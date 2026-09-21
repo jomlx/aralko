@@ -1,4 +1,4 @@
-import { Settings, GraduationCap, LayoutDashboard, BarChart3, BookOpen, FileText, Users, type LucideIcon } from 'lucide-react';
+import { Settings, LayoutDashboard, BarChart3, BookOpen, FileText, Users, type LucideIcon } from 'lucide-react';
 import type { MainTab } from '../types';
 
 interface HeaderProps {
