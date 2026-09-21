@@ -76,7 +76,7 @@ function AppContent() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
-  const [theme, setTheme] = useLocalStorage<'dark' | 'light'>('aralko-theme', 'dark');
+  const [theme, setTheme] = useLocalStorage<'dark' | 'light'>('aralko-theme', 'light');
 
   const { isAuthenticated, login, logout } = useSpotify();
 
