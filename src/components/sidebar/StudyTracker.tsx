@@ -92,10 +92,6 @@ export function StudyTracker({
               title="Timer settings"
             >
               <Settings2 size={13} />
-              {/* Tiny dot badge when auto-start is active */}
-              {autoStart && (
-                <span className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-accent ring-1 ring-[#151922]" />
-              )}
             </button>
 
             {/* Settings popover — uses bg-surface which is mapped to #DCE3EE in light mode */}
@@ -176,6 +172,7 @@ export function StudyTracker({
               />
             </g>
           </svg>
+
           <div className="text-2xl font-bold text-primary z-10 tracking-tight">{timeFormatted}</div>
           <div className={`text-2xs font-bold tracking-widest mt-0.5 z-10 uppercase ${isWork ? 'text-accent' : 'text-success'}`}>
             {phase === 'idle' ? 'Ready' : isWork ? 'Focus' : 'Break'}

@@ -32,7 +32,7 @@ function NavButton({ label, icon: Icon, isActive, onClick }: NavButtonProps) {
 
 export function Header({ activeTab, onTabChange, onOpenSettings }: HeaderProps) {
   return (
-    <header className="flex h-[60px] w-full items-center justify-between border-b border-token bg-app px-6">
+    <header className="flex h-[60px] w-full items-center justify-between border-b border-token bg-app px-4">
       {/* Logo */}
       <div className="flex items-center gap-4">
         <div className="flex h-11 w-11 shrink-0 overflow-hidden rounded-2xl shadow-lg">
@@ -40,7 +40,7 @@ export function Header({ activeTab, onTabChange, onOpenSettings }: HeaderProps) 
         </div>
         <div>
           <h1 className="text-lg font-bold text-primary">Aralko</h1>
-          <p className="text-xs text-muted">Made by Jomel for easier and more interesting studying</p>
+          <p className="text-xs text-muted">Made by Joml for easier studying.</p>
         </div>
       </div>
 
