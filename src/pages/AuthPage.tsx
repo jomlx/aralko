@@ -137,7 +137,7 @@ export function AuthPage() {
 
         {/* Logo + heading */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <div className="h-12 w-12 flex shrink-0 items-center justify-center overflow-hidden rounded-2xl shadow-lg mb-4 bg-surface border border-token">
+          <div className="h-16 w-16 flex shrink-0 items-center justify-center overflow-hidden rounded-2xl shadow-lg mb-4">
             <img src="/logo.png" alt="Aralko Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-bold text-primary">
