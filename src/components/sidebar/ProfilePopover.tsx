@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { LogOut, Flame, Star, Zap, BookOpen, Clock, Share2, X, CalendarDays } from 'lucide-react';
+import { LogOut, Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
@@ -127,8 +127,8 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
               {/* Card header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-                    <Star size={13} className="text-white" />
+                  <div className="flex h-7 w-7 shrink-0 overflow-hidden rounded-xl shadow-sm">
+                    <img src="/logo.png" alt="Aralko" className="w-full h-full object-cover" />
                   </div>
                   <span className="text-xs font-bold text-primary tracking-wide">Aralko</span>
                 </div>
@@ -137,9 +137,9 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
                   <button
                     onClick={handleShare}
                     title="Invite a friend"
-                    className="h-6 w-6 flex items-center justify-center rounded-lg bg-accent/20 hover:bg-accent/30 text-accent transition-colors"
+                    className="h-7 w-7 flex items-center justify-center rounded-lg bg-accent/20 hover:bg-accent/30 text-accent transition-colors"
                   >
-                    <Share2 size={12} />
+                    <Share size={15} />
                   </button>
                 </div>
               </div>
