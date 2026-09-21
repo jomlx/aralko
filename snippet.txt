@@ -1,0 +1,12 @@
+﻿          {/* Progress Bar Row */}
+          <div className="flex items-center w-full">
+            <div className="relative flex-1 h-2 bg-white/[0.05] rounded-full overflow-hidden">
+              <div
+                className="absolute top-0 left-0 h-full bg-violet-500 rounded-full transition-all duration-300"
+                style={{ width: \${playDeck.length > 0 ? Math.round(((currentIndex + 1) / playDeck.length) * 100) : 0}%\ }}
+              >
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Cards Row */}

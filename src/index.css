@@ -1,0 +1,313 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ==========================================================================
+   DESIGN TOKENS — Single source of truth for the entire palette.
+   Dark mode is the default (:root). Light mode overrides via :root.light.
+   ========================================================================== */
+:root {
+  /* Backgrounds */
+  --bg-app:     #202531;
+  --bg-surface: #2B3140;
+  --bg-raised:  #39404F;
+
+  /* Border */
+  --border: #39404F;
+
+  /* Text */
+  --text-primary:   #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted:     #64748b;
+
+  /* Accent — Discord blurple */
+  --accent:       #7A85F5;
+  --accent-hover: #848AF9;
+  --accent-muted: rgba(122, 133, 245, 0.15);
+
+  /* Success — emerald */
+  --success:       #57C98A;
+  --success-muted: #1F3B2C;
+
+  /* Danger — red */
+  --danger:       #ED7A7A;
+  --danger-muted: #3F2226;
+
+  /* Warning — orange */
+  --warning:       #F5A623;
+  --warning-muted: rgba(245, 166, 35, 0.15);
+}
+
+:root.light {
+  --bg-app:     #EEF2F7;
+  --bg-surface: #DCE3EE;
+  --bg-raised:  #B7C4DB;
+  --border:     #B7C4DB;
+
+  --text-primary:   #0f172a;
+  --text-secondary: #334155;
+  --text-muted:     #64748b;
+
+  --accent:       #5865F2;
+  --accent-hover: #4551D4;
+  --accent-muted: rgba(88, 101, 242, 0.15);
+
+  --success:       #3BA871;
+  --success-muted: #DFF3E7;
+
+  --danger:       #E65B5B;
+  --danger-muted: #FBE2E2;
+
+  --warning:       #D97706;
+  --warning-muted: #FEF3C7;
+}
+
+/* ==========================================================================
+   GLOBAL RESET & UTILITIES
+   ========================================================================== */
+:root {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+}
+
+body, #root {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Token Utility Classes for Tailwind */
+.bg-app          { background-color: var(--bg-app); }
+.bg-surface      { background-color: var(--bg-surface); }
+.bg-raised       { background-color: var(--bg-raised); }
+.border-token    { border-color: var(--border); }
+.text-primary    { color: var(--text-primary); }
+.text-secondary  { color: var(--text-secondary); }
+.text-muted      { color: var(--text-muted); }
+.bg-accent       { background-color: var(--accent); color: white; }
+.text-accent     { color: var(--accent); }
+.border-accent   { border-color: var(--accent); }
+.bg-accent-muted { background-color: var(--accent-muted); }
+
+/* Success Tokens */
+.bg-success       { background-color: var(--success); color: white; }
+.text-success     { color: var(--success); }
+.border-success   { border-color: var(--success); }
+.bg-success-muted { background-color: var(--success-muted); color: var(--success); }
+
+/* Spotify Green */
+.btn-spotify { background-color: #1DB954; color: white; }
+.btn-spotify:hover { background-color: #1ED760; }
+
+/* Structural elements pick up surface tokens automatically */
+aside, header {
+  background-color: var(--bg-surface);
+  border-color: var(--border);
+}
+
+/* Structural elements pick up surface tokens automatically */
+aside, header {
+  background-color: var(--bg-surface);
+  border-color: var(--border);
+}
+
+button, input, textarea {
+  font: inherit;
+}
+
+/* ==========================================================================
+   SHADCN BORDER-RADIUS OVERRIDES (keep as-is)
+   ========================================================================== */
+.rounded-2xl { border-radius: 0.5rem !important; }
+.rounded-xl  { border-radius: 0.375rem !important; }
+.rounded-lg  { border-radius: 0.375rem !important; }
+.rounded-full { border-radius: 9999px !important; }
+
+/* ==========================================================================
+   BUTTON VARIANT SYSTEM
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.25rem;         /* h-9 */
+  padding: 0 1rem;          /* px-4 */
+  border-radius: 0.375rem;  /* rounded-xl (overridden above) */
+  font-size: 0.875rem;      /* text-sm */
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background-color: var(--accent);
+  color: white;
+  border-color: transparent;
+}
+.btn-primary:hover:not(:disabled) { background-color: var(--accent-hover); }
+
+.btn-secondary {
+  background-color: var(--bg-raised);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+.btn-secondary:hover:not(:disabled) { background-color: var(--border); }
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--accent);
+  border-color: var(--border);
+}
+.btn-ghost:hover:not(:disabled) { background-color: var(--accent-muted); }
+
+.btn-danger {
+  background-color: var(--danger-muted);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.btn-danger:hover:not(:disabled) { opacity: 0.85; }
+
+/* ==========================================================================
+   TYPE SCALE (custom text-2xs for very small metadata labels)
+   ========================================================================== */
+.text-2xs { font-size: 0.625rem; line-height: 1rem; }   /* 10px */
+
+/* ==========================================================================
+   LIGHT MODE — TEXT COLOR OVERRIDES
+   (Components use text-white / text-slate-* — these adapt them for light bg)
+   ========================================================================== */
+:root.light .text-white      { color: #0f172a !important; }
+:root.light .text-slate-50   { color: #0f172a !important; }
+:root.light .text-slate-100  { color: #1e293b !important; }
+:root.light .text-slate-200  { color: #334155 !important; }
+:root.light .text-slate-300  { color: #475569 !important; }
+:root.light .text-slate-400  { color: #64748b !important; }
+:root.light .text-slate-500  { color: #64748b !important; }
+:root.light .text-slate-600  { color: #64748b !important; }
+:root.light .text-white\/90  { color: rgba(15, 23, 42, 0.9) !important; }
+:root.light .text-white\/80  { color: rgba(15, 23, 42, 0.8) !important; }
+:root.light .text-white\/70  { color: rgba(15, 23, 42, 0.7) !important; }
+:root.light .text-white\/60  { color: rgba(15, 23, 42, 0.6) !important; }
+:root.light .text-white\/50  { color: rgba(15, 23, 42, 0.5) !important; }
+
+/* Accent buttons must stay white text in light mode */
+:root.light button.bg-\[var\(--accent\)\],
+:root.light .bg-\[var\(--accent\)\] { color: white !important; }
+
+/* ==========================================================================
+   LIGHT MODE — SEMI-TRANSPARENT OVERLAY OVERRIDES
+   (bg-white/[0.x] overlays flip to dark-on-light)
+   ========================================================================== */
+:root.light .bg-white\/\[0\.02\] { background-color: rgba(15, 23, 42, 0.02) !important; }
+:root.light .bg-white\/\[0\.03\] { background-color: rgba(15, 23, 42, 0.03) !important; }
+:root.light .bg-white\/\[0\.04\] { background-color: rgba(15, 23, 42, 0.04) !important; }
+:root.light .bg-white\/\[0\.05\] { background-color: rgba(15, 23, 42, 0.05) !important; }
+:root.light .bg-white\/\[0\.07\] { background-color: rgba(15, 23, 42, 0.07) !important; }
+:root.light .bg-white\/\[0\.09\] { background-color: rgba(15, 23, 42, 0.09) !important; }
+:root.light .bg-white\/\[0\.1\]  { background-color: rgba(15, 23, 42, 0.1) !important; }
+
+/* ==========================================================================
+   LIGHT MODE — ORANGE / WARNING BADGE
+   ========================================================================== */
+:root.light .bg-orange-500\/10 { background-color: #ffedd5 !important; color: #c2410c !important; }
+:root.light .text-orange-400   { color: #c2410c !important; }
+
+/* ==========================================================================
+   SVG STROKE TOKENS
+   ========================================================================== */
+.stroke-white\/10       { stroke: var(--border); }
+:root.light .stroke-white\/10 { stroke: var(--border); }
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+@keyframes ring-pulse {
+  0%   { transform: scale(1); opacity: 0.1; }
+  50%  { transform: scale(1.05); opacity: 0.2; }
+  100% { transform: scale(1); opacity: 0.1; }
+}
+.pomodoro-ring-active { animation: ring-pulse 2s ease-in-out infinite; }
+
+@keyframes message-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.chat-message { animation: message-in 0.25s ease-out; }
+
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: 0.3; }
+  30%           { opacity: 1; }
+}
+.typing-dot:nth-child(1) { animation: typing-dot 1.4s infinite 0s; }
+.typing-dot:nth-child(2) { animation: typing-dot 1.4s infinite 0.2s; }
+.typing-dot:nth-child(3) { animation: typing-dot 1.4s infinite 0.4s; }
+
+@keyframes tab-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.tab-content { animation: tab-fade 0.2s ease-out; }
+
+/* ==========================================================================
+   UTILITIES
+   ========================================================================== */
+.sidebar-transition { transition: width 0.15s ease; }
+.sidebar-dragging   { transition: none; }
+.no-select { user-select: none; -webkit-user-select: none; }
+.perspective-1000    { perspective: 1000px; }
+.transform-style-3d  { transform-style: preserve-3d; }
+.backface-hidden     { backface-visibility: hidden; }
+.rotate-y-180        { transform: rotateY(180deg); }
+
+/* ==========================================================================
+   RANGE SLIDER STYLING
+   ========================================================================== */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: -5px;
+  border: 2px solid var(--bg-surface);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg-surface);
+}
+
+/* ==========================================================================
+   CUSTOM SCROLLBAR
+   ========================================================================== */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: rgba(255, 255, 255, 0.08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
