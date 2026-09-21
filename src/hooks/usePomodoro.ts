@@ -41,6 +41,15 @@ export function usePomodoro({ onSessionComplete, preset, autoStart }: UsePomodor
     if (isRunning && secondsLeft > 0) {
       interval = setInterval(() => setSecondsLeft(s => s - 1), 1000);
     } else if (isRunning && secondsLeft === 0) {
+      // Play notification sound silently without interrupting existing audio streams
+      try {
+        const audio = new Audio('/sounds/timer-end.wav');
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
+      } catch (e) {
+        // fail silently if blocked by browser
+      }
+
       if (phase === 'work') {
         setSessionsCompleted(c => c + 1);
         onSessionCompleteRef.current?.();
