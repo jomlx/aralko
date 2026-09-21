@@ -410,6 +410,20 @@ function AppContent() {
 function InnerApp() {
   const { session, loading } = useAuth();
 
+  // Initialize theme globally so AuthPage respects the user's preference
+  useEffect(() => {
+    const root = document.documentElement;
+    try {
+      const storedTheme = window.localStorage.getItem('aralko-theme');
+      const theme = storedTheme ? JSON.parse(storedTheme) : 'light';
+      if (theme === 'light') root.classList.add('light');
+      else root.classList.remove('light');
+    } catch (e) {
+      // fallback to light
+      root.classList.add('light');
+    }
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-app flex items-center justify-center">
