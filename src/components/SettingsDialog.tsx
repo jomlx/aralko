@@ -33,6 +33,40 @@ export function SettingsDialog({
   const guideRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
+  
+  // ── Account Name State ────────────────────────────────────────────────
+  const [displayName, setDisplayName] = useState('');
+  const [originalName, setOriginalName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const [nameSuccess, setNameSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const name = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? '';
+      setDisplayName(name);
+      setOriginalName(name);
+    }
+  }, [user]);
+
+  const handleSaveName = async () => {
+    const trimmed = displayName.trim();
+    if (!user || !trimmed || trimmed === originalName) return;
+    setSavingName(true);
+    setNameSuccess(false);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: trimmed, name: trimmed }
+      });
+      if (error) throw error;
+      setOriginalName(trimmed);
+      setNameSuccess(true);
+      setTimeout(() => setNameSuccess(false), 3000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   // Load saved key on mount
   useEffect(() => {
@@ -118,6 +152,39 @@ export function SettingsDialog({
           </button>
         </div>
 
+        {/* ── Section 0: Account ─────────────────────────── */}
+        <div className="mb-5">
+          <p className="text-2xs font-semibold uppercase tracking-widest text-muted mb-3">Account</p>
+          <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-secondary">Display Name</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={e => setDisplayName(e.target.value)}
+                  className="flex-1 rounded-xl border border-token bg-app px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
+                  placeholder="Your display name"
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={savingName || displayName.trim() === '' || displayName.trim() === originalName}
+                  className="rounded-xl bg-accent hover:bg-accent/90 px-4 py-2 text-sm font-semibold text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {savingName ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                </button>
+              </div>
+              {nameSuccess && (
+                <p className="text-xs text-success mt-1 animate-in fade-in flex items-center gap-1">
+                  <Check size={12} /> Name updated successfully
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-token mb-5" />
+
         {/* ── Section 1: General ─────────────────────────── */}
         <div className="mb-5">
           <p className="text-2xs font-semibold uppercase tracking-widest text-muted mb-3">General</p>
@@ -189,7 +256,7 @@ export function SettingsDialog({
         </div>
 
         {/* ── Section 2: AI / Gemini key ───────────────────── */}
-        <div className="h-px bg-white/[0.07] mb-5" />
+        <div className="border-t border-token mb-5" />
         <div className="flex flex-col gap-3">
           <p className="text-2xs font-semibold uppercase tracking-widest text-muted">AI</p>
           {/* Heading row */}
