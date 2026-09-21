@@ -172,7 +172,7 @@ export function AuthPage() {
 
             {/* Email */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-secondary">Your Email Address</label>
+              <label className="text-xs font-medium text-secondary">Email Address</label>
               <input
                 type="email"
                 value={email}
