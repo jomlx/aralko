@@ -136,11 +136,13 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
       {/* Outer padding wrapper — does NOT scroll */}
       <div className="flex-1 min-h-0 flex gap-5 px-8 py-4 overflow-hidden">
 
-        {/* Center: Reviewer Content — scrolls independently */}
-        <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <div className="flex flex-col min-h-0">
+        {/* Center: Reviewer Content */}
+        <div className="flex-1 min-w-0 flex flex-col min-h-0">
+          
+          {/* --- STATIC HEADER & COMMANDS (Does not scroll) --- */}
+          <div className="flex-shrink-0 flex flex-col pb-4 mb-4 border-b border-white/[0.05]">
             {/* Header */}
-            <div className="mb-6 flex items-start justify-between">
+            <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-primary">Reviewer</h2>
                 <p className="mt-1 text-sm text-muted">
@@ -160,6 +162,79 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               </div>
             </div>
 
+            {/* Toolbar (Commands) */}
+            {hasContent && !isGenerating && (
+              <div className="flex items-center justify-between mt-6">
+                <div className="flex items-center gap-2">
+                  <BookOpen size={15} className="text-amber-400" />
+                  <span className="text-sm font-medium text-primary">Cheat Sheet</span>
+                  {uploadedFileName && (
+                    <span className="text-xs text-muted">— {uploadedFileName}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {!isEditing && (
+                    <button
+                      onClick={startEditing}
+                      className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                      title="Edit"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                  )}
+
+                  {/* Re-upload */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                    title="Re-upload file"
+                  >
+                    <RotateCcw size={14} />
+                  </button>
+                  <input ref={fileInputRef} type="file" accept=".txt,.md,.json,.csv" className="hidden" onChange={onFileInput} />
+
+                  {/* Export */}
+                  <div ref={exportRef} className="relative">
+                    <button
+                      onClick={() => setExportOpen(p => !p)}
+                      className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors border border-token"
+                    >
+                      <Download size={12} /> Export <ChevronDown size={10} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {exportOpen && (
+                      <div className="absolute right-0 top-full mt-1 z-20 min-w-[130px] rounded-xl border border-token bg-surface p-1 shadow-xl">
+                        <button
+                          onClick={() => { exportReviewerAsPDF(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
+                        >
+                          <FileText size={11} /> As PDF
+                        </button>
+                        <button
+                          onClick={() => { exportReviewerAsDocx(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
+                        >
+                          <FileText size={11} /> As Word
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Clear */}
+                  <button
+                    onClick={clearReviewer}
+                    className="rounded-lg p-1.5 text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                    title="Clear"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* --- END STATIC HEADER --- */}
+
+          {/* --- SCROLLING CONTENT --- */}
+          <div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {/* Inline error banner */}
             {inlineError && (
               <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
@@ -168,7 +243,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               </div>
             )}
 
-            {/* Upload zone — always visible if no content or user wants to re-upload */}
+            {/* Upload zone */}
             {(!hasContent && !isGenerating) && (
               <div
                 onDragEnter={() => setIsDragging(true)}
@@ -224,75 +299,9 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               </div>
             )}
 
-            {/* Reviewer content — no card wrapper */}
+            {/* Reviewer content */}
             {hasContent && !isGenerating && (
               <div className="flex flex-col gap-4">
-                {/* Toolbar */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BookOpen size={15} className="text-amber-400" />
-                    <span className="text-sm font-medium text-primary">Cheat Sheet</span>
-                    {uploadedFileName && (
-                      <span className="text-xs text-muted">— {uploadedFileName}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!isEditing && (
-                      <button
-                        onClick={startEditing}
-                        className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
-                        title="Edit"
-                      >
-                        <Edit3 size={14} />
-                      </button>
-                    )}
-
-                    {/* Re-upload */}
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
-                      title="Re-upload file"
-                    >
-                      <RotateCcw size={14} />
-                    </button>
-                    <input ref={fileInputRef} type="file" accept=".txt,.md,.json,.csv" className="hidden" onChange={onFileInput} />
-
-                    {/* Export */}
-                    <div ref={exportRef} className="relative">
-                      <button
-                        onClick={() => setExportOpen(p => !p)}
-                        className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors border border-token"
-                      >
-                        <Download size={12} /> Export <ChevronDown size={10} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      {exportOpen && (
-                        <div className="absolute right-0 top-full mt-1 z-20 min-w-[130px] rounded-xl border border-token bg-surface p-1 shadow-xl">
-                          <button
-                            onClick={() => { exportReviewerAsPDF(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
-                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
-                          >
-                            <FileText size={11} /> As PDF
-                          </button>
-                          <button
-                            onClick={() => { exportReviewerAsDocx(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
-                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
-                          >
-                            <FileText size={11} /> As Word
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Clear */}
-                    <button
-                      onClick={clearReviewer}
-                      className="rounded-lg p-1.5 text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                      title="Clear"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
 
                 {/* Content */}
                 {isEditing ? (
