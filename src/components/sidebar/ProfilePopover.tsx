@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
-import { LogOut, Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays } from 'lucide-react';
+import { useState, useCallback, useRef } from 'react';
+import { LogOut, Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
@@ -16,7 +17,31 @@ interface ProfilePopoverProps {
 
 export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCount }: ProfilePopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const { showToast } = useToast();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadJpeg = useCallback(async () => {
+    if (!cardRef.current) return;
+    try {
+      const isLight = document.documentElement.classList.contains('light');
+      const bgColor = isLight ? '#ffffff' : '#151922'; // Matches bg-surface
+      
+      const canvas = await html2canvas(cardRef.current, { 
+        backgroundColor: bgColor, 
+        scale: 2, 
+        useCORS: true 
+      });
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      
+      const link = document.createElement('a');
+      link.download = `aralko-stats.jpg`;
+      link.href = dataUrl;
+      link.click();
+    } catch (e) {
+      console.error('Failed to generate image', e);
+    }
+  }, []);
 
   const { user } = useAuth();
   const displayEmail = user?.email ?? 'Not signed in';
@@ -123,24 +148,53 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
             </div>
 
             {/* ── Streak & Stats Card ─────────────────────────── */}
-            <div className="rounded-2xl bg-gradient-to-br from-accent/25 via-violet-600/10 to-indigo-500/10 border border-accent/20 p-5 mb-3">
+            <div ref={cardRef} className="rounded-2xl bg-gradient-to-br from-accent/25 via-violet-600/10 to-indigo-500/10 border border-accent/20 p-5 mb-3">
               {/* Card header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 shrink-0 overflow-hidden rounded-xl shadow-sm">
                     <img src="/logo.png" alt="Aralko" className="w-full h-full object-cover" />
                   </div>
-                  <span className="text-xs font-bold text-primary tracking-wide">Aralko</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-primary tracking-wide leading-none">Aralko</span>
+                    <span className="text-[10px] text-muted leading-tight mt-0.5">@{displayName.replace(/\s+/g, '').toLowerCase()}</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-2xs text-muted">Study Stats</span>
-                  <button
-                    onClick={handleShare}
-                    title="Invite a friend"
-                    className="h-7 w-7 flex items-center justify-center rounded-lg bg-accent/20 hover:bg-accent/30 text-accent transition-colors"
-                  >
-                    <Share size={15} />
-                  </button>
+                  <div className="relative flex items-center gap-1">
+                    <button
+                      onClick={() => setShowShareMenu(!showShareMenu)}
+                      title="Share or Save"
+                      className="h-7 w-7 flex items-center justify-center rounded-lg bg-accent/20 hover:bg-accent/30 text-accent transition-colors"
+                    >
+                      <Share size={15} />
+                    </button>
+                    {showShareMenu && (
+                      <div className="absolute right-0 top-full mt-1 w-36 rounded-xl border border-token bg-surface p-1.5 shadow-xl shadow-black/40 z-10 animate-in fade-in slide-in-from-top-1 duration-150">
+                        <button
+                          onClick={() => {
+                            setShowShareMenu(false);
+                            handleShare();
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-primary hover:bg-white/[0.06] transition-colors"
+                        >
+                          <Share size={13} />
+                          Share Link
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowShareMenu(false);
+                            handleDownloadJpeg();
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-primary hover:bg-white/[0.06] transition-colors"
+                        >
+                          <Download size={13} />
+                          Save Image
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
