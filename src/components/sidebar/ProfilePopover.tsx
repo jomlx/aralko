@@ -251,41 +251,21 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
       {/* Profile Dialog */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         >
-          <div className="w-full max-w-md rounded-2xl border border-token bg-surface p-6 shadow-2xl shadow-black/60">
-            {/* Header row */}
-            <div className="flex items-start justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12">
-                  {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-                  <AvatarFallback className="bg-accent text-primary font-bold text-sm">{initials}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-base font-semibold text-primary">{displayName}</span>
-                  <span className="text-xs text-secondary">{displayEmail}</span>
-                </div>
-              </div>
-              <button
-                onClick={handleClose}
-                className="rounded-lg p-1.5 text-muted hover:bg-white/[0.06] hover:text-primary transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* ── Streak & Stats Card ─────────────────────────── */}
-            <div className="rounded-2xl bg-gradient-to-br from-accent/25 via-violet-600/10 to-indigo-500/10 border border-accent/20 p-5 mb-3">
+          <div className="w-full max-w-sm flex flex-col items-center">
+            {/* ── Stats Card ─────────────────────────── */}
+            <div id="aralko-stats-card" className="w-full rounded-2xl bg-surface bg-gradient-to-br from-accent/25 via-violet-600/10 to-indigo-500/10 border border-accent/20 p-5 mb-4 shadow-2xl shadow-black/60 relative">
               {/* Card header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 shrink-0 overflow-hidden rounded-xl shadow-sm">
-                    <img src="/logo.png" alt="Aralko" className="w-full h-full object-cover" />
+                    <img src="/logo.png" alt="Aralko" className="w-full h-full object-cover" crossOrigin="anonymous" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-primary tracking-wide leading-none">Aralko</span>
-                    <span className="text-[10px] text-muted leading-tight mt-0.5">@{displayName.replace(/\s+/g, '').toLowerCase()}</span>
+                    <span className="text-[10px] text-muted leading-tight mt-0.5">{displayEmail}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -293,6 +273,7 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
                   <button
                     onClick={() => setShowShareMenu(true)}
                     title="Share"
+                    data-html2canvas-ignore="true"
                     className="h-6 w-6 flex items-center justify-center rounded-lg bg-accent/20 hover:bg-accent/30 text-accent transition-colors"
                   >
                     <Share size={13} />
@@ -300,12 +281,25 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
                 </div>
               </div>
 
+              {/* Profile Row */}
+              <div className="flex flex-col items-center gap-2 mb-6 mt-2">
+                <Avatar className="h-16 w-16 border-2 border-accent/20">
+                  {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} crossOrigin="anonymous" />}
+                  <AvatarFallback className="bg-slate-800 text-secondary font-medium text-xl">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-center">
+                  <span className="text-lg font-bold text-primary">{displayName}</span>
+                </div>
+              </div>
+
               {/* Streak highlight */}
-              <div className="flex items-center gap-2 mb-4">
-                <Flame size={26} className="text-amber-400 shrink-0" />
-                <div>
+              <div className="flex justify-center items-center gap-2 mb-5">
+                <Flame size={28} className="text-amber-400 shrink-0" />
+                <div className="flex items-baseline gap-1.5">
                   <p className="text-3xl font-extrabold text-primary leading-none">{streak}</p>
-                  <p className="text-[11px] text-muted mt-0.5">day streak</p>
+                  <p className="text-xs text-muted font-medium">day streak</p>
                 </div>
               </div>
 
@@ -347,7 +341,7 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
                   <div className="col-span-3 rounded-xl bg-white/[0.07] p-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <CalendarDays size={11} className="text-secondary" />
-                      <span className="text-[11px] text-secondary">Member since</span>
+                      <span className="text-[11px] text-secondary">Active since</span>
                     </div>
                     <span className="text-[11px] font-semibold text-primary">{joinDate}</span>
                   </div>
@@ -355,13 +349,11 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
               </div>
             </div>
 
-            {/* ── Sign out ─────────────────────────────────── */}
-            <div className="h-px bg-white/[0.07] mb-3 mt-4" />
             <button
               onClick={handleSignOut}
-              className="flex items-center justify-center gap-2 text-sm font-medium text-danger hover:bg-raised border border-danger/25 hover:border-danger/40 rounded-xl py-2 transition-colors w-full"
+              className="w-full rounded-xl bg-surface hover:bg-white/[0.05] border border-token py-2.5 text-sm font-semibold text-danger transition-colors flex items-center justify-center gap-2"
             >
-              <LogOut size={14} />
+              <LogOut size={16} />
               Sign out
             </button>
           </div>
