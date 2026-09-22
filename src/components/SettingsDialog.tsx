@@ -39,6 +39,7 @@ export function SettingsDialog({
   const [originalName, setOriginalName] = useState('');
   const [savingName, setSavingName] = useState(false);
   const [nameSuccess, setNameSuccess] = useState(false);
+  const [nameError, setNameError] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -53,16 +54,36 @@ export function SettingsDialog({
     if (!user || !trimmed || trimmed === originalName) return;
     setSavingName(true);
     setNameSuccess(false);
+    setNameError('');
     try {
+      // Soft unique check
+      const { data: existing } = await supabase
+        .from('user_settings')
+        .select('user_id')
+        .ilike('display_name', trimmed)
+        .neq('user_id', user.id)
+        .limit(1);
+        
+      if (existing && existing.length > 0) {
+        setNameError('Username is already taken by another user.');
+        setSavingName(false);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         data: { full_name: trimmed, name: trimmed }
       });
       if (error) throw error;
+
+      // Sync to user_settings so other checks catch it immediately
+      await supabase.from('user_settings').upsert({ user_id: user.id, display_name: trimmed }, { onConflict: 'user_id' });
+
       setOriginalName(trimmed);
       setNameSuccess(true);
       setTimeout(() => setNameSuccess(false), 3000);
     } catch (e) {
       console.error(e);
+      setNameError('An error occurred while saving.');
     } finally {
       setSavingName(false);
     }
@@ -177,6 +198,11 @@ export function SettingsDialog({
               {nameSuccess && (
                 <p className="text-xs text-success mt-1 animate-in fade-in flex items-center gap-1">
                   <Check size={12} /> Name updated successfully
+                </p>
+              )}
+              {nameError && (
+                <p className="text-xs text-danger mt-1 animate-in fade-in flex items-center gap-1">
+                  <X size={12} /> {nameError}
                 </p>
               )}
             </div>
