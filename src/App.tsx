@@ -151,7 +151,7 @@ function AppContent() {
 
   const userSettings = useUserSettings();
   const { activities, loading, addActivity, updateActivity, removeActivity } = useActivities();
-  const { sessions, addSession } = useSessions(userSettings.addXP);
+  const { sessions, sessionsLoaded, addSession } = useSessions(userSettings.addXP);
   const [selectedActivityId, setSelectedActivityId] = useLocalStorage<number>('aralko-selected-activity', 1);
 
   const activitiesRef = useRef(activities);
@@ -168,6 +168,7 @@ function AppContent() {
 
   const streakLogic = useStreakLogic({
     sessions,
+    sessionsLoaded,
     streakFreezes: userSettings.streakFreezes,
     savedStreak: userSettings.savedStreak,
     updateStreakData: userSettings.updateStreakData

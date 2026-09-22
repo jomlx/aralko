@@ -5,11 +5,21 @@ import { useAuth } from './useAuth';
 
 const LOCAL_STORAGE_KEY = 'aralko-sessions-local';
 
+/** Parse a session date string to a local YYYY-MM-DD string (timezone-safe) */
+function toLocalDateStr(dateStr: string): string {
+  // If the date is already YYYY-MM-DD (no time part), use it directly
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  // Otherwise it's an ISO timestamp — extract the local date parts
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export function useSessions(addXP?: (amount: number) => void) {
   const { user } = useAuth();
   const userId = user?.id;
 
   const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
 
   const saveToLocal = useCallback((data: StudySession[]) => {
     if (!userId) return;
@@ -19,7 +29,14 @@ export function useSessions(addXP?: (amount: number) => void) {
   const fetchSessions = useCallback(async () => {
     if (!userId) {
       setSessions([]);
+      setSessionsLoaded(true); // No user = nothing to load
       return;
+    }
+
+    // Seed from localStorage immediately so UI isn't empty while network loads
+    const local = localStorage.getItem(`${LOCAL_STORAGE_KEY}-${userId}`);
+    if (local) {
+      try { setSessions(JSON.parse(local)); } catch {}
     }
 
     let data = null;
@@ -38,11 +55,8 @@ export function useSessions(addXP?: (amount: number) => void) {
 
     if (error || !data) {
       console.warn('Failed to fetch sessions from Supabase. Falling back to local storage.');
-      const local = localStorage.getItem(`${LOCAL_STORAGE_KEY}-${userId}`);
-      if (local) {
-        setSessions(JSON.parse(local));
-      }
-    } else if (data) {
+      // Keep whatever we already seeded from localStorage
+    } else {
       const mapped: StudySession[] = data.map(row => ({
         date: row.date,
         minutes: row.minutes,
@@ -52,9 +66,13 @@ export function useSessions(addXP?: (amount: number) => void) {
       setSessions(mapped);
       saveToLocal(mapped);
     }
+
+    // Mark loaded only AFTER the network attempt completes (success or fallback)
+    setSessionsLoaded(true);
   }, [userId, saveToLocal]);
 
   useEffect(() => {
+    setSessionsLoaded(false); // reset on user change
     fetchSessions();
   }, [fetchSessions]);
 
@@ -85,34 +103,32 @@ export function useSessions(addXP?: (amount: number) => void) {
     addXP?.(5);
   }, [saveToLocal, userId, addXP]);
 
-  // Calculate streak from sessions
+  // Calculate streak from sessions (timezone-safe)
   let streak = 0;
   if (sessions.length > 0) {
-    const dates = [...new Set(sessions.map(s => {
-      const d = new Date(s.date);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }))].sort().reverse();
+    const dates = [...new Set(sessions.map(s => toLocalDateStr(s.date)))].sort().reverse();
 
     if (dates.length > 0) {
       const today = new Date();
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      
+      const todayStr = toLocalDateStr(today.toISOString());
+
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+      const yesterdayStr = toLocalDateStr(yesterday.toISOString());
 
       if (dates[0] === todayStr || dates[0] === yesterdayStr) {
         streak = 1;
-        let currentDate = new Date(dates[0]);
+        let currentDateStr = dates[0];
 
         for (let i = 1; i < dates.length; i++) {
-          const prevDate = new Date(currentDate);
-          prevDate.setDate(prevDate.getDate() - 1);
-          const prevDateStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}-${String(prevDate.getDate()).padStart(2, '0')}`;
+          // Compute expected previous day
+          const cur = new Date(currentDateStr + 'T12:00:00'); // noon to avoid DST edge
+          cur.setDate(cur.getDate() - 1);
+          const prevStr = toLocalDateStr(cur.toISOString());
 
-          if (dates[i] === prevDateStr) {
+          if (dates[i] === prevStr) {
             streak++;
-            currentDate = prevDate;
+            currentDateStr = prevStr;
           } else {
             break;
           }
@@ -123,6 +139,7 @@ export function useSessions(addXP?: (amount: number) => void) {
 
   return {
     sessions,
+    sessionsLoaded,
     addSession,
     streak
   };
