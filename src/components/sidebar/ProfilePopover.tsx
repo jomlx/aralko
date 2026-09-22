@@ -1,6 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { LogOut, Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays } from 'lucide-react';
-import html2canvas from 'html2canvas';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
@@ -19,46 +18,6 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
   const [isOpen, setIsOpen] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const { showToast } = useToast();
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  const handleDownloadJpeg = useCallback(async () => {
-    if (!cardRef.current) return;
-
-    // Clone the node BEFORE closing the modal so the ref stays valid
-    const clone = cardRef.current.cloneNode(true) as HTMLElement;
-    const isLight = document.documentElement.classList.contains('light');
-
-    // Give the clone a solid opaque background so gradients render correctly
-    clone.style.position = 'fixed';
-    clone.style.top = '-9999px';
-    clone.style.left = '-9999px';
-    clone.style.width = `${cardRef.current.offsetWidth}px`;
-    clone.style.zIndex = '-1';
-    clone.style.borderRadius = '1rem';
-    document.body.appendChild(clone);
-
-    try {
-      const bgColor = isLight ? '#f1f5f9' : '#151922';
-      const canvas = await html2canvas(clone, {
-        backgroundColor: bgColor,
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        imageTimeout: 5000,
-      });
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      const link = document.createElement('a');
-      link.download = 'aralko-stats.jpg';
-      link.href = dataUrl;
-      link.click();
-    } catch (e) {
-      console.error('Failed to generate image', e);
-      showToast('Could not save image. Try again.', 'error');
-    } finally {
-      document.body.removeChild(clone);
-    }
-  }, [showToast]);
 
   const { user } = useAuth();
   const displayEmail = user?.email ?? 'Not signed in';
@@ -81,6 +40,162 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
   const joinDate = user?.created_at
     ? new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(user.created_at))
     : null;
+
+  const handleDownloadJpeg = useCallback(async () => {
+    const isLight = document.documentElement.classList.contains('light');
+
+    // --- Colors based on theme ---
+    const bg       = isLight ? '#e2e8f0' : '#151922';
+    const cellBg   = isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.07)';
+    const textPri  = isLight ? '#0f172a' : '#f1f5f9';
+    const textMut  = isLight ? '#64748b' : '#94a3b8';
+    const accent   = '#7c3aed';
+
+    const W = 400, H = 340;
+    const canvas = document.createElement('canvas');
+    canvas.width = W * 2; canvas.height = H * 2;
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(2, 2);
+
+    // outer background
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // card
+    const rx = 16, pad = 20;
+    ctx.beginPath();
+    ctx.roundRect(pad, pad, W - pad * 2, H - pad * 2, rx);
+    // gradient fill
+    const grad = ctx.createLinearGradient(pad, pad, W - pad, H - pad);
+    grad.addColorStop(0, isLight ? 'rgba(124,58,237,0.18)' : 'rgba(124,58,237,0.25)');
+    grad.addColorStop(0.5, isLight ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.10)');
+    grad.addColorStop(1, isLight ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.10)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = isLight ? 'rgba(124,58,237,0.3)' : 'rgba(124,58,237,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    const x0 = pad + 16, y0 = pad + 16;
+
+    // ── Load logo ──
+    const loadImg = (src: string): Promise<HTMLImageElement | null> =>
+      new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+
+    const logo = await loadImg(`${window.location.origin}/logo.png`);
+
+    // Logo icon
+    if (logo) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x0, y0, 28, 28, 8);
+      ctx.clip();
+      ctx.drawImage(logo, x0, y0, 28, 28);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.roundRect(x0, y0, 28, 28, 8);
+      ctx.fill();
+    }
+
+    // "Aralko" + username
+    ctx.fillStyle = textPri;
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.fillText('Aralko', x0 + 34, y0 + 11);
+    ctx.fillStyle = textMut;
+    ctx.font = '10px system-ui, sans-serif';
+    ctx.fillText(`@${displayName.replace(/\s+/g, '').toLowerCase()}`, x0 + 34, y0 + 24);
+
+    // "Study Stats" top-right
+    ctx.fillStyle = textMut;
+    ctx.font = '10px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('Study Stats', W - pad - 16, y0 + 18);
+    ctx.textAlign = 'left';
+
+    // ── Streak ──
+    const sy = y0 + 48;
+    ctx.font = '24px system-ui, sans-serif';
+    ctx.fillText('🔥', x0, sy + 22);
+    ctx.fillStyle = textPri;
+    ctx.font = 'bold 36px system-ui, sans-serif';
+    ctx.fillText(String(streak), x0 + 32, sy + 28);
+    ctx.fillStyle = textMut;
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.fillText('day streak', x0 + 32, sy + 44);
+
+    // ── Stat grid ──
+    const gy = sy + 62, cellW = (W - pad * 2 - 32 - 8) / 3, cellH = 56;
+    const cells = [
+      { icon: '⚡', val: String(level),              label: 'Level'   },
+      { icon: '⭐', val: xp.toLocaleString(),         label: 'Total XP'},
+      { icon: '📖', val: String(sessionsCount),       label: 'Sessions'},
+    ];
+    cells.forEach((c, i) => {
+      const cx = x0 + i * (cellW + 4);
+      ctx.fillStyle = cellBg;
+      ctx.beginPath(); ctx.roundRect(cx, gy, cellW, cellH, 10); ctx.fill();
+      ctx.font = '14px system-ui, sans-serif';
+      ctx.fillText(c.icon, cx + cellW / 2 - 8, gy + 18);
+      ctx.fillStyle = textPri;
+      ctx.font = 'bold 16px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(c.val, cx + cellW / 2, gy + 36);
+      ctx.fillStyle = textMut;
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.fillText(c.label, cx + cellW / 2, gy + 50);
+      ctx.textAlign = 'left';
+    });
+
+    // Total study time row
+    const rowY = gy + cellH + 6;
+    const rowW = W - pad * 2 - 32;
+    ctx.fillStyle = cellBg;
+    ctx.beginPath(); ctx.roundRect(x0, rowY, rowW, 34, 10); ctx.fill();
+    ctx.fillStyle = textMut;
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.fillText('⏱  Total study time', x0 + 10, rowY + 21);
+    ctx.fillStyle = textPri;
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${(totalMinutes / 60).toFixed(1)} hrs`, x0 + rowW - 10, rowY + 21);
+    ctx.textAlign = 'left';
+
+    // Member since row
+    if (joinDate) {
+      const row2Y = rowY + 40;
+      ctx.fillStyle = cellBg;
+      ctx.beginPath(); ctx.roundRect(x0, row2Y, rowW, 34, 10); ctx.fill();
+      ctx.fillStyle = textMut;
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.fillText('📅  Member since', x0 + 10, row2Y + 21);
+      ctx.fillStyle = textPri;
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(joinDate, x0 + rowW - 10, row2Y + 21);
+      ctx.textAlign = 'left';
+    }
+
+    // ── Export ──
+    try {
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      const link = document.createElement('a');
+      link.download = 'aralko-stats.jpg';
+      link.href = dataUrl;
+      link.click();
+    } catch (e) {
+      console.error('Export failed', e);
+      showToast('Could not save image. Try again.', 'error');
+    }
+  }, [displayName, streak, xp, sessionsCount, totalMinutes, joinDate, showToast]);
+
 
   const handleSignOut = async () => {
     handleClose();
@@ -161,7 +276,7 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
             </div>
 
             {/* ── Streak & Stats Card ─────────────────────────── */}
-            <div ref={cardRef} className="rounded-2xl bg-gradient-to-br from-accent/25 via-violet-600/10 to-indigo-500/10 border border-accent/20 p-5 mb-3">
+            <div className="rounded-2xl bg-gradient-to-br from-accent/25 via-violet-600/10 to-indigo-500/10 border border-accent/20 p-5 mb-3">
               {/* Card header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
