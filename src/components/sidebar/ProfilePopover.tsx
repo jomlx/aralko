@@ -23,14 +23,29 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
 
   const handleDownloadJpeg = useCallback(async () => {
     if (!cardRef.current) return;
+
+    // Clone the node BEFORE closing the modal so the ref stays valid
+    const clone = cardRef.current.cloneNode(true) as HTMLElement;
+    const isLight = document.documentElement.classList.contains('light');
+
+    // Give the clone a solid opaque background so gradients render correctly
+    clone.style.position = 'fixed';
+    clone.style.top = '-9999px';
+    clone.style.left = '-9999px';
+    clone.style.width = `${cardRef.current.offsetWidth}px`;
+    clone.style.zIndex = '-1';
+    clone.style.borderRadius = '1rem';
+    document.body.appendChild(clone);
+
     try {
-      const isLight = document.documentElement.classList.contains('light');
       const bgColor = isLight ? '#f1f5f9' : '#151922';
-      const canvas = await html2canvas(cardRef.current, {
+      const canvas = await html2canvas(clone, {
         backgroundColor: bgColor,
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
+        imageTimeout: 5000,
       });
       const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
       const link = document.createElement('a');
@@ -40,6 +55,8 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
     } catch (e) {
       console.error('Failed to generate image', e);
       showToast('Could not save image. Try again.', 'error');
+    } finally {
+      document.body.removeChild(clone);
     }
   }, [showToast]);
 
