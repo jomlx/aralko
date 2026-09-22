@@ -240,14 +240,14 @@ function AppContent() {
     >
       {/* Header */}
       <div className="flex-shrink-0 h-[60px]">
-        <Header activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} />
+        <Header activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} disabled={isTestMode} />
       </div>
       
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
         <div
-          className="flex-shrink-0 overflow-hidden"
-          style={{ width: sidebarWidth }}
+          className="flex-shrink-0 overflow-hidden transition-all duration-300"
+          style={{ width: isTestMode ? 0 : sidebarWidth, borderRightWidth: isTestMode ? 0 : 1 }}
         >
           <Sidebar width={sidebarWidth} onResizeStart={() => setIsDragging(true)}>
             <StudyTracker 

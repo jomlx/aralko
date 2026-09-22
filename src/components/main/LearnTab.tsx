@@ -3,9 +3,11 @@ import type { Activity } from '../../types';
 import { Loader2, X, ChevronDown, Share2 } from 'lucide-react';
 import { FlashcardsViewer } from './FlashcardsViewer';
 import { QuizViewer } from './QuizViewer';
+import { TestModeViewer } from './TestModeViewer';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useGemini } from '../../hooks/useGemini';
 import { getQuizPromptFromFlashcards } from '../../prompts/quizPrompt';
+import { getTestModePrompt } from '../../prompts/testModePrompt';
 import { parseAIJson } from '../../lib/parseAIJson';
 import { useStudyGroups } from '../../hooks/useStudyGroups';
 
@@ -74,6 +76,8 @@ export function LearnTab({
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [quizCooldown, setQuizCooldown] = useState(false);
   const [quizError, setQuizError] = useState<string | null>(null);
+  const [isGeneratingTest, setIsGeneratingTest] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
 
   const activeActivity = activities.find((a) => a.id === selectedActivity) || activities[0];
   const gemini = useGemini() || { generateReviewer: async () => '', sendChat: async () => '' };
@@ -165,10 +169,55 @@ export function LearnTab({
     }
   }, [activeActivity, onUpdateActivity]);
 
+  const handleGenerateTestQuestions = async () => {
+    const cards = activeActivity?.techniqueData;
+    if (!Array.isArray(cards) || cards.length === 0) {
+      setTestError('No flashcards found. Generate flashcards first, then create a test.');
+      return;
+    }
+    if (isGeneratingTest) return;
+
+    setTestError(null);
+    setIsGeneratingTest(true);
+    try {
+      const MAX_CARDS = 60;
+      const clampedCards = cards.length > MAX_CARDS ? cards.slice(0, MAX_CARDS) : cards;
+      const prompt = getTestModePrompt(clampedCards);
+      // @ts-ignore
+      const response = await gemini.sendChat(
+        [{ id: '1', role: 'user', content: prompt, timestamp: 0 }],
+        'You are an expert exam creator. Return ONLY valid JSON with no markdown formatting.'
+      );
+      const questions = parseAIJson<any[]>(response, 'test', 'array');
+      const validQuestions = Array.isArray(questions)
+        ? questions.filter(
+            (q) =>
+              q.question &&
+              (q.answer_type === 'single' || q.answer_type === 'multiple') &&
+              Array.isArray(q.options) &&
+              Array.isArray(q.correct_options) &&
+              q.correct_options.length >= 1
+          )
+        : [];
+
+      if (validQuestions.length > 0) {
+        onUpdateActivity(activeActivity.id, { testData: validQuestions });
+      } else {
+        setTestError('AI returned no valid questions. Please try again.');
+      }
+    } catch (e: any) {
+      console.error('Test generation error:', e);
+      setTestError('Something went wrong generating the test. Please try again.');
+    } finally {
+      setIsGeneratingTest(false);
+    }
+  };
+
   if (!activeActivity) return null;
 
   const isFlashcardTechnique = !!activeActivity.technique?.toLowerCase().includes('flashcard');
   const isQuizTechnique = activeActivity.technique?.toLowerCase() === 'quiz';
+  const isTestModeTechnique = activeActivity.technique?.toLowerCase() === 'test mode';
 
   // ── On-demand quiz generation ──
   // When the user switches to Quiz tab for the first time, auto-generate if there's no quiz yet.
@@ -209,13 +258,13 @@ export function LearnTab({
                       {activeActivity.technique || 'Study Notes'}
                       <ChevronDown size={16} className="opacity-70" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      {['Study Notes', 'Flashcards', 'Quiz', 'Feynman Technique', 'Active Recall', 'Spaced Repetition', 'Interleaving'].map((tech) => (
+                    <DropdownMenuContent align="end" className="w-52">
+                      {['Study Notes', 'Flashcards', 'Quiz', 'Test Mode', 'Feynman Technique', 'Active Recall', 'Spaced Repetition', 'Interleaving'].map((tech) => (
                         <DropdownMenuItem 
                           key={tech} 
                           onClick={() => onUpdateActivity(activeActivity.id, { technique: tech === 'Study Notes' ? undefined : tech })}
                         >
-                          {tech}
+                          {tech === 'Test Mode' ? '🧪 ' : ''}{tech}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
@@ -282,8 +331,20 @@ export function LearnTab({
                 )}
               </div>
 
+              {/* TEST MODE */}
+              <div className={isTestModeTechnique ? "flex-1 flex flex-col min-h-0" : "hidden"}>
+                <TestModeViewer
+                  activityName={activeActivity.name}
+                  questions={activeActivity.testData ?? []}
+                  isGenerating={isGeneratingTest}
+                  generateError={testError}
+                  onGenerateQuestions={handleGenerateTestQuestions}
+                  onExit={() => onUpdateActivity(activeActivity.id, { technique: 'Flashcards' })}
+                />
+              </div>
+
               {/* STUDY NOTES / other techniques */}
-              <div className={(!isFlashcardTechnique && !isQuizTechnique) ? "flex-1 flex flex-col min-h-0" : "hidden"}>
+              <div className={(!isFlashcardTechnique && !isQuizTechnique && !isTestModeTechnique) ? "flex-1 flex flex-col min-h-0" : "hidden"}>
                 <textarea
                   value={activeActivity.notes}
                   onChange={(e) => onUpdateActivity(activeActivity.id, { notes: e.target.value })}
