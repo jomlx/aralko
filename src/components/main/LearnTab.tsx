@@ -169,7 +169,7 @@ export function LearnTab({
     }
   }, [activeActivity, onUpdateActivity]);
 
-  const handleGenerateTestQuestions = async () => {
+  const handleGenerateTestQuestions = async (timeLimitSeconds: number) => {
     const cards = activeActivity?.techniqueData;
     if (!Array.isArray(cards) || cards.length === 0) {
       setTestError('No flashcards found. Generate flashcards first, then create a test.');
@@ -180,8 +180,8 @@ export function LearnTab({
     setTestError(null);
     setIsGeneratingTest(true);
     try {
-      const MAX_CARDS = 60;
-      const clampedCards = cards.length > MAX_CARDS ? cards.slice(0, MAX_CARDS) : cards;
+      const cap = timeLimitSeconds === 300 ? 8 : timeLimitSeconds === 600 ? 13 : 20;
+      const clampedCards = cards.length > cap ? [...cards].sort(() => 0.5 - Math.random()).slice(0, cap) : cards;
       const prompt = getTestModePrompt(clampedCards);
       // @ts-ignore
       const response = await gemini.sendChat(
@@ -336,10 +336,15 @@ export function LearnTab({
                 <TestModeViewer
                   activityName={activeActivity.name}
                   questions={activeActivity.testData ?? []}
+                  totalFlashcards={activeActivity.techniqueData?.length || 0}
                   isGenerating={isGeneratingTest}
                   generateError={testError}
                   onGenerateQuestions={handleGenerateTestQuestions}
                   onExit={() => onUpdateActivity(activeActivity.id, { technique: 'Flashcards' })}
+                  onTestStateChange={(isActive) => {
+                    if (isActive) onEnterTestMode();
+                    else onExitTestMode();
+                  }}
                 />
               </div>
 
@@ -359,7 +364,7 @@ export function LearnTab({
       </div>
 
       {/* ── Focus Test Mode Overlay ── */}
-      {renderOverlay && (
+      {renderOverlay && isFlashcardTechnique && (
         <div
           className={`fixed inset-0 z-50 bg-app flex flex-col transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
             overlayVisible ? 'opacity-100' : 'opacity-0'

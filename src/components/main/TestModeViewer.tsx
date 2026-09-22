@@ -19,10 +19,12 @@ import type { TestQuestion } from '../../types';
 interface TestModeViewerProps {
   activityName: string;
   questions: TestQuestion[];
+  totalFlashcards: number;
   isGenerating: boolean;
   generateError: string | null;
-  onGenerateQuestions: () => void;
+  onGenerateQuestions: (timeLimitSeconds: number) => void;
   onExit: () => void;
+  onTestStateChange?: (isActive: boolean) => void;
 }
 
 type Phase = 'setup' | 'test' | 'results';
@@ -94,6 +96,7 @@ function ExitConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onC
 function SetupScreen({
   activityName,
   questions,
+  totalFlashcards,
   isGenerating,
   generateError,
   onGenerateQuestions,
@@ -102,19 +105,23 @@ function SetupScreen({
 }: {
   activityName: string;
   questions: TestQuestion[];
+  totalFlashcards: number;
   isGenerating: boolean;
   generateError: string | null;
-  onGenerateQuestions: () => void;
+  onGenerateQuestions: (seconds: number) => void;
   onStart: (timeLimitSeconds: number) => void;
   onExit: () => void;
 }) {
   const [selectedPreset, setSelectedPreset] = useState(TIME_PRESETS[1]); // default 10 min
-  const autoSuggestSeconds = Math.ceil(questions.length * 45);
-  const autoPreset = TIME_PRESETS.reduce((prev, curr) =>
-    Math.abs(curr.seconds - autoSuggestSeconds) < Math.abs(prev.seconds - autoSuggestSeconds) ? curr : prev
-  );
 
+  const expectedCap =
+    selectedPreset.seconds === 300 ? 8 : selectedPreset.seconds === 600 ? 13 : 20;
+  const expectedQuestions = Math.min(totalFlashcards, expectedCap);
+  
   const hasQuestions = questions.length > 0;
+  // It's a mismatch if we have questions but the count doesn't match the expected count
+  // for the current time preset (e.g. they generated for 10m but now clicked 5m).
+  const isMismatch = hasQuestions && questions.length !== expectedQuestions;
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8">
@@ -126,7 +133,7 @@ function SetupScreen({
           </div>
           <h1 className="text-2xl font-bold text-primary mb-2">{activityName}</h1>
           <p className="text-sm text-secondary">
-            {hasQuestions
+            {hasQuestions && !isMismatch
               ? `${questions.length} questions ready — single-answer & multi-select mixed`
               : 'Generate questions from your flashcards to begin'}
           </p>
@@ -136,7 +143,7 @@ function SetupScreen({
         <div className="rounded-2xl border border-token bg-surface p-5 mb-5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold text-primary">Questions</p>
-            {hasQuestions && (
+            {hasQuestions && !isMismatch && (
               <span className="text-xs text-secondary bg-white/[0.05] border border-token rounded-full px-2.5 py-1">
                 {questions.length} questions
               </span>
@@ -149,10 +156,17 @@ function SetupScreen({
               <p className="text-xs text-red-300 flex-1">{generateError}</p>
             </div>
           )}
+          
+          {isMismatch && (
+            <div className="mb-3 flex items-center gap-3 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5">
+              <AlertTriangle size={15} className="text-warning shrink-0" />
+              <p className="text-xs text-warning-foreground flex-1">Time limit changed. Please regenerate questions to match the {selectedPreset.label} format ({expectedQuestions} questions).</p>
+            </div>
+          )}
 
           <button
-            onClick={onGenerateQuestions}
-            disabled={isGenerating}
+            onClick={() => onGenerateQuestions(selectedPreset.seconds)}
+            disabled={isGenerating || totalFlashcards === 0}
             className="w-full flex items-center justify-center gap-2 rounded-xl border border-token bg-white/[0.04] hover:bg-white/[0.07] py-2.5 text-sm font-medium text-secondary transition-colors disabled:opacity-50"
           >
             {isGenerating ? (
@@ -160,10 +174,15 @@ function SetupScreen({
                 <Loader2 size={15} className="animate-spin" />
                 Generating with AI…
               </>
-            ) : hasQuestions ? (
+            ) : hasQuestions && !isMismatch ? (
               <>
                 <RefreshCw size={15} />
                 Regenerate Questions
+              </>
+            ) : isMismatch ? (
+              <>
+                <RefreshCw size={15} />
+                Generate for {selectedPreset.label}
               </>
             ) : (
               <>
@@ -172,7 +191,7 @@ function SetupScreen({
               </>
             )}
           </button>
-          {!hasQuestions && !isGenerating && (
+          {totalFlashcards === 0 && !isGenerating && (
             <p className="mt-2 text-center text-xs text-muted">
               Flashcards must exist before generating test questions.
             </p>
@@ -183,9 +202,6 @@ function SetupScreen({
         <div className="rounded-2xl border border-token bg-surface p-5 mb-5">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm font-semibold text-primary">Time Limit</p>
-            <span className="text-xs text-secondary">
-              Auto-suggested: {autoPreset.label}
-            </span>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {TIME_PRESETS.map((preset) => (
@@ -215,7 +231,7 @@ function SetupScreen({
           </button>
           <button
             onClick={() => onStart(selectedPreset.seconds)}
-            disabled={!hasQuestions || isGenerating}
+            disabled={!hasQuestions || isGenerating || isMismatch}
             className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-accent hover:bg-violet-700 px-5 py-3 text-sm font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Start Test
@@ -636,10 +652,12 @@ function ResultsScreen({
 export function TestModeViewer({
   activityName,
   questions,
+  totalFlashcards,
   isGenerating,
   generateError,
   onGenerateQuestions,
   onExit,
+  onTestStateChange,
 }: TestModeViewerProps) {
   const [phase, setPhase] = useState<Phase>('setup');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(600);
@@ -653,31 +671,40 @@ export function TestModeViewer({
       setTimeLimitSeconds(seconds);
       setActiveQuestions(shuffleArray(questions));
       setPhase('test');
+      onTestStateChange?.(true);
     },
-    [questions]
+    [questions, onTestStateChange]
   );
 
   const handleSubmit = useCallback((answers: Record<number, string[]>, used: number) => {
     setTestAnswers(answers);
     setTimeUsed(used);
     setPhase('results');
-  }, []);
+    onTestStateChange?.(false);
+  }, [onTestStateChange]);
 
   const handleRetake = useCallback(() => {
     setActiveQuestions(shuffleArray(questions));
     setPhase('test');
-  }, [questions]);
+    onTestStateChange?.(true);
+  }, [questions, onTestStateChange]);
+
+  const handleExit = useCallback(() => {
+    onTestStateChange?.(false);
+    onExit();
+  }, [onExit, onTestStateChange]);
 
   if (phase === 'setup') {
     return (
       <SetupScreen
         activityName={activityName}
         questions={questions}
+        totalFlashcards={totalFlashcards}
         isGenerating={isGenerating}
         generateError={generateError}
         onGenerateQuestions={onGenerateQuestions}
         onStart={handleStart}
-        onExit={onExit}
+        onExit={handleExit}
       />
     );
   }
@@ -689,7 +716,7 @@ export function TestModeViewer({
         questions={activeQuestions}
         timeLimit={timeLimitSeconds}
         onSubmit={handleSubmit}
-        onExit={onExit}
+        onExit={handleExit}
       />
     );
   }
@@ -701,7 +728,7 @@ export function TestModeViewer({
       timeUsed={timeUsed}
       timeLimit={timeLimitSeconds}
       onRetake={handleRetake}
-      onExit={onExit}
+      onExit={handleExit}
     />
   );
 }
