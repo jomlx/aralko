@@ -40,6 +40,7 @@ export function SettingsDialog({
   const [savingName, setSavingName] = useState(false);
   const [nameSuccess, setNameSuccess] = useState(false);
   const [nameError, setNameError] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -80,6 +81,7 @@ export function SettingsDialog({
 
       setOriginalName(trimmed);
       setNameSuccess(true);
+      setIsEditingName(false);
       setTimeout(() => setNameSuccess(false), 3000);
     } catch (e) {
       console.error(e);
@@ -183,17 +185,39 @@ export function SettingsDialog({
                 <input
                   type="text"
                   value={displayName}
-                  onChange={e => setDisplayName(e.target.value)}
-                  className="flex-1 rounded-xl border border-token bg-app px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
+                  readOnly={!isEditingName}
+                  onChange={e => { setDisplayName(e.target.value); setNameError(''); }}
+                  className={`flex-1 rounded-xl border px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none transition-colors
+                    ${isEditingName
+                      ? 'border-accent/60 bg-app focus:border-accent cursor-text'
+                      : 'border-token bg-raised cursor-default select-none'
+                    }`}
                   placeholder="Your display name"
                 />
-                <button
-                  onClick={handleSaveName}
-                  disabled={savingName || displayName.trim() === '' || displayName.trim() === originalName}
-                  className="rounded-xl bg-accent hover:bg-accent/90 px-4 py-2 text-sm font-semibold text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {savingName ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
-                </button>
+                {!isEditingName ? (
+                  <button
+                    onClick={() => { setIsEditingName(true); setNameError(''); setNameSuccess(false); }}
+                    className="rounded-xl border border-token hover:border-accent/50 px-4 py-2 text-sm font-semibold text-primary hover:text-accent transition-colors"
+                  >
+                    Edit
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => { setDisplayName(originalName); setIsEditingName(false); setNameError(''); }}
+                      className="rounded-xl border border-token px-3 py-2 text-sm text-muted hover:text-primary transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveName}
+                      disabled={savingName || displayName.trim() === '' || displayName.trim() === originalName}
+                      className="rounded-xl bg-accent hover:bg-accent/90 px-4 py-2 text-sm font-semibold text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {savingName ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                    </button>
+                  </div>
+                )}
               </div>
               {nameSuccess && (
                 <p className="text-xs text-success mt-1 animate-in fade-in flex items-center gap-1">
