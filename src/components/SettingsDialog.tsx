@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Sun, Moon, Music2, Key, ExternalLink, Check, X, Trash2, Loader2, HelpCircle, LogOut } from 'lucide-react';
+import { Settings, Sun, Moon, Music2, Key, ExternalLink, Check, X, Trash2, Loader2, HelpCircle, LogOut, SquarePen } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -197,9 +197,10 @@ export function SettingsDialog({
                 {!isEditingName ? (
                   <button
                     onClick={() => { setIsEditingName(true); setNameError(''); setNameSuccess(false); }}
-                    className="rounded-xl border border-token hover:border-accent/50 px-4 py-2 text-sm font-semibold text-primary hover:text-accent transition-colors"
+                    className="flex h-[38px] w-[38px] items-center justify-center rounded-xl border border-token hover:border-accent/50 text-muted hover:text-accent transition-colors shrink-0"
+                    title="Edit Display Name"
                   >
-                    Edit
+                    <SquarePen size={18} />
                   </button>
                 ) : (
                   <div className="flex items-center gap-1.5">
