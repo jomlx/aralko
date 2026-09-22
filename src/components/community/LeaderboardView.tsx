@@ -222,7 +222,7 @@ export function LeaderboardView() {
         >
           <div className="w-full max-w-sm flex flex-col items-center">
             {/* ── Stats Card ─────────────────────────── */}
-            <div className="w-full rounded-2xl bg-gradient-to-br from-accent/25 via-violet-600/10 to-indigo-500/10 border border-accent/20 p-5 mb-4 shadow-2xl shadow-black/60">
+            <div className="w-full rounded-2xl bg-surface bg-gradient-to-br from-accent/25 via-violet-600/10 to-indigo-500/10 border border-accent/20 p-5 mb-4 shadow-2xl shadow-black/60">
               {/* Card header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
