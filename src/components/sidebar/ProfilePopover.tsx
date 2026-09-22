@@ -51,7 +51,7 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
     const textMut  = isLight ? '#64748b' : '#94a3b8';
     const accent   = '#7c3aed';
 
-    const W = 400, H = 340;
+    const W = 400, H = 400;
     const canvas = document.createElement('canvas');
     canvas.width = W * 2; canvas.height = H * 2;
     const ctx = canvas.getContext('2d')!;
@@ -90,7 +90,7 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
 
     const logo = await loadImg(`${window.location.origin}/logo.png`);
 
-    // Logo icon
+    // "Aralko" + user email
     if (logo) {
       ctx.save();
       ctx.beginPath();
@@ -105,34 +105,60 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
       ctx.fill();
     }
 
-    // "Aralko" + username
     ctx.fillStyle = textPri;
     ctx.font = 'bold 13px system-ui, sans-serif';
     ctx.fillText('Aralko', x0 + 34, y0 + 11);
     ctx.fillStyle = textMut;
     ctx.font = '10px system-ui, sans-serif';
-    ctx.fillText(`@${displayName.replace(/\s+/g, '').toLowerCase()}`, x0 + 34, y0 + 24);
+    ctx.fillText(displayEmail, x0 + 34, y0 + 24);
 
     // "Study Stats" top-right
     ctx.fillStyle = textMut;
     ctx.font = '10px system-ui, sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText('Study Stats', W - pad - 16, y0 + 18);
-    ctx.textAlign = 'left';
+    
+    // Centered Avatar & Name
+    const midX = W / 2;
+    const avatarY = y0 + 40;
+    const avatarSize = 64;
+    
+    ctx.beginPath();
+    ctx.arc(midX, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; // slate-800 fallback
+    ctx.fill();
+    ctx.strokeStyle = isLight ? 'rgba(124,58,237,0.3)' : 'rgba(124,58,237,0.2)'; // border-accent/20
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Initials fallback
+    ctx.fillStyle = textMut;
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(initials, midX, avatarY + avatarSize / 2);
+    ctx.textBaseline = 'alphabetic'; // reset
+
+    // Name
+    ctx.fillStyle = textPri;
+    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(displayName, midX, avatarY + avatarSize + 20);
 
     // ── Streak ──
-    const sy = y0 + 48;
-    ctx.font = '24px system-ui, sans-serif';
-    ctx.fillText('🔥', x0, sy + 22);
+    const sy = avatarY + avatarSize + 35;
+    ctx.textAlign = 'left';
+    ctx.font = '28px system-ui, sans-serif';
+    ctx.fillText('🔥', midX - 35, sy + 28);
     ctx.fillStyle = textPri;
-    ctx.font = 'bold 36px system-ui, sans-serif';
-    ctx.fillText(String(streak), x0 + 32, sy + 28);
+    ctx.font = 'bold 32px system-ui, sans-serif';
+    ctx.fillText(String(streak), midX, sy + 30);
     ctx.fillStyle = textMut;
-    ctx.font = '11px system-ui, sans-serif';
-    ctx.fillText('day streak', x0 + 32, sy + 44);
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillText('day streak', midX + 22, sy + 28);
 
     // ── Stat grid ──
-    const gy = sy + 62, cellW = (W - pad * 2 - 32 - 8) / 3, cellH = 56;
+    const gy = sy + 45, cellW = (W - pad * 2 - 32 - 8) / 3, cellH = 56;
     const cells = [
       { icon: '⚡', val: String(level),              label: 'Level'   },
       { icon: '⭐', val: xp.toLocaleString(),         label: 'Total XP'},
@@ -175,7 +201,7 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
       ctx.beginPath(); ctx.roundRect(x0, row2Y, rowW, 34, 10); ctx.fill();
       ctx.fillStyle = textMut;
       ctx.font = '11px system-ui, sans-serif';
-      ctx.fillText('📅  Member since', x0 + 10, row2Y + 21);
+      ctx.fillText('📅  Active since', x0 + 10, row2Y + 21);
       ctx.fillStyle = textPri;
       ctx.font = 'bold 12px system-ui, sans-serif';
       ctx.textAlign = 'right';
@@ -274,9 +300,9 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
                     onClick={() => setShowShareMenu(true)}
                     title="Share"
                     data-html2canvas-ignore="true"
-                    className="h-6 w-6 flex items-center justify-center rounded-lg bg-accent/20 hover:bg-accent/30 text-accent transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-accent/20 hover:bg-accent/30 text-accent transition-colors shrink-0"
                   >
-                    <Share size={13} />
+                    <Share size={16} />
                   </button>
                 </div>
               </div>
