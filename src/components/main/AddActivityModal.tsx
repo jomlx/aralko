@@ -101,7 +101,7 @@ export function AddActivityModal({ isOpen, onClose, onActivityAdded }: AddActivi
     } catch (err: any) {
       if (err.message === 'Aborted') return; // User cancelled
       console.error('Error processing file via queue:', err);
-      setErrorMsg('Error processing file. Please try again.');
+      setErrorMsg(err.message || 'Error processing file. Please try again.');
       setStep('error');
     }
   };

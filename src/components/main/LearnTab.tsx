@@ -120,7 +120,7 @@ export function LearnTab({
       }
     } catch (e: any) {
       console.error('Quiz generation error via Queue:', e);
-      setQuizError('Something went wrong while generating the quiz. Please try again.');
+      setQuizError(e.message || 'Something went wrong while generating the quiz. Please try again.');
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -166,7 +166,7 @@ export function LearnTab({
       }
     } catch (e: any) {
       console.error('Test generation error via Queue:', e);
-      setTestError('Something went wrong generating the test. Please try again.');
+      setTestError(e.message || 'Something went wrong generating the test. Please try again.');
     } finally {
       setIsGeneratingTest(false);
     }
