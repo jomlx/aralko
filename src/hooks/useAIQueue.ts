@@ -21,12 +21,18 @@ export function useAIQueue() {
 
     try {
       // 1. Check if a job already exists that is pending or processing
-      const { data: existingJobs } = await supabase
+      const { data: existingJobs, error: checkError } = await supabase
         .from('ai_jobs')
         .select('*')
         .eq('activity_id', activityId)
         .eq('job_type', jobType)
         .in('status', ['pending', 'processing']);
+
+      if (checkError) {
+        if (checkError.code === 'PGRST205' || checkError.code === '42P01') {
+           throw new Error("The 'ai_jobs' table does not exist in your Supabase database. Please run the phase4_ai_jobs.sql script in your Supabase SQL editor.");
+        }
+      }
 
       if (existingJobs && existingJobs.length > 0) {
         // Wait for the existing job instead of creating a duplicate
@@ -45,7 +51,12 @@ export function useAIQueue() {
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        if (insertError.code === 'PGRST205' || insertError.code === '42P01') {
+           throw new Error("The 'ai_jobs' table does not exist in your Supabase database. Please run the phase4_ai_jobs.sql script in your Supabase SQL editor.");
+        }
+        throw insertError;
+      }
 
       // 3. Trigger worker
       supabase.functions.invoke('process-ai-jobs').catch(e => console.warn('Worker invoke failed (might already be running):', e));
