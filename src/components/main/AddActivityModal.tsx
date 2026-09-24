@@ -10,14 +10,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 interface AddActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onActivityAdded: (activity: Activity) => void;
+  onActivityAdded: (activity: Activity) => Promise<number | undefined> | void;
 }
 
-import { callAI } from '../../lib/aiCall';
-import type { AIBody } from '../../lib/aiCall';
-import { parseAIJson } from '../../lib/parseAIJson';
-import { getFlashcardPrompt } from '../../prompts/flashcardsPrompt';
-
+import { useAIQueue } from '../../hooks/useAIQueue';
 
 export function AddActivityModal({ isOpen, onClose, onActivityAdded }: AddActivityModalProps) {
   const [step, setStep] = useState<'upload' | 'analyzing' | 'error'>('upload');
@@ -63,95 +59,48 @@ export function AddActivityModal({ isOpen, onClose, onActivityAdded }: AddActivi
     onClose();
   };
 
+  const { enqueueJob } = useAIQueue();
+
   const analyzeAndCreate = async (rawText: string) => {
     setStep('analyzing');
     setErrorMsg(null);
-    
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
     const signal = abortController.signal;
-    startTimeRef.current = Date.now();
 
     try {
-      setLoadingMsg('Understanding your notes...');
-
-      const extractBody: AIBody = {
-        contents: [{
-          role: 'user',
-          parts: [{ text: `Extract the following from the study material and return ONLY a valid JSON object without markdown wrappers:\n{"name": "A short 2-3 word title", "subject": "The broad subject area"}\n\nMaterial:\n${rawText.substring(0, 50000)}` }]
-        }],
-        systemInstruction: { parts: [{ text: 'You are a data extraction bot. Output only raw JSON.' }] }
-      };
-
-      const flashcardBody: AIBody = {
-        contents: [{
-          role: 'user',
-          parts: [{ text: getFlashcardPrompt(rawText.substring(0, 50000)) }]
-        }],
-        systemInstruction: {
-          parts: [{ text: 'You are an expert study guide creator. Output ONLY valid JSON array without markdown.' }]
-        },
-        generationConfig: { maxOutputTokens: 65536 }  // was 8192 — increased to allow full card sets for large docs
-      };
-
-      // Diagnostic logging
-      console.log(`[AddActivity] Input text length: ${rawText.length} chars (sending first ${Math.min(rawText.length, 50000)} chars to AI)`);
-
-      // Wrap in a delay before changing the text so it doesn't flash too fast
-      setTimeout(() => {
-        if (!signal.aborted && Date.now() - startTimeRef.current < 15000) {
-          setLoadingMsg('Creating your flashcards...');
-        }
-      }, 2000);
-
-      const [extractRaw, flashcardRaw] = await Promise.all([
-        callAI(extractBody, { fastFail: true, signal }),
-        callAI(flashcardBody, { maxRetries: 2, signal })  // removed fastFail — flashcards need full retry budget
-      ]);
-
-      console.log(`[AddActivity] Raw flashcard response length: ${flashcardRaw.length} chars`);
-
-      if (signal.aborted) return;
-
-      // Parse extraction result
-      let parsed: { name?: string; subject?: string } = {};
-      try {
-        const clean = extractRaw.replace(/```json/g, '').replace(/```/g, '').trim();
-        parsed = parseAIJson<{ name?: string; subject?: string }>(clean, 'extraction', 'object');
-      } catch (e: any) {
-        console.warn('[Upload] Extraction parse failed — using defaults:', e.message);
-      }
-
-      // Parse flashcards
-      let flashcards: any[] = [];
-      try {
-        flashcards = parseAIJson<any[]>(flashcardRaw, 'flashcards', 'array');
-        if (!Array.isArray(flashcards)) flashcards = [];
-      } catch (e: any) {
-        if (signal.aborted) return;
-        throw new Error('Failed to create flashcards. Please try again.');
-      }
-
-      // Disallow cancellation during the actual write step
-      abortControllerRef.current = null;
-
-      const newActivity: Activity = {
+      setLoadingMsg('Setting up your study material...');
+      
+      const genericName = `Upload: ${new Date().toLocaleDateString()}`;
+      
+      const initialActivity: Activity = {
         id: Date.now(),
-        name: parsed.name || 'New Activity',
-        subject: parsed.subject || 'General Study',
+        name: genericName,
+        subject: 'General Study',
         progress: 0,
         notes: rawText,
         reviewerContent: '',
-        technique: flashcards.length > 0 ? 'Flashcards' : undefined,
-        techniqueData: flashcards.length > 0 ? flashcards : undefined,
-        quizData: undefined,
+        technique: 'Flashcards',
+        techniqueData: []
       };
 
-      onActivityAdded(newActivity);
+      if (signal.aborted) return;
+      
+      // onActivityAdded returns the real DB ID
+      const realId = await onActivityAdded(initialActivity);
+
+      if (realId) {
+        setLoadingMsg('Extracting flashcards via AI Queue (this may take a bit)...');
+        // Wait for the job to complete
+        await enqueueJob(realId, 'flashcards');
+        if (signal.aborted) return;
+      }
+
+      abortControllerRef.current = null;
       handleClose();
     } catch (err: any) {
       if (err.message === 'Aborted') return; // User cancelled
-      console.error('Error processing file:', err);
+      console.error('Error processing file via queue:', err);
       setErrorMsg('Error processing file. Please try again.');
       setStep('error');
     }

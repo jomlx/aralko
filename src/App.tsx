@@ -206,9 +206,10 @@ function AppContent() {
   }, []);
 
   const handleActivityAdded = (newActivity: Activity) => {
-    // addActivity is fire-and-forget — returns tempId immediately, syncs DB in background
-    addActivity(newActivity).then(newId => {
+    // addActivity syncs DB in background and returns the real ID
+    return addActivity(newActivity).then(newId => {
       if (newId) setSelectedActivityId(newId);
+      return newId;
     });
   };
 

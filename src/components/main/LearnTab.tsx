@@ -5,11 +5,8 @@ import { FlashcardsViewer } from './FlashcardsViewer';
 import { QuizViewer } from './QuizViewer';
 import { TestModeViewer } from './TestModeViewer';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { useGemini } from '../../hooks/useGemini';
-import { getQuizPromptFromFlashcards } from '../../prompts/quizPrompt';
-import { getTestModePrompt } from '../../prompts/testModePrompt';
-import { parseAIJson } from '../../lib/parseAIJson';
 import { useStudyGroups } from '../../hooks/useStudyGroups';
+import { useAIQueue } from '../../hooks/useAIQueue';
 
 function ShareActivityButton({ activityId }: { activityId: number }) {
   const { groups, shareActivity } = useStudyGroups();
@@ -80,7 +77,6 @@ export function LearnTab({
   const [testError, setTestError] = useState<string | null>(null);
 
   const activeActivity = activities.find((a) => a.id === selectedActivity) || activities[0];
-  const gemini = useGemini() || { generateReviewer: async () => '', sendChat: async () => '' };
 
   // Reset test mode when switching activity
   useEffect(() => {
@@ -101,58 +97,29 @@ export function LearnTab({
     }
   }, [isTestMode]);
 
-  const handleGenerateQuizFromFlashcards = async () => {
-    const cards = activeActivity?.techniqueData;
-    
-    // LOGGING (a): What 'flashcards' actually contained when it failed
-    console.log('[Quiz Generation] Starting. Original flashcards data type:', typeof cards, 'IsArray:', Array.isArray(cards), 'Value:', cards);
+  const { enqueueJob } = useAIQueue();
 
-    if (!cards) return;
-    
-    // Explicit array validation to prevent .map() crashes
-    if (!Array.isArray(cards)) {
-      console.error('[Quiz Generation] Data error: expected techniqueData to be an array, but received:', cards);
-      setQuizError('Could not read flashcard data. Please try regenerating your flashcards first.');
-      return;
-    }
-    
-    if (cards.length === 0) return;
+  const handleGenerateQuizFromFlashcards = async () => {
     if (quizCooldown || isGeneratingQuiz) return;
 
     setQuizError(null);
     setQuizCooldown(true);
     setTimeout(() => setQuizCooldown(false), 3000);
 
-    // Clamp to 80 cards max to avoid token overflow on large decks
-    const MAX_CARDS = 80;
-    const clampedCards = cards.length > MAX_CARDS ? cards.slice(0, MAX_CARDS) : cards;
-
     setIsGeneratingQuiz(true);
     try {
-      const prompt = getQuizPromptFromFlashcards(clampedCards);
-      // @ts-ignore
-      const response = await gemini.sendChat(
-        [{ id: '1', role: 'user', content: prompt, timestamp: 0 }],
-        'You are an expert quiz creator. Return ONLY valid JSON with no markdown formatting.'
-      );
-      const questions = parseAIJson<any[]>(response, 'quiz', 'array');
-      const validQuestions = Array.isArray(questions) ? questions : [];
+      // We now trigger the backend queue. The Edge function reads activities.notes directly.
+      const validQuestions = await enqueueJob(activeActivity.id, 'quiz');
       
-      if (validQuestions.length > 0) {
-        // SAFEGUARD (b): Explicitly confirm we are ONLY updating quizData, and techniqueData is explicitly preserved
-        const updatePayload: Partial<Activity> = { 
-          quizData: validQuestions,
-          techniqueData: activeActivity.techniqueData // explicitly re-assign existing flashcards to prevent accidental wipe
-        };
-        
-        onUpdateActivity(activeActivity.id, updatePayload);
+      if (Array.isArray(validQuestions) && validQuestions.length > 0) {
+        // Safe-guard: explicitly merge if needed, though edge function already updates the DB!
+        // But since we have local state in 'activities' hook, we should update local state too.
+        onUpdateActivity(activeActivity.id, { quizData: validQuestions });
       } else {
-        console.warn('[Quiz Generation] AI returned empty or invalid quiz questions.');
         setQuizError('Could not generate quiz questions. Please try again.');
       }
     } catch (e: any) {
-      console.error('Quiz generation error:', e);
-      // FAILURE PATH: Do NOT call onUpdateActivity. Wipes/blanks cannot happen here.
+      console.error('Quiz generation error via Queue:', e);
       setQuizError('Something went wrong while generating the quiz. Please try again.');
     } finally {
       setIsGeneratingQuiz(false);
@@ -170,25 +137,13 @@ export function LearnTab({
   }, [activeActivity, onUpdateActivity]);
 
   const handleGenerateTestQuestions = async (timeLimitSeconds: number) => {
-    const cards = activeActivity?.techniqueData;
-    if (!Array.isArray(cards) || cards.length === 0) {
-      setTestError('No flashcards found. Generate flashcards first, then create a test.');
-      return;
-    }
     if (isGeneratingTest) return;
-
     setTestError(null);
     setIsGeneratingTest(true);
     try {
-      const cap = timeLimitSeconds === 300 ? 8 : timeLimitSeconds === 600 ? 13 : 20;
-      const clampedCards = cards.length > cap ? [...cards].sort(() => 0.5 - Math.random()).slice(0, cap) : cards;
-      const prompt = getTestModePrompt(clampedCards);
-      // @ts-ignore
-      const response = await gemini.sendChat(
-        [{ id: '1', role: 'user', content: prompt, timestamp: 0 }],
-        'You are an expert exam creator. Return ONLY valid JSON with no markdown formatting.'
-      );
-      const questions = parseAIJson<any[]>(response, 'test', 'array');
+      // Trigger backend AI queue
+      const questions = await enqueueJob(activeActivity.id, 'test');
+      
       const validQuestions = Array.isArray(questions)
         ? questions.filter(
             (q) =>
@@ -201,12 +156,16 @@ export function LearnTab({
         : [];
 
       if (validQuestions.length > 0) {
-        onUpdateActivity(activeActivity.id, { testData: validQuestions });
+        // Enforce the time cap locally by slicing the valid questions
+        const cap = timeLimitSeconds === 300 ? 8 : timeLimitSeconds === 600 ? 13 : 20;
+        const clampedQuestions = validQuestions.length > cap ? validQuestions.slice(0, cap) : validQuestions;
+
+        onUpdateActivity(activeActivity.id, { testData: clampedQuestions });
       } else {
         setTestError('AI returned no valid questions. Please try again.');
       }
     } catch (e: any) {
-      console.error('Test generation error:', e);
+      console.error('Test generation error via Queue:', e);
       setTestError('Something went wrong generating the test. Please try again.');
     } finally {
       setIsGeneratingTest(false);

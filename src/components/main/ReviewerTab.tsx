@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, Download, ChevronDown, Trash2, RotateCcw, MessageSquare, MessageSquareOff } from 'lucide-react';
 import type { Activity } from '../../types';
-import { useGemini } from '../../hooks/useGemini';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
+import { useAIQueue } from '../../hooks/useAIQueue';
 import { AIChatPanel } from '../sidebar/AIChatPanel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -28,7 +28,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
   const exportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const gemini = useGemini() || { generateReviewer: async () => '' };
+  const { enqueueJob } = useAIQueue();
 
   // ── On-demand reviewer generation ──
   // Automatically generate if the tab is opened for an activity that has notes
@@ -52,14 +52,22 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
     setIsGenerating(true);
     if (fileName) setUploadedFileName(fileName);
     try {
-      // @ts-ignore
-      const res = await gemini.generateReviewer(text);
+      // If there's a file, we should update the notes first so the backend can read it!
+      // But actually ReviewerTab isn't an "Add Activity" tab, it's just updating the current activity.
+      if (fileName && activeActivity) {
+        onUpdateActivity(activeActivity.id, { notes: activeActivity.notes + '\n\n' + text });
+        // Wait a small bit for DB sync
+        await new Promise(r => setTimeout(r, 500));
+      }
+
       if (activeActivity) {
-        onUpdateActivity(activeActivity.id, { reviewerContent: res });
+        const res = await enqueueJob(activeActivity.id, 'reviewer');
+        const content = typeof res === 'string' ? res : (res?.content || JSON.stringify(res));
+        onUpdateActivity(activeActivity.id, { reviewerContent: content });
         addXP?.(5, `reviewer-${activeActivity.id}`);
       }
     } catch (e: any) {
-      console.error('Generate Reviewer error:', e);
+      console.error('Generate Reviewer error via Queue:', e);
       setInlineError('Something went wrong while generating the reviewer. Please try again.');
     } finally {
       setIsGenerating(false);
@@ -289,10 +297,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
             {isGenerating && (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
                 <Loader2 size={40} className="animate-spin text-accent" />
-                <p className="text-sm font-medium text-primary">Generating your cheat sheet...</p>
-                {(gemini as any).retryStatus && (
-                  <p className="text-xs text-amber-400">{(gemini as any).retryStatus}</p>
-                )}
+                <p className="text-sm font-medium text-primary">Generating your cheat sheet (this may take a bit via Queue)...</p>
                 {uploadedFileName && (
                   <p className="text-xs text-muted">{uploadedFileName}</p>
                 )}
