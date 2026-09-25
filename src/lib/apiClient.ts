@@ -1,15 +1,16 @@
 ﻿/**
- * API Client for interacting with the Supabase Backend API.
- * Replaces direct client-side AI calls.
+ * API Client — talks to the Supabase backend-api Edge Function.
+ * The Edge Function runs AI generation synchronously and returns results directly.
+ * No polling needed.
  */
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
-export async function uploadAndQueueJob(
-  textContent: string, 
-  jobTypes: string[], 
+export async function generateWithBackend(
+  textContent: string,
+  jobTypes: string[],
   personalApiKey?: string | null
-): Promise<{ fileHash: string, cachedData?: any }> {
+): Promise<{ fileHash: string; cachedData: Record<string, any> }> {
   const formData = new FormData();
   formData.append('text_content', textContent);
   formData.append('job_types', JSON.stringify(jobTypes));
@@ -22,40 +23,23 @@ export async function uploadAndQueueJob(
     body: formData,
   });
 
+  const data = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || `Backend API error: ${res.statusText}`);
+    throw new Error(data.error || `Backend API error: ${res.status} ${res.statusText}`);
   }
 
-  return res.json();
+  return data;
 }
 
-/**
- * Polls the file_cache table to check if a specific result column is populated.
- */
+// Keep old names as aliases so existing imports don't break
+export const uploadAndQueueJob = generateWithBackend;
+
+/** @deprecated — no longer needed, kept for safety */
 export async function pollCacheForResult(
-  supabase: any,
-  fileHash: string, 
-  jobType: string,
-  maxWaitMs = 120000
+  _supabase: any,
+  _fileHash: string,
+  _jobType: string,
 ): Promise<any> {
-  const column = `${jobType}_result`;
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < maxWaitMs) {
-    const { data, error } = await supabase
-      .from('file_cache')
-      .select(column)
-      .eq('file_hash', fileHash)
-      .single();
-
-    if (!error && data && data[column] !== null) {
-      return data[column];
-    }
-
-    // Wait 2 seconds before next poll
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }
-
-  throw new Error(`Timeout waiting for ${jobType} generation to complete.`);
+  throw new Error('pollCacheForResult is deprecated — results are now returned directly from generateWithBackend.');
 }

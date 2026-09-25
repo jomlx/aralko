@@ -3,11 +3,10 @@ import { UploadCloud, Loader2, X } from 'lucide-react';
 import type { Activity } from '../../types';
 import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
-import { uploadAndQueueJob, pollCacheForResult } from '../../lib/apiClient';
-import { supabase } from '../../lib/supabase';
+import { generateWithBackend } from '../../lib/apiClient';
 import { getPersonalGeminiKey } from '../../lib/aiCall';
 
-// Use CDN worker — the bundled ?url import fails on Vercel due to module serving restrictions
+// CDN worker — the bundled ?url import fails on Vercel
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface AddActivityModalProps {
@@ -66,27 +65,18 @@ export function AddActivityModal({ isOpen, onClose, onActivityAdded }: AddActivi
   const analyzeAndCreate = async (rawText: string, fileName: string) => {
     setStep('analyzing');
     setErrorMsg(null);
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
     startTimeRef.current = Date.now();
 
     try {
-      setLoadingMsg('Uploading to secure cloud storage...');
+      setLoadingMsg('Sending to AI — generating your flashcards...');
 
       const personalKey = getPersonalGeminiKey();
-      const { fileHash, cachedData } = await uploadAndQueueJob(rawText, ['flashcards'], personalKey);
+      // generateWithBackend does: cache check → AI generation → cache save — all in one call
+      const { cachedData } = await generateWithBackend(rawText, ['flashcards'], personalKey);
       
-      let flashcards: any[] = [];
-
-      if (cachedData && cachedData.flashcards_result) {
-        setLoadingMsg('Found existing flashcards in cache...');
-        flashcards = cachedData.flashcards_result;
-      } else {
-        setLoadingMsg('Waiting for AI Workers to process your file...');
-        flashcards = await pollCacheForResult(supabase, fileHash, 'flashcards');
-      }
-
-      abortControllerRef.current = null;
+      const flashcards = Array.isArray(cachedData?.flashcards_result)
+        ? cachedData.flashcards_result
+        : [];
 
       const newActivity: Activity = {
         id: Date.now(),
