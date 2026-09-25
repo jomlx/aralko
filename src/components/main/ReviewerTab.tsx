@@ -2,8 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, Download, ChevronDown, Trash2, RotateCcw, MessageSquare, MessageSquareOff } from 'lucide-react';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
-import { generateWithBackend } from '../../lib/apiClient';
-import { getPersonalGeminiKey } from '../../lib/aiCall';
+import { useAIQueue } from '../../hooks/useAIQueue';
 import { AIChatPanel } from '../sidebar/AIChatPanel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -29,12 +28,18 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
   const exportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { enqueueJob } = useAIQueue();
+
   // ── On-demand reviewer generation ──
+  // Automatically generate if the tab is opened for an activity that has notes
+  // but hasn't had a reviewer generated yet (reviewerContent is empty).
   useEffect(() => {
     if (!activeActivity) return;
-    if (activeActivity.reviewerContent) return;
-    if (!activeActivity.notes || activeActivity.notes.trim().length < 50) return;
-    if (isGenerating) return;
+    if (activeActivity.reviewerContent) return;  // already have one
+    if (!activeActivity.notes || activeActivity.notes.trim().length < 50) return;  // nothing to generate from
+    if (isGenerating) return;  // already in progress
+
+    // Auto-trigger generation
     generateFromText(activeActivity.notes);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeActivity?.id]);
@@ -47,24 +52,23 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
     setIsGenerating(true);
     if (fileName) setUploadedFileName(fileName);
     try {
+      // If there's a file, we should update the notes first so the backend can read it!
+      // But actually ReviewerTab isn't an "Add Activity" tab, it's just updating the current activity.
       if (fileName && activeActivity) {
         onUpdateActivity(activeActivity.id, { notes: activeActivity.notes + '\n\n' + text });
+        // Wait a small bit for DB sync
         await new Promise(r => setTimeout(r, 500));
       }
 
       if (activeActivity) {
-        const sourceText = fileName ? (activeActivity.notes + '\n\n' + text) : activeActivity.notes;
-        const personalKey = getPersonalGeminiKey();
-        const { cachedData } = await generateWithBackend(sourceText, ['reviewer'], personalKey);
-        const content = typeof cachedData?.reviewer_result === 'string'
-          ? cachedData.reviewer_result
-          : JSON.stringify(cachedData?.reviewer_result || '');
+        const res = await enqueueJob(activeActivity.id, 'reviewer');
+        const content = typeof res === 'string' ? res : (res?.content || JSON.stringify(res));
         onUpdateActivity(activeActivity.id, { reviewerContent: content });
         addXP?.(5, `reviewer-${activeActivity.id}`);
       }
     } catch (e: any) {
-      console.error('Generate Reviewer error:', e);
-      setInlineError(e.message || 'Something went wrong while generating the reviewer. Please try again.');
+      console.error('Generate Reviewer error via Queue:', e);
+      setInlineError('Something went wrong while generating the reviewer. Please try again.');
     } finally {
       setIsGenerating(false);
     }

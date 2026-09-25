@@ -6,8 +6,7 @@ import { QuizViewer } from './QuizViewer';
 import { TestModeViewer } from './TestModeViewer';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useStudyGroups } from '../../hooks/useStudyGroups';
-import { generateWithBackend } from '../../lib/apiClient';
-import { getPersonalGeminiKey } from '../../lib/aiCall';
+import { useAIQueue } from '../../hooks/useAIQueue';
 
 function ShareActivityButton({ activityId }: { activityId: number }) {
   const { groups, shareActivity } = useStudyGroups();
@@ -98,6 +97,8 @@ export function LearnTab({
     }
   }, [isTestMode]);
 
+  const { enqueueJob } = useAIQueue();
+
   const handleGenerateQuizFromFlashcards = async () => {
     if (quizCooldown || isGeneratingQuiz) return;
 
@@ -107,17 +108,18 @@ export function LearnTab({
 
     setIsGeneratingQuiz(true);
     try {
-      const personalKey = getPersonalGeminiKey();
-      const { cachedData } = await generateWithBackend(activeActivity.notes, ['quiz'], personalKey);
-      const validQuestions = Array.isArray(cachedData?.quiz_result) ? cachedData.quiz_result : [];
-
-      if (validQuestions.length > 0) {
+      // We now trigger the backend queue. The Edge function reads activities.notes directly.
+      const validQuestions = await enqueueJob(activeActivity.id, 'quiz');
+      
+      if (Array.isArray(validQuestions) && validQuestions.length > 0) {
+        // Safe-guard: explicitly merge if needed, though edge function already updates the DB!
+        // But since we have local state in 'activities' hook, we should update local state too.
         onUpdateActivity(activeActivity.id, { quizData: validQuestions });
       } else {
         setQuizError('Could not generate quiz questions. Please try again.');
       }
     } catch (e: any) {
-      console.error('Quiz generation error:', e);
+      console.error('Quiz generation error via Queue:', e);
       setQuizError(e.message || 'Something went wrong while generating the quiz. Please try again.');
     } finally {
       setIsGeneratingQuiz(false);
@@ -139,28 +141,31 @@ export function LearnTab({
     setTestError(null);
     setIsGeneratingTest(true);
     try {
-      const personalKey = getPersonalGeminiKey();
-      const { cachedData } = await generateWithBackend(activeActivity.notes, ['test'], personalKey);
-      const questions = Array.isArray(cachedData?.test_result) ? cachedData.test_result : [];
-
-      const validQuestions = questions.filter(
-        (q: any) =>
-          q.question &&
-          (q.answer_type === 'single' || q.answer_type === 'multiple') &&
-          Array.isArray(q.options) &&
-          Array.isArray(q.correct_options) &&
-          q.correct_options.length >= 1
-      );
+      // Trigger backend AI queue
+      const questions = await enqueueJob(activeActivity.id, 'test');
+      
+      const validQuestions = Array.isArray(questions)
+        ? questions.filter(
+            (q) =>
+              q.question &&
+              (q.answer_type === 'single' || q.answer_type === 'multiple') &&
+              Array.isArray(q.options) &&
+              Array.isArray(q.correct_options) &&
+              q.correct_options.length >= 1
+          )
+        : [];
 
       if (validQuestions.length > 0) {
+        // Enforce the time cap locally by slicing the valid questions
         const cap = timeLimitSeconds === 300 ? 8 : timeLimitSeconds === 600 ? 13 : 20;
         const clampedQuestions = validQuestions.length > cap ? validQuestions.slice(0, cap) : validQuestions;
+
         onUpdateActivity(activeActivity.id, { testData: clampedQuestions });
       } else {
         setTestError('AI returned no valid questions. Please try again.');
       }
     } catch (e: any) {
-      console.error('Test generation error:', e);
+      console.error('Test generation error via Queue:', e);
       setTestError(e.message || 'Something went wrong generating the test. Please try again.');
     } finally {
       setIsGeneratingTest(false);

@@ -2,12 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Loader2, X } from 'lucide-react';
 import type { Activity } from '../../types';
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import JSZip from 'jszip';
-import { generateWithBackend } from '../../lib/apiClient';
+import { uploadAndQueueJob, pollCacheForResult } from '../../lib/apiClient';
+import { supabase } from '../../lib/supabase';
 import { getPersonalGeminiKey } from '../../lib/aiCall';
 
-// CDN worker — the bundled ?url import fails on Vercel
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 interface AddActivityModalProps {
   isOpen: boolean;
@@ -65,18 +66,17 @@ export function AddActivityModal({ isOpen, onClose, onActivityAdded }: AddActivi
   const analyzeAndCreate = async (rawText: string, fileName: string) => {
     setStep('analyzing');
     setErrorMsg(null);
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     startTimeRef.current = Date.now();
 
     try {
-      setLoadingMsg('Sending to AI — generating your flashcards...');
+      setLoadingMsg('Uploading to secure cloud storage...');
 
       const personalKey = getPersonalGeminiKey();
-      // generateWithBackend does: cache check → AI generation → cache save — all in one call
-      const { cachedData } = await generateWithBackend(rawText, ['flashcards'], personalKey);
+      const { fileHash, cachedData } = await uploadAndQueueJob(rawText, ['flashcards'], personalKey);
       
-      const flashcards = Array.isArray(cachedData?.flashcards_result)
-        ? cachedData.flashcards_result
-        : [];
+      const flashcards = Array.isArray(cachedData?.flashcards_result) ? cachedData.flashcards_result : [];
 
       const newActivity: Activity = {
         id: Date.now(),

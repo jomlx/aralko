@@ -13,22 +13,34 @@ function bufferToHex(buffer: ArrayBuffer): string {
 }
 
 function buildPrompt(jobType: string, text: string): string {
-  const truncated = text.substring(0, 50000);
+  const t = text.substring(0, 50000);
   if (jobType === "flashcards") {
-    return `Generate an exhaustive JSON array of flashcards from this material. Each object must have exactly: "front" (term/concept), "back" (concise definition, max 2 sentences), and "options" (array of exactly 4 strings — the correct answer plus 3 plausible distractors). Output ONLY the raw JSON array, no markdown.\n\n${truncated}`;
+    return `Generate an exhaustive JSON object {"data": [...]} of flashcards. Each item: "front" (term), "back" (definition max 2 sentences), "options" (array of exactly 4 strings: correct answer + 3 distractors). Output ONLY the JSON object, no markdown.\n\n${t}`;
   } else if (jobType === "quiz") {
-    return `Generate a JSON array of quiz questions from this material. Each object must have: "question", "answer", "options" (array of 4 strings), "explanation". Output ONLY raw JSON array.\n\n${truncated}`;
+    return `Generate a JSON object {"data": [...]} of quiz questions. Each item: "question", "answer", "options" (4 strings), "explanation". Output ONLY the JSON object.\n\n${t}`;
   } else if (jobType === "reviewer") {
-    return `Generate a comprehensive, well-structured markdown study guide from this material. Use headings, bullet points, and key terms. Be thorough.\n\n${truncated}`;
-  } else if (jobType === "test") {
-    return `Generate a JSON array of test questions from this material. Each object must have: "question", "answer_type" ("single" or "multiple"), "options" (array of strings), "correct_options" (array of correct option strings), "explanation". Output ONLY raw JSON array.\n\n${truncated}`;
+    return `Generate a comprehensive markdown study guide. Use headings, bullet points, key terms.\n\n${t}`;
+  } else {
+    return `Generate a JSON object {"data": [...]} of test questions. Each item: "question", "answer_type" ("single" or "multiple"), "options" (array of strings), "correct_options" (array of correct strings), "explanation". Output ONLY the JSON object.\n\n${t}`;
   }
-  return text;
+}
+
+function parseResult(rawText: string, jobType: string): unknown {
+  if (jobType === "reviewer") return rawText;
+  const cleaned = rawText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  try {
+    const p = JSON.parse(cleaned);
+    return Array.isArray(p) ? p : (p.data ?? p);
+  } catch {
+    const m = rawText.match(/\[[\s\S]*\]/);
+    if (m) { try { return JSON.parse(m[0]); } catch { /* fall */ } }
+    throw new Error(`AI output not parseable. Preview: ${rawText.substring(0, 150)}`);
+  }
 }
 
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -38,10 +50,7 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
       })
     }
   );
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Gemini error ${res.status}: ${body.substring(0, 200)}`);
-  }
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).substring(0, 200)}`);
   const json = await res.json();
   return json.candidates[0].content.parts[0].text;
 }
@@ -51,14 +60,13 @@ async function callGroq(prompt: string, apiKey: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "mixtral-8x7b-32768",
+      model: "openai/gpt-oss-120b",
+      response_format: { type: "json_object" },
+      max_tokens: 8000,
       messages: [{ role: "user", content: prompt }]
     })
   });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Groq error ${res.status}: ${body.substring(0, 200)}`);
-  }
+  if (!res.ok) throw new Error(`Groq ${res.status}: ${(await res.text()).substring(0, 200)}`);
   const json = await res.json();
   return json.choices[0].message.content;
 }
@@ -73,10 +81,9 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
-
     const formData = await req.formData();
     const textContent = formData.get("text_content") as string;
-    const personalApiKey = formData.get("personal_api_key") as string | null;
+    const personalApiKey = (formData.get("personal_api_key") as string | null) || null;
     const jobTypesRaw = formData.get("job_types") as string;
     const jobTypes: string[] = JSON.parse(jobTypesRaw || '["flashcards"]');
 
@@ -84,90 +91,96 @@ serve(async (req) => {
       throw new Error("Missing or empty text_content");
     }
 
-    // 1. Hash the content for cache key
-    const msgBuffer = new TextEncoder().encode(textContent);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+    // 1. Hash
+    const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(textContent));
     const fileHash = bufferToHex(hashBuffer);
 
-    // 2. Check cache
+    // 2. Cache check
     const { data: existingCache } = await supabase
-      .from("file_cache")
-      .select("*")
-      .eq("file_hash", fileHash)
-      .single();
+      .from("file_cache").select("*").eq("file_hash", fileHash).single();
 
     if (existingCache) {
-      // Check if all requested job types are already cached
       const allCached = jobTypes.every(t => existingCache[`${t}_result`] !== null);
       if (allCached) {
-        return new Response(JSON.stringify({ fileHash, cachedData: existingCache }), {
+        return new Response(JSON.stringify({ fileHash, cachedData: existingCache, fromCache: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
     }
 
-    // 3. Upload file to storage (upsert — safe to call again)
+    // 3. Upload to storage
     const storagePath = fileHash + ".txt";
-    await supabase.storage
-      .from("learning_materials")
+    await supabase.storage.from("learning_materials")
       .upload(storagePath, textContent, { contentType: "text/plain", upsert: true });
 
-    // 4. Ensure cache row exists
+    // 4. Ensure file_cache row
     if (!existingCache) {
       await supabase.from("file_cache").insert({ file_hash: fileHash, storage_path: storagePath });
     }
 
-    // 5. Process each requested job type (AI Router → Gemini → Groq fallback)
-    const primaryKey = personalApiKey || defaultGeminiKey;
-    const results: Record<string, any> = {};
-
-    for (const jobType of jobTypes) {
-      // Skip if already cached
-      if (existingCache && existingCache[`${jobType}_result`] !== null) {
-        results[`${jobType}_result`] = existingCache[`${jobType}_result`];
-        continue;
+    // ── PATH A: Personal key ─ call AI directly, return result synchronously ──
+    if (personalApiKey) {
+      const results: Record<string, unknown> = {};
+      for (const jobType of jobTypes) {
+        if (existingCache && existingCache[`${jobType}_result`] !== null) {
+          results[`${jobType}_result`] = existingCache[`${jobType}_result`];
+          continue;
+        }
+        const prompt = buildPrompt(jobType, textContent);
+        let rawText: string;
+        try {
+          rawText = await callGemini(prompt, personalApiKey);
+        } catch (gErr: unknown) {
+          const gMsg = gErr instanceof Error ? gErr.message : String(gErr);
+          if (!fallbackGroqKey) throw new Error("Gemini failed, no Groq key: " + gMsg);
+          rawText = await callGroq(prompt, fallbackGroqKey);
+        }
+        results[`${jobType}_result`] = parseResult(rawText, jobType);
       }
-
-      const prompt = buildPrompt(jobType, textContent);
-      let rawText = "";
-
-      try {
-        if (!primaryKey) throw new Error("No Gemini API key configured");
-        rawText = await callGemini(prompt, primaryKey);
-      } catch (geminiErr: any) {
-        console.warn(`Gemini failed (${geminiErr.message}), trying Groq fallback...`);
-        if (!fallbackGroqKey) throw new Error("Gemini failed and no Groq fallback key set: " + geminiErr.message);
-        rawText = await callGroq(prompt, fallbackGroqKey);
-      }
-
-      // Parse JSON for non-reviewer types
-      let result: any = rawText;
-      if (jobType !== "reviewer") {
-        const cleaned = rawText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-        try { result = JSON.parse(cleaned); } catch { result = cleaned; }
-      }
-
-      results[`${jobType}_result`] = result;
+      const { data: updatedCache } = await supabase.from("file_cache")
+        .update(results).eq("file_hash", fileHash).select("*").single();
+      return new Response(JSON.stringify({ fileHash, cachedData: updatedCache, fromCache: false }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    // 6. Save results to cache
-    const { data: updatedCache } = await supabase
-      .from("file_cache")
-      .update(results)
-      .eq("file_hash", fileHash)
-      .select("*")
-      .single();
+    // ── PATH B: Shared key ─ insert into job_queue, fire workers, return jobIds ──
+    const jobIds: Record<string, string> = {};
+    for (const jobType of jobTypes) {
+      // Skip already-cached types
+      if (existingCache && existingCache[`${jobType}_result`] !== null) {
+        jobIds[jobType] = "cached";
+        continue;
+      }
+      const { data: newJob, error: insertErr } = await supabase.from("job_queue")
+        .insert({ file_hash: fileHash, job_type: jobType, status: "pending" })
+        .select("id").single();
+      if (insertErr) throw new Error("job_queue insert failed: " + insertErr.message);
+      jobIds[jobType] = newJob.id;
+    }
 
-    return new Response(JSON.stringify({
-      fileHash,
-      cachedData: updatedCache
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // Fire both workers simultaneously (fire-and-forget via waitUntil)
+    const workerUrl = supabaseUrl + "/functions/v1/ai-worker";
+    const workerHeaders = { "Authorization": "Bearer " + supabaseKey, "Content-Type": "application/json" };
+    const w1 = fetch(workerUrl, { method: "POST", headers: workerHeaders });
+    const w2 = fetch(workerUrl, { method: "POST", headers: workerHeaders });
+    // @ts-ignore: EdgeRuntime available in Supabase Edge Functions
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(Promise.allSettled([w1, w2]));
+    } else {
+      Promise.allSettled([w1, w2]).catch(() => {});
+    }
 
-  } catch (err: any) {
-    console.error("[backend-api] Fatal error:", err);
-    return new Response(JSON.stringify({ error: err.message || "Unknown error" }), {
-      status: 400,
+    return new Response(JSON.stringify({ fileHash, jobIds, queued: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[backend-api] error:", msg);
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 });
