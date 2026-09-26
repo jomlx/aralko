@@ -4,8 +4,9 @@
  *
  * PATH A (personal key):  backend-api calls AI directly, returns cachedData synchronously.
  * PATH B (shared key):    backend-api queues job, returns { fileHash, jobIds }.
- *                         We subscribe to the job_queue row via Supabase Realtime and
- *                         resolve when status = "completed", then fetch the cache row.
+ *                         We poll file_cache every 2s until the result columns appear.
+ *                         This deliberately avoids Realtime entirely — it's unreliable
+ *                         unless job_queue is added to the supabase_realtime publication.
  */
 
 import { supabase } from './supabase';
@@ -21,7 +22,7 @@ export interface GenerationResult {
 /**
  * Main entry point for all AI generation.
  * Personal key → synchronous result.
- * No key → queued job, resolves via Realtime when worker completes.
+ * No key → queued job, poll file_cache until results appear.
  */
 export async function generateWithBackend(
   textContent: string,
@@ -50,82 +51,85 @@ export async function generateWithBackend(
     return { fileHash: data.fileHash as string, cachedData: data.cachedData as Record<string, unknown> };
   }
 
-  // PATH B: shared key, job(s) queued — wait via Realtime
+  // PATH B: shared key, job(s) queued
   if (data.queued) {
     const fileHash = data.fileHash as string;
     const jobIds = data.jobIds as Record<string, string>;
 
-    // Wait for all non-cached job types to complete
-    const pendingJobIds = Object.values(jobIds).filter(id => id !== 'cached');
-    if (pendingJobIds.length === 0) {
-      // All were already cached — fetch the cache row directly
-            const { data: cacheRow } = await supabase.from('file_cache').select('*').eq('file_hash', fileHash).single();
+    // Determine which job types are still pending (not already cached)
+    const pendingTypes = Object.entries(jobIds)
+      .filter(([, id]) => id !== 'cached')
+      .map(([type]) => type);
+
+    if (pendingTypes.length === 0) {
+      // All results were already in cache — just fetch and return them
+      const { data: cacheRow } = await supabase
+        .from('file_cache').select('*').eq('file_hash', fileHash).single();
       return { fileHash, cachedData: cacheRow as Record<string, unknown> };
     }
 
-    await Promise.all(pendingJobIds.map(jobId => waitForJob(jobId, timeoutMs)));
-
-    // Fetch final cache row after all jobs complete
-        const { data: cacheRow } = await supabase.from('file_cache').select('*').eq('file_hash', fileHash).single();
-    if (!cacheRow) throw new Error('Cache row missing after job completion');
-    return { fileHash, cachedData: cacheRow as Record<string, unknown> };
+    // Wait for the AI workers to write results into file_cache
+    const cacheRow = await waitForCacheResults(fileHash, pendingTypes, timeoutMs);
+    return { fileHash, cachedData: cacheRow };
   }
 
   throw new Error('Unexpected backend-api response shape');
 }
 
 /**
- * Subscribe to a single job_queue row via Realtime.
- * Resolves when status = completed, rejects on failed or timeout.
- * Fixes the "cannot add callbacks after subscribe()" bug by subscribing
- * BEFORE checking current status.
+ * Poll file_cache every 2s until all requested result columns are non-null.
+ *
+ * Root-cause fix: The previous implementation watched job_queue via Supabase Realtime.
+ * Realtime only delivers events if the table is added to the supabase_realtime publication,
+ * which it wasn't. The AI workers DO complete (the data IS in file_cache), but the browser
+ * never got notified and timed out after 120s. Polling file_cache directly is simpler,
+ * requires no special DB config, and is guaranteed to work.
  */
-function waitForJob(jobId: string, timeoutMs: number): Promise<void> {
-  
-  return new Promise<void>((resolve, reject) => {
-    let settled = false;
-    let timeoutHandle: ReturnType<typeof setTimeout>;
+function waitForCacheResults(
+  fileHash: string,
+  pendingTypes: string[],
+  timeoutMs: number
+): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    let done = false;
 
-    function finish(err?: string) {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutHandle);
-      supabase.removeChannel(channel);
-      if (err) reject(new Error(err));
-      else resolve();
-    }
+    const check = async () => {
+      if (done) return;
+      try {
+        const { data: row } = await supabase
+          .from('file_cache')
+          .select('*')
+          .eq('file_hash', fileHash)
+          .single();
 
-    // Subscribe FIRST, then check current status (avoids race)
-    const channel = supabase
-      .channel(`job-${jobId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'job_queue', filter: `id=eq.${jobId}` },
-        (payload: { new: Record<string, unknown> }) => {
-          const status = payload.new.status as string;
-          if (status === 'completed') finish();
-          else if (status === 'failed') finish(String(payload.new.error_message || 'Job failed'));
+        if (!row) return;
+
+        // Check that every pending type has a non-null result column
+        const allReady = pendingTypes.every(type => row[`${type}_result`] != null);
+        if (allReady) {
+          done = true;
+          clearInterval(intervalId);
+          clearTimeout(timeoutId);
+          resolve(row as Record<string, unknown>);
         }
-      )
-      .subscribe();
+      } catch {
+        // Ignore transient network errors and keep polling
+      }
+    };
 
-    // Poll every 2s as a guaranteed fallback — Realtime events are not reliable
-    // if job_queue is not added to the supabase_realtime publication.
-    const pollInterval = setInterval(() => {
-      if (settled) { clearInterval(pollInterval); return; }
-      supabase.from('job_queue').select('status, error_message').eq('id', jobId).single()
-        .then(({ data: row }) => {
-          if (!row) return;
-          if (row.status === 'completed') { clearInterval(pollInterval); finish(); }
-          else if (row.status === 'failed') { clearInterval(pollInterval); finish(String(row.error_message || 'Job failed')); }
-        });
-    }, 2000);
+    // Check immediately (catches jobs that finished before we even started polling)
+    check();
 
-    // Timeout safety net — cancel poll too
-    timeoutHandle = setTimeout(() => { clearInterval(pollInterval); finish('Job timed out after ' + Math.round(timeoutMs / 1000) + 's'); }, timeoutMs);
+    // Then poll every 2 seconds
+    const intervalId = setInterval(check, 2000);
 
-    // Store channel ref so we can clean up on early finish
-    void channel;
+    // Timeout safety net
+    const timeoutId = setTimeout(() => {
+      if (done) return;
+      done = true;
+      clearInterval(intervalId);
+      reject(new Error('Job timed out after ' + Math.round(timeoutMs / 1000) + 's'));
+    }, timeoutMs);
   });
 }
 
@@ -136,7 +140,3 @@ export const uploadAndQueueJob = generateWithBackend;
 export async function pollCacheForResult(): Promise<never> {
   throw new Error('pollCacheForResult removed. Use generateWithBackend instead.');
 }
-
-
-
-
