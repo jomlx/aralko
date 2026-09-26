@@ -26,7 +26,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [showSummary, setShowSummary] = useState(false);
 
-  const question = questions[currentIndex];
+  const question = activeQuestions[currentIndex];
 
   // Shuffle options whenever the question changes
   useEffect(() => {
@@ -46,7 +46,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
     setShowSummary(false);
   }, [questions]);
 
-  if (!questions || questions.length === 0) {
+  if (!activeQuestions || activeQuestions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-muted gap-3">
         <Trophy size={32} className="opacity-30" />
@@ -56,7 +56,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
   }
 
   const totalCorrect = Object.values(results).filter(Boolean).length;
-  const progressPct = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  const progressPct = activeQuestions.length > 0 ? ((currentIndex + 1) / activeQuestions.length) * 100 : 0;
 
   const handleSelect = (option: string) => {
     if (answered) return;
@@ -67,11 +67,11 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
   };
 
   const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
+    if (currentIndex < activeQuestions.length - 1) {
       setCurrentIndex((i) => i + 1);
     } else {
       setShowSummary(true);
-      onQuizComplete?.(totalCorrect, questions.length);
+      onQuizComplete?.(totalCorrect, activeQuestions.length);
     }
   };
 
@@ -83,7 +83,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
 
   // ── Summary Screen ──
   if (showSummary) {
-    const pct = Math.round((totalCorrect / questions.length) * 100);
+    const pct = Math.round((totalCorrect / activeQuestions.length) * 100);
     const grade = pct >= 90 ? '🏆 Excellent!' : pct >= 75 ? '🎉 Great job!' : pct >= 60 ? '👍 Good effort!' : '📚 Keep studying!';
     return (
       <div className="w-full max-w-3xl mx-auto flex flex-col items-center gap-6 py-6">
@@ -91,7 +91,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
           <p className="text-3xl">{grade}</p>
           <div className="flex flex-col items-center gap-1">
             <span className="text-5xl font-bold text-primary">{pct}%</span>
-            <span className="text-sm text-secondary">{totalCorrect} / {questions.length} correct</span>
+            <span className="text-sm text-secondary">{totalCorrect} / {activeQuestions.length} correct</span>
           </div>
           <div className="w-full h-3 bg-white/[0.05] rounded-full overflow-hidden">
             <div
@@ -107,7 +107,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
 
         {/* Per-question review */}
         <div className="w-full flex flex-col gap-2">
-          {questions.map((q, i) => (
+          {activeQuestions.map((q, i) => (
             <div
               key={i}
               className={`flex items-start gap-3 rounded-xl px-4 py-3 text-sm border ${
@@ -233,7 +233,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
               onClick={handleNext}
               className="flex items-center gap-2 rounded-xl bg-accent hover:bg-violet-700 px-6 py-2 text-sm font-semibold text-primary transition-colors"
             >
-              {currentIndex === questions.length - 1 ? 'See Results' : 'Next'} <ChevronRight size={15} />
+              {currentIndex === activeQuestions.length - 1 ? 'See Results' : 'Next'} <ChevronRight size={15} />
             </button>
           </div>
         )}
@@ -242,3 +242,4 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
     </div>
   );
 }
+
