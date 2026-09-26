@@ -109,16 +109,20 @@ function waitForJob(jobId: string, timeoutMs: number): Promise<void> {
       )
       .subscribe();
 
-    // After subscribing, poll once for already-completed jobs
-    supabase.from('job_queue').select('status, error_message').eq('id', jobId).single()
-      .then(({ data }) => {
-        if (!data) return;
-        if (data.status === 'completed') finish();
-        else if (data.status === 'failed') finish(String(data.error_message || 'Job failed'));
-      });
+    // Poll every 2s as a guaranteed fallback — Realtime events are not reliable
+    // if job_queue is not added to the supabase_realtime publication.
+    const pollInterval = setInterval(() => {
+      if (settled) { clearInterval(pollInterval); return; }
+      supabase.from('job_queue').select('status, error_message').eq('id', jobId).single()
+        .then(({ data: row }) => {
+          if (!row) return;
+          if (row.status === 'completed') { clearInterval(pollInterval); finish(); }
+          else if (row.status === 'failed') { clearInterval(pollInterval); finish(String(row.error_message || 'Job failed')); }
+        });
+    }, 2000);
 
-    // Timeout safety net
-    timeoutHandle = setTimeout(() => finish('Job timed out after ' + Math.round(timeoutMs / 1000) + 's'), timeoutMs);
+    // Timeout safety net — cancel poll too
+    timeoutHandle = setTimeout(() => { clearInterval(pollInterval); finish('Job timed out after ' + Math.round(timeoutMs / 1000) + 's'); }, timeoutMs);
 
     // Store channel ref so we can clean up on early finish
     void channel;
