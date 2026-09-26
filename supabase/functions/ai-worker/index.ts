@@ -15,7 +15,7 @@ function buildPrompt(jobType: string, text: string): string {
   } else if (jobType === "reviewer") {
     return `Generate a concise, highly dense markdown cheat sheet summarizing the core concepts. Do NOT include a table of contents, introduction, or high-level overview. Jump straight into the facts, definitions, and key terms using bullet points and concise tables. Keep it dense and straight to the point without fluff.\\n\\n${t}`;
   } else {
-    return `Generate a JSON object {"data": [...]} of test questions. Each item: "question", "answer_type" ("single" or "multiple"), "options" (array of strings), "correct_options" (array of correct strings), "explanation". Output ONLY the JSON object.\n\n${t}`;
+    return `Generate an exhaustive JSON object {"data": [...]} of test questions that thoroughly covers ALL facts, terms, and concepts in the text (generate 25-30 questions depending on text length). Each item: "question", "answer_type" ("single" or "multiple"), "options" (array of strings), "correct_options" (array of correct strings), "explanation". Output ONLY the JSON object.\n\n${t}`;
   }
 }
 
