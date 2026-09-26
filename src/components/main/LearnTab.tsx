@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { Activity } from '../../types';
 import { Loader2, X, ChevronDown, Share2 } from 'lucide-react';
 import { FlashcardsViewer } from './FlashcardsViewer';
@@ -238,6 +238,7 @@ export function LearnTab({
               <div className={isFlashcardTechnique ? "flex-1 relative flex flex-col min-h-0" : "hidden"}>
                 {activeActivity.techniqueData && activeActivity.techniqueData.length > 0 ? (
                   <FlashcardsViewer
+                    key={`flashcard-${activeActivity.id}`}
                     cards={activeActivity.techniqueData}
                     onFlagForReview={handleFlagForReview}
                     reviewedCards={activeActivity.reviewedCards || []}
@@ -272,6 +273,7 @@ export function LearnTab({
                 )}
                 {activeActivity.quizData && activeActivity.quizData.length > 0 ? (
                   <QuizViewer
+                    key={`quiz-${activeActivity.id}`}
                     questions={activeActivity.quizData}
                     onRegenerateQuiz={handleGenerateQuizFromFlashcards}
                     isRegenerating={isGeneratingQuiz}
@@ -294,6 +296,7 @@ export function LearnTab({
               {/* TEST MODE */}
               <div className={isTestModeTechnique ? "flex-1 flex flex-col min-h-0" : "hidden"}>
                 <TestModeViewer
+                  key={`test-${activeActivity.id}`}
                   activityName={activeActivity.name}
                   questions={activeActivity.testData ?? []}
                   totalFlashcards={activeActivity.techniqueData?.length || 0}
