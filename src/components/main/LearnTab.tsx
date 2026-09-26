@@ -4,6 +4,7 @@ import { Loader2, X, ChevronDown, Share2 } from 'lucide-react';
 import { FlashcardsViewer } from './FlashcardsViewer';
 import { QuizViewer } from './QuizViewer';
 import { TestModeViewer } from './TestModeViewer';
+import { ErrorBoundary } from './ErrorBoundary';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useStudyGroups } from '../../hooks/useStudyGroups';
 import { generateWithBackend } from '../../lib/apiClient';
