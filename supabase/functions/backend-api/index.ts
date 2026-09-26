@@ -61,7 +61,7 @@ async function callGroq(prompt: string, apiKey: string): Promise<string> {
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: "openai/gpt-oss-120b",
-      response_format: { type: "json_object" },
+      ...(jobType === "reviewer" ? {} : { response_format: { type: "json_object" } }),
       max_tokens: 8000,
       messages: [{ role: "user", content: prompt }]
     })
@@ -184,3 +184,4 @@ serve(async (req) => {
     });
   }
 });
+
