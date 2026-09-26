@@ -1,4 +1,4 @@
-﻿/**
+/**
  * apiClient.ts
  * Talks to the Supabase backend-api Edge Function.
  *
@@ -109,13 +109,16 @@ function waitForJob(jobId: string, timeoutMs: number): Promise<void> {
       )
       .subscribe();
 
-    // After subscribing, poll once for already-completed jobs
-    supabase.from('job_queue').select('status, error_message').eq('id', jobId).single()
-      .then(({ data }) => {
-        if (!data) return;
-        if (data.status === 'completed') finish();
-        else if (data.status === 'failed') finish(String(data.error_message || 'Job failed'));
-      });
+    // Fallback: poll every 2s in case Realtime events are disabled on the table or dropped
+    const pollInterval = setInterval(() => {
+      if (settled) { clearInterval(pollInterval); return; }
+      supabase.from('job_queue').select('status, error_message').eq('id', jobId).single()
+        .then(({ data }) => {
+          if (!data) return;
+          if (data.status === 'completed') { clearInterval(pollInterval); finish(); }
+          else if (data.status === 'failed') { clearInterval(pollInterval); finish(String(data.error_message || 'Job failed')); }
+        });
+    }, 2000);
 
     // Timeout safety net
     timeoutHandle = setTimeout(() => finish('Job timed out after ' + Math.round(timeoutMs / 1000) + 's'), timeoutMs);
@@ -132,6 +135,7 @@ export const uploadAndQueueJob = generateWithBackend;
 export async function pollCacheForResult(): Promise<never> {
   throw new Error('pollCacheForResult removed. Use generateWithBackend instead.');
 }
+
 
 
 
