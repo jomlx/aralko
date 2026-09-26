@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { ChevronRight, CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react';
 import type { QuizQuestion } from '../../types';
 
@@ -19,6 +19,7 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuizComplete }: QuizViewerProps) {
+  const [activeQuestions, setActiveQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -26,7 +27,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [showSummary, setShowSummary] = useState(false);
 
-  const question = questions[currentIndex];
+  const question = activeQuestions[currentIndex];
 
   // Shuffle options whenever the question changes
   useEffect(() => {
@@ -39,6 +40,8 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
 
   // Reset when questions change (new quiz generated)
   useEffect(() => {
+    const pool = shuffleArray(questions || []);
+    setActiveQuestions(pool.slice(0, 15));
     setCurrentIndex(0);
     setSelected(null);
     setAnswered(false);
@@ -46,7 +49,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
     setShowSummary(false);
   }, [questions]);
 
-  if (!questions || questions.length === 0) {
+  if (!activeQuestions || activeQuestions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-muted gap-3">
         <Trophy size={32} className="opacity-30" />
@@ -56,7 +59,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
   }
 
   const totalCorrect = Object.values(results).filter(Boolean).length;
-  const progressPct = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  const progressPct = activeQuestions.length > 0 ? ((currentIndex + 1) / activeQuestions.length) * 100 : 0;
 
   const handleSelect = (option: string) => {
     if (answered) return;
@@ -67,11 +70,11 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
   };
 
   const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
+    if (currentIndex < activeQuestions.length - 1) {
       setCurrentIndex((i) => i + 1);
     } else {
       setShowSummary(true);
-      onQuizComplete?.(totalCorrect, questions.length);
+      onQuizComplete?.(totalCorrect, activeQuestions.length);
     }
   };
 
@@ -81,17 +84,17 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
     setShowSummary(false);
   };
 
-  // ── Summary Screen ──
+  // â”€â”€ Summary Screen â”€â”€
   if (showSummary) {
-    const pct = Math.round((totalCorrect / questions.length) * 100);
-    const grade = pct >= 90 ? '🏆 Excellent!' : pct >= 75 ? '🎉 Great job!' : pct >= 60 ? '👍 Good effort!' : '📚 Keep studying!';
+    const pct = Math.round((totalCorrect / activeQuestions.length) * 100);
+    const grade = pct >= 90 ? 'ðŸ† Excellent!' : pct >= 75 ? 'ðŸŽ‰ Great job!' : pct >= 60 ? 'ðŸ‘ Good effort!' : 'ðŸ“š Keep studying!';
     return (
       <div className="w-full max-w-3xl mx-auto flex flex-col items-center gap-6 py-6">
         <div className="w-full bg-surface border border-token rounded-2xl p-8 flex flex-col items-center gap-4 text-center">
           <p className="text-3xl">{grade}</p>
           <div className="flex flex-col items-center gap-1">
             <span className="text-5xl font-bold text-primary">{pct}%</span>
-            <span className="text-sm text-secondary">{totalCorrect} / {questions.length} correct</span>
+            <span className="text-sm text-secondary">{totalCorrect} / {activeQuestions.length} correct</span>
           </div>
           <div className="w-full h-3 bg-white/[0.05] rounded-full overflow-hidden">
             <div
@@ -107,7 +110,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
 
         {/* Per-question review */}
         <div className="w-full flex flex-col gap-2">
-          {questions.map((q, i) => (
+          {activeQuestions.map((q, i) => (
             <div
               key={i}
               className={`flex items-start gap-3 rounded-xl px-4 py-3 text-sm border ${
@@ -146,7 +149,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
               disabled={isRegenerating}
               className="flex items-center gap-2 rounded-xl bg-accent hover:bg-violet-700 px-5 py-2.5 text-sm font-medium text-primary transition-colors disabled:opacity-50"
             >
-              {isRegenerating ? 'Generating…' : 'New Quiz'}
+              {isRegenerating ? 'Generatingâ€¦' : 'New Quiz'}
             </button>
           )}
         </div>
@@ -154,7 +157,7 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
     );
   }
 
-  // ── Question Screen ──
+  // â”€â”€ Question Screen â”€â”€
   const optionLetters = ['A', 'B', 'C', 'D'];
 
   return (
@@ -226,14 +229,14 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
           </div>
         )}
 
-        {/* Next button — only after answering */}
+        {/* Next button â€” only after answering */}
         {answered && (
           <div className="flex w-full items-center justify-center mt-2">
             <button
               onClick={handleNext}
               className="flex items-center gap-2 rounded-xl bg-accent hover:bg-violet-700 px-6 py-2 text-sm font-semibold text-primary transition-colors"
             >
-              {currentIndex === questions.length - 1 ? 'See Results' : 'Next'} <ChevronRight size={15} />
+              {currentIndex === activeQuestions.length - 1 ? 'See Results' : 'Next'} <ChevronRight size={15} />
             </button>
           </div>
         )}
@@ -242,3 +245,4 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
     </div>
   );
 }
+
