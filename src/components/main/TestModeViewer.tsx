@@ -119,9 +119,9 @@ function SetupScreen({
   const expectedQuestions = Math.min(totalFlashcards, expectedCap);
   
   const hasQuestions = questions.length > 0;
-  // It's a mismatch if we have questions but the count doesn't match the expected count
-  // for the current time preset (e.g. they generated for 10m but now clicked 5m).
-  const isMismatch = hasQuestions && questions.length !== expectedQuestions;
+  // It's a mismatch if they change to a shorter time limit than what they generated for,
+  // resulting in too many questions for the new limit. (If AI generated fewer than expected, that's fine).
+  const isMismatch = hasQuestions && questions.length > expectedQuestions;
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8">
