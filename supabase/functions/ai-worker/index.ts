@@ -11,9 +11,9 @@ function buildPrompt(jobType: string, text: string): string {
   if (jobType === "flashcards") {
     return `Generate an exhaustive JSON object {"data": [...]} of flashcards. Each item must have: "front" (term/concept), "back" (definition max 2 sentences), "options" (array of exactly 4 strings: correct answer + 3 distractors). Output ONLY the JSON object, no markdown or explanation.\n\n${t}`;
   } else if (jobType === "quiz") {
-    return `Generate a JSON object {"data": [...]} of quiz questions. Each item: "question", "answer", "options" (4 strings), "explanation". Output ONLY the JSON object.\n\n${t}`;
+    return `Generate an exhaustive JSON object {"data": [...]} of quiz questions that thoroughly covers ALL facts, terms, and concepts in the text (generate 20-40 questions depending on text length). Each item: "question", "answer", "options" (4 strings), "explanation". Output ONLY the JSON object.\\n\\n${t}`;
   } else if (jobType === "reviewer") {
-    return `Generate a comprehensive markdown study guide. Use headings, bullet points, key terms. Be thorough.\n\n${t}`;
+    return `Generate a concise, highly dense markdown cheat sheet summarizing the core concepts. Do NOT include a table of contents, introduction, or high-level overview. Jump straight into the facts, definitions, and key terms using bullet points and concise tables. Keep it dense and straight to the point without fluff.\\n\\n${t}`;
   } else {
     return `Generate a JSON object {"data": [...]} of test questions. Each item: "question", "answer_type" ("single" or "multiple"), "options" (array of strings), "correct_options" (array of correct strings), "explanation". Output ONLY the JSON object.\n\n${t}`;
   }
@@ -137,5 +137,6 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: msg }), { status: 500, headers: corsHeaders });
   }
 });
+
 
 
