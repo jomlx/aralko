@@ -322,7 +322,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-secondary leading-relaxed pb-4">
+                  <div className="text-sm text-secondary leading-relaxed pb-4 min-w-0 w-full overflow-x-hidden">
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -366,6 +366,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
     </div>
   );
 }
+
 
 
 
