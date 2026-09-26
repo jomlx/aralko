@@ -322,7 +322,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-secondary leading-relaxed pb-4 min-w-0 w-full overflow-x-auto">
+                  <div className="text-sm text-secondary leading-relaxed pb-4 min-w-0 w-full overflow-x-hidden">
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -337,8 +337,8 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         p: ({node, ...props}) => <p className="mb-4" {...props} />,
                         strong: ({node, ...props}) => <strong className="font-semibold text-primary" {...props} />,
                         code: ({node, inline, ...props}: any) => inline 
-                          ? <code className="bg-app border border-token text-accent px-1.5 py-0.5 rounded text-xs" {...props} />
-                          : <pre className="bg-app border border-token p-4 rounded-xl overflow-x-auto my-4 text-xs"><code {...props} /></pre>,
+                          ? <code className="bg-app border border-token text-accent px-1.5 py-0.5 rounded text-xs break-words" {...props} />
+                          : <pre className="bg-app border border-token p-4 rounded-xl overflow-x-auto my-4 text-xs max-w-full"><code {...props} /></pre>,
                         blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-accent pl-4 my-4 italic text-secondary bg-white/[0.02] py-2 pr-4 rounded-r-xl" {...props} />
                       }}
                     >
