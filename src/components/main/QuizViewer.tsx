@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight, CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react';
 import type { QuizQuestion } from '../../types';
 
@@ -19,6 +19,7 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuizComplete }: QuizViewerProps) {
+  const [activeQuestions, setActiveQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -39,6 +40,8 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
 
   // Reset when questions change (new quiz generated)
   useEffect(() => {
+    const pool = shuffleArray(questions || []);
+    setActiveQuestions(pool.slice(0, 15));
     setCurrentIndex(0);
     setSelected(null);
     setAnswered(false);
@@ -76,6 +79,8 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
   };
 
   const handleRestart = () => {
+    const pool = shuffleArray(questions || []);
+    setActiveQuestions(pool.slice(0, 15));
     setCurrentIndex(0);
     setResults({});
     setShowSummary(false);
@@ -242,4 +247,5 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
     </div>
   );
 }
+
 
