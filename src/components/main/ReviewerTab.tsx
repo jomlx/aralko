@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+﻿import { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, Download, ChevronDown, Trash2, RotateCcw, MessageSquare, MessageSquareOff } from 'lucide-react';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
-import { useAIQueue } from '../../hooks/useAIQueue';
+import { generateWithBackend } from '../../lib/apiClient';
+import { getPersonalGeminiKey } from '../../lib/aiCall';
 import { AIChatPanel } from '../sidebar/AIChatPanel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -28,9 +29,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
   const exportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { enqueueJob } = useAIQueue();
-
-  // ── On-demand reviewer generation ──
+  // â”€â”€ On-demand reviewer generation â”€â”€
   // Automatically generate if the tab is opened for an activity that has notes
   // but hasn't had a reviewer generated yet (reviewerContent is empty).
   useEffect(() => {
@@ -61,8 +60,9 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
       }
 
       if (activeActivity) {
-        const res = await enqueueJob(activeActivity.id, 'reviewer');
-        const content = typeof res === 'string' ? res : (res?.content || JSON.stringify(res));
+        const personalKey = getPersonalGeminiKey();
+        const { cachedData } = await generateWithBackend(activeActivity.notes, ['reviewer'], personalKey);
+        const content = typeof cachedData?.reviewer_result === 'string' ? cachedData.reviewer_result : '';
         onUpdateActivity(activeActivity.id, { reviewerContent: content });
         addXP?.(5, `reviewer-${activeActivity.id}`);
       }
@@ -141,7 +141,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-      {/* Outer padding wrapper — does NOT scroll */}
+      {/* Outer padding wrapper â€” does NOT scroll */}
       <div className="flex-1 min-h-0 flex gap-5 px-8 py-4 overflow-hidden">
 
         {/* Center: Reviewer Content */}
@@ -154,7 +154,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               <div>
                 <h2 className="text-xl font-semibold text-primary">Reviewer</h2>
                 <p className="mt-1 text-sm text-muted">
-                  {activeActivity.name}{activeActivity.subject ? `: ${activeActivity.subject}` : ''} — Upload a file or use activity notes to auto-generate a cheat sheet.
+                  {activeActivity.name}{activeActivity.subject ? `: ${activeActivity.subject}` : ''} â€” Upload a file or use activity notes to auto-generate a cheat sheet.
                 </p>
               </div>
 
@@ -177,7 +177,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                   <BookOpen size={15} className="text-amber-400" />
                   <span className="text-sm font-medium text-primary">Cheat Sheet</span>
                   {uploadedFileName && (
-                    <span className="text-xs text-muted">— {uploadedFileName}</span>
+                    <span className="text-xs text-muted">â€” {uploadedFileName}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -247,7 +247,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
             {inlineError && (
               <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                 <span className="text-sm text-red-300">{inlineError}</span>
-                <button onClick={() => setInlineError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">×</button>
+                <button onClick={() => setInlineError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">Ã—</button>
               </div>
             )}
 
@@ -366,4 +366,5 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
     </div>
   );
 }
+
 

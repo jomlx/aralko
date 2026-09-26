@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+﻿import { useState, useCallback, useEffect } from 'react';
 import type { Activity } from '../../types';
 import { Loader2, X, ChevronDown, Share2 } from 'lucide-react';
 import { FlashcardsViewer } from './FlashcardsViewer';
@@ -6,7 +6,8 @@ import { QuizViewer } from './QuizViewer';
 import { TestModeViewer } from './TestModeViewer';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useStudyGroups } from '../../hooks/useStudyGroups';
-import { useAIQueue } from '../../hooks/useAIQueue';
+import { generateWithBackend } from '../../lib/apiClient';
+import { getPersonalGeminiKey } from '../../lib/aiCall';
 
 function ShareActivityButton({ activityId }: { activityId: number }) {
   const { groups, shareActivity } = useStudyGroups();
@@ -97,8 +98,6 @@ export function LearnTab({
     }
   }, [isTestMode]);
 
-  const { enqueueJob } = useAIQueue();
-
   const handleGenerateQuizFromFlashcards = async () => {
     if (quizCooldown || isGeneratingQuiz) return;
 
@@ -108,8 +107,9 @@ export function LearnTab({
 
     setIsGeneratingQuiz(true);
     try {
-      // We now trigger the backend queue. The Edge function reads activities.notes directly.
-      const validQuestions = await enqueueJob(activeActivity.id, 'quiz');
+      const personalKey = getPersonalGeminiKey();
+      const { cachedData: qData } = await generateWithBackend(activeActivity.notes, ['quiz'], personalKey);
+      const validQuestions = Array.isArray(qData?.quiz_result) ? qData.quiz_result : [];
       
       if (Array.isArray(validQuestions) && validQuestions.length > 0) {
         // Safe-guard: explicitly merge if needed, though edge function already updates the DB!
@@ -141,8 +141,9 @@ export function LearnTab({
     setTestError(null);
     setIsGeneratingTest(true);
     try {
-      // Trigger backend AI queue
-      const questions = await enqueueJob(activeActivity.id, 'test');
+      const personalKey = getPersonalGeminiKey();
+      const { cachedData: tData } = await generateWithBackend(activeActivity.notes, ['test'], personalKey);
+      const questions = Array.isArray(tData?.test_result) ? tData.test_result : [];
       
       const validQuestions = Array.isArray(questions)
         ? questions.filter(
@@ -178,7 +179,7 @@ export function LearnTab({
   const isQuizTechnique = activeActivity.technique?.toLowerCase() === 'quiz';
   const isTestModeTechnique = activeActivity.technique?.toLowerCase() === 'test mode';
 
-  // ── On-demand quiz generation ──
+  // â”€â”€ On-demand quiz generation â”€â”€
   // When the user switches to Quiz tab for the first time, auto-generate if there's no quiz yet.
   useEffect(() => {
     if (!isQuizTechnique) return;
@@ -223,7 +224,7 @@ export function LearnTab({
                           key={tech} 
                           onClick={() => onUpdateActivity(activeActivity.id, { technique: tech === 'Study Notes' ? undefined : tech })}
                         >
-                          {tech === 'Test Mode' ? '🧪 ' : ''}{tech}
+                          {tech === 'Test Mode' ? 'ðŸ§ª ' : ''}{tech}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
@@ -231,7 +232,7 @@ export function LearnTab({
                 </div>
               </div>
 
-              {/* Content area — always render all three, show/hide via CSS to preserve state */}
+              {/* Content area â€” always render all three, show/hide via CSS to preserve state */}
 
               {/* FLASHCARDS */}
               <div className={isFlashcardTechnique ? "flex-1 relative flex flex-col min-h-0" : "hidden"}>
@@ -266,7 +267,7 @@ export function LearnTab({
                 {quizError && !isGeneratingQuiz && (
                   <div className="mb-3 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                     <span className="text-sm text-red-300">{quizError}</span>
-                    <button onClick={() => setQuizError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">×</button>
+                    <button onClick={() => setQuizError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">Ã—</button>
                   </div>
                 )}
                 {activeActivity.quizData && activeActivity.quizData.length > 0 ? (
@@ -322,7 +323,7 @@ export function LearnTab({
         </div>
       </div>
 
-      {/* ── Focus Test Mode Overlay ── */}
+      {/* â”€â”€ Focus Test Mode Overlay â”€â”€ */}
       {renderOverlay && isFlashcardTechnique && (
         <div
           className={`fixed inset-0 z-50 bg-app flex flex-col transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
@@ -370,3 +371,4 @@ export function LearnTab({
     </>
   );
 }
+
