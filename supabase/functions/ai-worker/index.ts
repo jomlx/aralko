@@ -107,7 +107,7 @@ serve(async (req) => {
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${fallbackGroqKey}` },
         body: JSON.stringify({
           model: "openai/gpt-oss-120b",
-          response_format: { type: "json_object" },
+          ...(job.job_type === "reviewer" ? {} : { response_format: { type: "json_object" } }),
           max_tokens: 8000,
           messages: [{ role: "user", content: prompt }]
         })
@@ -137,4 +137,5 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: msg }), { status: 500, headers: corsHeaders });
   }
 });
+
 
