@@ -302,7 +302,7 @@ export function LearnTab({
               <div className={isTestModeTechnique ? "flex-1 flex flex-col min-h-0" : "hidden"}>
                 <ErrorBoundary onReset={() => onUpdateActivity(activeActivity.id, { technique: 'Flashcards' })}>
                   <TestModeViewer
-                  key={`test-${activeActivity.id}`} headerControls={headerControls}
+                  key={`test-${activeActivity.id}`}
                   activityName={activeActivity.name}
                   questions={activeActivity.testData ?? []}
                   totalFlashcards={activeActivity.techniqueData?.length || 0}

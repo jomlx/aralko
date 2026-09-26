@@ -25,7 +25,6 @@ interface TestModeViewerProps {
   onGenerateQuestions: (timeLimitSeconds: number) => void;
   onExit: () => void;
   onTestStateChange?: (isActive: boolean) => void;
-  headerControls?: React.ReactNode;
 }
 
 type Phase = 'setup' | 'test' | 'results';
@@ -249,14 +248,12 @@ function TestScreen({
   timeLimit,
   onSubmit,
   onExit,
-  headerControls,
 }: {
   activityName: string;
   questions: TestQuestion[];
   timeLimit: number;
   onSubmit: (answers: Record<number, string[]>, timeUsed: number) => void;
   onExit: () => void;
-  headerControls?: React.ReactNode;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string[]>>({});
@@ -352,9 +349,9 @@ function TestScreen({
 
       {/* Unified top bar: activity name + badge left; counter, timer, exit, dropdown right */}
       <div className="flex-shrink-0 flex items-center gap-4 px-8 py-3 border-b border-token bg-surface/50">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="text-sm font-semibold text-primary truncate">{activityName}</span>
-          <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-accent/20 bg-accent-muted px-2 py-0.5 text-2xs font-semibold text-accent uppercase tracking-wider">
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-xl font-semibold text-primary truncate">{activityName}</span>
+          <span className="inline-flex items-center gap-1 w-fit rounded-full border border-accent/20 bg-accent-muted px-2 py-0.5 text-2xs font-semibold text-accent uppercase tracking-wider mt-0.5">
             Test Mode
           </span>
         </div>
@@ -378,11 +375,6 @@ function TestScreen({
           <LogOut size={14} />
           Exit
         </button>
-
-        {/* Technique dropdown passed down from LearnTab */}
-        {headerControls && (
-          <div className="shrink-0">{headerControls}</div>
-        )}
       </div>
 
       {/* Green timer progress bar (only progress indicator) */}
@@ -614,7 +606,6 @@ export function TestModeViewer({
   onGenerateQuestions,
   onExit,
   onTestStateChange,
-  headerControls,
 }: TestModeViewerProps) {
   const [phase, setPhase] = useState<Phase>('setup');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(600);
@@ -676,7 +667,6 @@ export function TestModeViewer({
         timeLimit={timeLimitSeconds}
         onSubmit={handleSubmit}
         onExit={handleExit}
-        headerControls={headerControls}
       />
     );
   }
