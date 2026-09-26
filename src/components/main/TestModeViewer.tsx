@@ -378,11 +378,13 @@ function TestScreen({
       </div>
 
       {/* Green timer progress bar (only progress indicator) */}
-      <div className="flex-shrink-0 h-1 bg-white/[0.05]">
-        <div
-          className={`h-full transition-all duration-1000 ease-linear ${timerBarColor}`}
-          style={{ width: `${timerPct}%` }}
-        />
+      <div className="flex-shrink-0 h-1 px-8">
+        <div className="h-full w-full bg-white/[0.05] rounded-full overflow-hidden">
+          <div
+            className={`h-full transition-all duration-1000 ease-linear ${timerBarColor}`}
+            style={{ width: `${timerPct}%` }}
+          />
+        </div>
       </div>
 
       {/* Scrollable question area */}
@@ -413,7 +415,7 @@ function TestScreen({
                   onClick={() => toggleOption(option)}
                   className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-medium transition-all border ${
                     isSelected
-                      ? 'border-accent/50 bg-accent-muted text-accent'
+                      ? 'border-accent bg-accent/20 text-white shadow-sm'
                       : 'border-token bg-white/[0.03] text-secondary hover:bg-white/[0.07] hover:border-accent/20 cursor-pointer'
                   }`}
                 >
