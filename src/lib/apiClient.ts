@@ -8,15 +8,10 @@
  *                         resolve when status = "completed", then fetch the cache row.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-// Shared anon client for Realtime subscriptions
-function getSupabase() {
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
 
 export interface GenerationResult {
   fileHash: string;
@@ -64,16 +59,14 @@ export async function generateWithBackend(
     const pendingJobIds = Object.values(jobIds).filter(id => id !== 'cached');
     if (pendingJobIds.length === 0) {
       // All were already cached — fetch the cache row directly
-      const supabase = getSupabase();
-      const { data: cacheRow } = await supabase.from('file_cache').select('*').eq('file_hash', fileHash).single();
+            const { data: cacheRow } = await supabase.from('file_cache').select('*').eq('file_hash', fileHash).single();
       return { fileHash, cachedData: cacheRow as Record<string, unknown> };
     }
 
     await Promise.all(pendingJobIds.map(jobId => waitForJob(jobId, timeoutMs)));
 
     // Fetch final cache row after all jobs complete
-    const supabase = getSupabase();
-    const { data: cacheRow } = await supabase.from('file_cache').select('*').eq('file_hash', fileHash).single();
+        const { data: cacheRow } = await supabase.from('file_cache').select('*').eq('file_hash', fileHash).single();
     if (!cacheRow) throw new Error('Cache row missing after job completion');
     return { fileHash, cachedData: cacheRow as Record<string, unknown> };
   }
@@ -88,8 +81,7 @@ export async function generateWithBackend(
  * BEFORE checking current status.
  */
 function waitForJob(jobId: string, timeoutMs: number): Promise<void> {
-  const supabase = getSupabase();
-
+  
   return new Promise<void>((resolve, reject) => {
     let settled = false;
     let timeoutHandle: ReturnType<typeof setTimeout>;
@@ -98,7 +90,7 @@ function waitForJob(jobId: string, timeoutMs: number): Promise<void> {
       if (settled) return;
       settled = true;
       clearTimeout(timeoutHandle);
-      supabase.removeAllChannels();
+      supabase.removeChannel(channel);
       if (err) reject(new Error(err));
       else resolve();
     }
@@ -140,3 +132,6 @@ export const uploadAndQueueJob = generateWithBackend;
 export async function pollCacheForResult(): Promise<never> {
   throw new Error('pollCacheForResult removed. Use generateWithBackend instead.');
 }
+
+
+
