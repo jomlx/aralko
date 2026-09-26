@@ -180,6 +180,28 @@ export function LearnTab({
   const isQuizTechnique = activeActivity.technique?.toLowerCase() === 'quiz';
   const isTestModeTechnique = activeActivity.technique?.toLowerCase() === 'test mode';
 
+  const headerControls = (
+    <div className="flex items-center gap-3">
+      <ShareActivityButton activityId={activeActivity.id} />
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex items-center gap-2 bg-surface border border-token text-secondary text-sm font-medium px-4 py-2 rounded-xl outline-none cursor-pointer hover:bg-white/[0.04] hover:text-primary transition-colors shadow-sm">
+          {activeActivity.technique || 'Study Notes'}
+          <ChevronDown size={16} className="opacity-70" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          {['Study Notes', 'Flashcards', 'Quiz', 'Test Mode', 'Feynman Technique', 'Active Recall', 'Spaced Repetition', 'Interleaving'].map((tech) => (
+            <DropdownMenuItem 
+              key={tech} 
+              onClick={() => onUpdateActivity(activeActivity.id, { technique: tech === 'Study Notes' ? undefined : tech })}
+            >
+              {tech === 'Test Mode' ? '?? ' : ''}{tech}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+
   // â”€â”€ On-demand quiz generation â”€â”€
   // When the user switches to Quiz tab for the first time, auto-generate if there's no quiz yet.
   useEffect(() => {
@@ -202,7 +224,7 @@ export function LearnTab({
             {/* Left: Flashcard or notes */}
             <div className="flex-1 flex flex-col min-h-[520px] transition-all duration-300 min-w-0">
               {/* Header */}
-              <div className="mb-4 w-full flex items-start justify-between">
+              <div className={(isTestModeTechnique && isTestMode) ? "hidden" : "mb-4 w-full flex items-start justify-between"}>
                 <div>
                   <h2 className="text-xl font-semibold text-primary">Learn</h2>
                   <p className="mt-1 text-sm text-muted">
@@ -212,25 +234,7 @@ export function LearnTab({
                 </div>
 
                 {/* Right controls */}
-                <div className="flex items-center gap-3">
-                  <ShareActivityButton activityId={activeActivity.id} />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="flex items-center gap-2 bg-surface border border-token text-secondary text-sm font-medium px-4 py-2 rounded-xl outline-none cursor-pointer hover:bg-white/[0.04] hover:text-primary transition-colors shadow-sm">
-                      {activeActivity.technique || 'Study Notes'}
-                      <ChevronDown size={16} className="opacity-70" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
-                      {['Study Notes', 'Flashcards', 'Quiz', 'Test Mode', 'Feynman Technique', 'Active Recall', 'Spaced Repetition', 'Interleaving'].map((tech) => (
-                        <DropdownMenuItem 
-                          key={tech} 
-                          onClick={() => onUpdateActivity(activeActivity.id, { technique: tech === 'Study Notes' ? undefined : tech })}
-                        >
-                          {tech === 'Test Mode' ? 'ðŸ§ª ' : ''}{tech}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                {headerControls}
               </div>
 
               {/* Content area â€” always render all three, show/hide via CSS to preserve state */}
@@ -298,7 +302,7 @@ export function LearnTab({
               <div className={isTestModeTechnique ? "flex-1 flex flex-col min-h-0" : "hidden"}>
                 <ErrorBoundary onReset={() => onUpdateActivity(activeActivity.id, { technique: 'Flashcards' })}>
                   <TestModeViewer
-                  key={`test-${activeActivity.id}`}
+                  key={`test-${activeActivity.id}`} headerControls={headerControls}
                   activityName={activeActivity.name}
                   questions={activeActivity.testData ?? []}
                   totalFlashcards={activeActivity.techniqueData?.length || 0}

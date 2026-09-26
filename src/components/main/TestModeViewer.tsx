@@ -25,6 +25,7 @@ interface TestModeViewerProps {
   onGenerateQuestions: (timeLimitSeconds: number) => void;
   onExit: () => void;
   onTestStateChange?: (isActive: boolean) => void;
+  headerControls?: React.ReactNode;
 }
 
 type Phase = 'setup' | 'test' | 'results';
@@ -39,9 +40,7 @@ const TIME_PRESETS = [
 // Helpers
 // ─────────────────────────────────────────────
 function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-    .toString()
-    .padStart(2, '0');
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
   const s = (seconds % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
 }
@@ -117,10 +116,8 @@ function SetupScreen({
   const expectedCap =
     selectedPreset.seconds === 300 ? 8 : selectedPreset.seconds === 600 ? 13 : 20;
   const expectedQuestions = Math.min(totalFlashcards, expectedCap);
-  
+
   const hasQuestions = questions.length > 0;
-  // It's a mismatch if they change to a shorter time limit than what they generated for,
-  // resulting in too many questions for the new limit. (If AI generated fewer than expected, that's fine).
   const isMismatch = hasQuestions && questions.length > expectedQuestions;
 
   return (
@@ -178,7 +175,7 @@ function SetupScreen({
               <p className="text-xs text-red-300 flex-1">{generateError}</p>
             </div>
           )}
-          
+
           {isMismatch && (
             <div className="mb-3 flex items-center gap-3 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5">
               <AlertTriangle size={15} className="text-warning shrink-0" />
@@ -252,12 +249,14 @@ function TestScreen({
   timeLimit,
   onSubmit,
   onExit,
+  headerControls,
 }: {
   activityName: string;
   questions: TestQuestion[];
   timeLimit: number;
   onSubmit: (answers: Record<number, string[]>, timeUsed: number) => void;
   onExit: () => void;
+  headerControls?: React.ReactNode;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string[]>>({});
@@ -266,12 +265,12 @@ function TestScreen({
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const timeUsedRef = useRef(0);
 
-  // Shuffle options for each question
+  // Shuffle options whenever the question changes
   useEffect(() => {
     setShuffledOptions(shuffleArray(questions[currentIndex]?.options ?? []));
   }, [currentIndex, questions]);
 
-  // Countdown timer
+  // Countdown timer — auto-submit when time runs out
   useEffect(() => {
     if (secondsLeft <= 0) {
       onSubmit(answers, timeLimit);
@@ -287,12 +286,30 @@ function TestScreen({
   }, [secondsLeft, answers, timeLimit, onSubmit]);
 
   const question = questions[currentIndex];
-  if (!question) return <div className="flex-1 flex flex-col items-center justify-center p-8"><p className="text-secondary mb-4">No questions available.</p><button onClick={onExit} className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white">Exit</button></div>;
-    const isMulti = question.answer_type === 'multiple';
+  if (!question) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8">
+        <p className="text-secondary mb-4">No questions available.</p>
+        <button onClick={onExit} className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white">Exit</button>
+      </div>
+    );
+  }
+
+  const isMulti = question.answer_type === 'multiple';
   const currentAnswer = answers[currentIndex] ?? [];
+
+  // Forward-only advance: next question or auto-submit on last
+  const advance = (latestAnswers: Record<number, string[]>) => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex((i) => i + 1);
+    } else {
+      onSubmit(latestAnswers, timeLimit - secondsLeft);
+    }
+  };
 
   const toggleOption = (option: string) => {
     if (isMulti) {
+      // Multi-select: toggle the checkbox; user must click "Confirm Selections" to advance
       setAnswers((prev) => {
         const cur = prev[currentIndex] ?? [];
         return {
@@ -303,13 +320,15 @@ function TestScreen({
         };
       });
     } else {
-      setAnswers((prev) => ({ ...prev, [currentIndex]: [option] }));
+      // Single-answer: lock in answer and auto-advance after brief visual feedback delay
+      const nextAnswers = { ...answers, [currentIndex]: [option] };
+      setAnswers(nextAnswers);
+      setTimeout(() => advance(nextAnswers), 250);
     }
   };
 
   const handleExitRequest = () => {
-    const answered = Object.keys(answers).length;
-    if (answered > 0) {
+    if (Object.keys(answers).length > 0) {
       setShowExitConfirm(true);
     } else {
       onExit();
@@ -320,12 +339,7 @@ function TestScreen({
   const timerColor =
     timerPct > 50 ? 'text-success' : timerPct > 20 ? 'text-warning' : 'text-danger';
   const timerBarColor =
-    timerPct > 50
-      ? 'bg-success'
-      : timerPct > 20
-      ? 'bg-amber-400'
-      : 'bg-danger';
-  const answeredCount = Object.keys(answers).length;
+    timerPct > 50 ? 'bg-success' : timerPct > 20 ? 'bg-amber-400' : 'bg-danger';
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -336,7 +350,7 @@ function TestScreen({
         />
       )}
 
-      {/* Test top bar */}
+      {/* Unified top bar: activity name + badge left; counter, timer, exit, dropdown right */}
       <div className="flex-shrink-0 flex items-center gap-4 px-8 py-3 border-b border-token bg-surface/50">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <span className="text-sm font-semibold text-primary truncate">{activityName}</span>
@@ -345,7 +359,7 @@ function TestScreen({
           </span>
         </div>
 
-        {/* Counter */}
+        {/* Question counter */}
         <span className="shrink-0 text-sm text-secondary font-medium">
           {currentIndex + 1} / {questions.length}
         </span>
@@ -364,9 +378,14 @@ function TestScreen({
           <LogOut size={14} />
           Exit
         </button>
+
+        {/* Technique dropdown passed down from LearnTab */}
+        {headerControls && (
+          <div className="shrink-0">{headerControls}</div>
+        )}
       </div>
 
-      {/* Timer progress bar */}
+      {/* Green timer progress bar (only progress indicator) */}
       <div className="flex-shrink-0 h-1 bg-white/[0.05]">
         <div
           className={`h-full transition-all duration-1000 ease-linear ${timerBarColor}`}
@@ -374,27 +393,9 @@ function TestScreen({
         />
       </div>
 
-      {/* Scroll area */}
+      {/* Scrollable question area */}
       <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <div className="max-w-3xl mx-auto px-6 py-8 flex flex-col gap-5">
-
-          {/* Question progress dots */}
-          <div className="flex flex-wrap gap-1.5">
-            {questions.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentIndex(i)}
-                title={`Question ${i + 1}`}
-                className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                  i === currentIndex
-                    ? 'bg-accent'
-                    : answers[i]?.length
-                    ? 'bg-success/70'
-                    : 'bg-white/[0.12]'
-                }`}
-              />
-            ))}
-          </div>
 
           {/* Question card */}
           <div className="rounded-2xl border border-accent/20 bg-surface p-6 shadow-sm">
@@ -424,7 +425,6 @@ function TestScreen({
                       : 'border-token bg-white/[0.03] text-secondary hover:bg-white/[0.07] hover:border-accent/20 cursor-pointer'
                   }`}
                 >
-                  {/* Indicator */}
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center border text-xs font-bold transition-colors ${
                       isMulti
@@ -433,12 +433,8 @@ function TestScreen({
                     }`}
                   >
                     {isMulti
-                      ? isSelected
-                        ? '✓'
-                        : ''
-                      : isSelected
-                      ? '●'
-                      : String.fromCharCode(65 + idx)}
+                      ? isSelected ? '✓' : ''
+                      : isSelected ? '●' : String.fromCharCode(65 + idx)}
                   </span>
                   <span className="flex-1">{option}</span>
                 </button>
@@ -446,36 +442,19 @@ function TestScreen({
             })}
           </div>
 
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-2">
-            <button
-              onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-              disabled={currentIndex === 0}
-              className="rounded-xl border border-token px-4 py-2 text-sm font-medium text-secondary hover:bg-white/[0.05] disabled:opacity-30 transition-colors"
-            >
-              ← Previous
-            </button>
-
-            <span className="text-xs text-muted">
-              {answeredCount} of {questions.length} answered
-            </span>
-
-            {currentIndex < questions.length - 1 ? (
+          {/* Multi-select only: Confirm button (disabled until ≥1 selected) */}
+          {isMulti && (
+            <div className="flex justify-end mt-2">
               <button
-                onClick={() => setCurrentIndex((i) => i + 1)}
-                className="flex items-center gap-2 rounded-xl bg-accent/10 hover:bg-accent/20 border border-accent/20 px-4 py-2 text-sm font-semibold text-accent transition-colors"
+                onClick={() => advance(answers)}
+                disabled={currentAnswer.length === 0}
+                className="flex items-center gap-2 rounded-xl bg-accent hover:bg-violet-700 px-5 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Next <ChevronRight size={15} />
+                {currentIndex < questions.length - 1 ? 'Confirm Selections' : 'Submit Test'}
+                <ChevronRight size={15} />
               </button>
-            ) : (
-              <button
-                onClick={() => onSubmit(answers, timeLimit - secondsLeft)}
-                className="flex items-center gap-2 rounded-xl bg-accent hover:bg-violet-700 px-5 py-2 text-sm font-semibold text-white transition-colors"
-              >
-                Submit Test <ChevronRight size={15} />
-              </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -500,32 +479,23 @@ function ResultsScreen({
   onRetake: () => void;
   onExit: () => void;
 }) {
-  // Score each question
   const scored = questions.map((q, i) => {
     const given = answers[i] ?? [];
     const correct = q.correct_options;
-
     const isCorrect =
-      given.length === correct.length &&
-      correct.every((c) => given.includes(c));
-
-    // For multi, track which were missed or wrong
+      given.length === correct.length && correct.every((c) => given.includes(c));
     const missed = correct.filter((c) => !given.includes(c));
     const wrong = given.filter((g) => !correct.includes(g));
-
     return { q, given, correct, isCorrect, missed, wrong, skipped: given.length === 0 };
   });
 
   const correctCount = scored.filter((s) => s.isCorrect).length;
   const pct = Math.round((correctCount / questions.length) * 100);
   const grade =
-    pct >= 90
-      ? '🏆 Excellent!'
-      : pct >= 75
-      ? '🎉 Great job!'
-      : pct >= 60
-      ? '👍 Good effort!'
-      : '📚 Keep studying!';
+    pct >= 90 ? '🏆 Excellent!'
+    : pct >= 75 ? '🎉 Great job!'
+    : pct >= 60 ? '👍 Good effort!'
+    : '📚 Keep studying!';
 
   const timeUsedDisplay = formatTime(Math.min(timeUsed, timeLimit));
 
@@ -584,40 +554,25 @@ function ResultsScreen({
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-secondary leading-snug line-clamp-3">{q.question}</p>
-
-                  {/* Type badge */}
                   <span className="inline-block mt-1 text-2xs font-semibold text-muted uppercase tracking-wide">
                     {q.answer_type === 'multiple' ? 'Multi-select' : 'Single answer'}
                   </span>
-
-                  {/* If wrong — show breakdown */}
                   {!isCorrect && !skipped && (
                     <div className="mt-2 flex flex-col gap-1">
                       {missed.length > 0 && (
-                        <p className="text-2xs text-success">
-                          Missed: {missed.join(', ')}
-                        </p>
+                        <p className="text-2xs text-success">Missed: {missed.join(', ')}</p>
                       )}
                       {wrong.length > 0 && (
-                        <p className="text-2xs text-red-400">
-                          Wrongly selected: {wrong.join(', ')}
-                        </p>
+                        <p className="text-2xs text-red-400">Wrongly selected: {wrong.join(', ')}</p>
                       )}
                     </div>
                   )}
-
                   {skipped && (
                     <p className="mt-1 text-2xs text-muted">Not answered</p>
                   )}
-
-                  {/* Correct answers always shown on miss */}
                   {!isCorrect && (
-                    <p className="mt-1 text-2xs text-success">
-                      Correct: {correct.join(', ')}
-                    </p>
+                    <p className="mt-1 text-2xs text-success">Correct: {correct.join(', ')}</p>
                   )}
-
-                  {/* Explanation */}
                   {q.explanation && (
                     <p className="mt-1.5 text-2xs text-muted italic">{q.explanation}</p>
                   )}
@@ -659,12 +614,12 @@ export function TestModeViewer({
   onGenerateQuestions,
   onExit,
   onTestStateChange,
+  headerControls,
 }: TestModeViewerProps) {
   const [phase, setPhase] = useState<Phase>('setup');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(600);
   const [testAnswers, setTestAnswers] = useState<Record<number, string[]>>({});
   const [timeUsed, setTimeUsed] = useState(0);
-  // Shuffle questions once when test starts so order is randomised
   const [activeQuestions, setActiveQuestions] = useState<TestQuestion[]>([]);
 
   const handleStart = useCallback(
@@ -681,7 +636,7 @@ export function TestModeViewer({
     setTestAnswers(answers);
     setTimeUsed(used);
     setPhase('results');
-    setPhase('setup'); setTestAnswers({}); setTimeUsed(0); onTestStateChange?.(false);
+    onTestStateChange?.(false);
   }, [onTestStateChange]);
 
   const handleRetake = useCallback(() => {
@@ -691,7 +646,10 @@ export function TestModeViewer({
   }, [questions, onTestStateChange]);
 
   const handleExit = useCallback(() => {
-    setPhase('setup'); setTestAnswers({}); setTimeUsed(0); onTestStateChange?.(false);
+    setPhase('setup');
+    setTestAnswers({});
+    setTimeUsed(0);
+    onTestStateChange?.(false);
     onExit();
   }, [onExit, onTestStateChange]);
 
@@ -718,10 +676,12 @@ export function TestModeViewer({
         timeLimit={timeLimitSeconds}
         onSubmit={handleSubmit}
         onExit={handleExit}
+        headerControls={headerControls}
       />
     );
   }
 
+  // phase === 'results'
   return (
     <ResultsScreen
       questions={activeQuestions}
@@ -733,4 +693,3 @@ export function TestModeViewer({
     />
   );
 }
-
