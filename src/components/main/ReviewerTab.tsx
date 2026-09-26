@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, Download, ChevronDown, Trash2, RotateCcw, MessageSquare, MessageSquareOff } from 'lucide-react';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
@@ -242,7 +242,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
           {/* --- END STATIC HEADER --- */}
 
           {/* --- SCROLLING CONTENT --- */}
-          <div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex-1 min-h-0 min-w-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {/* Inline error banner */}
             {inlineError && (
               <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
@@ -322,7 +322,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-secondary leading-relaxed pb-4 min-w-0 w-full overflow-x-hidden">
+                  <div className="text-sm text-secondary leading-relaxed pb-4 min-w-0 w-full overflow-x-auto">
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
