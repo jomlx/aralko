@@ -1,4 +1,4 @@
-﻿import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const corsHeaders = {
@@ -40,7 +40,7 @@ function parseResult(rawText: string, jobType: string): unknown {
 
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -55,7 +55,7 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
   return json.candidates[0].content.parts[0].text;
 }
 
-async function callGroq(prompt: string, apiKey: string): Promise<string> {
+async function callGroq(prompt: string, apiKey: string, jobType: string): Promise<string> {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
@@ -133,7 +133,7 @@ serve(async (req) => {
         } catch (gErr: unknown) {
           const gMsg = gErr instanceof Error ? gErr.message : String(gErr);
           if (!fallbackGroqKey) throw new Error("Gemini failed, no Groq key: " + gMsg);
-          rawText = await callGroq(prompt, fallbackGroqKey);
+          rawText = await callGroq(prompt, fallbackGroqKey, jobType);
         }
         results[`${jobType}_result`] = parseResult(rawText, jobType);
       }
