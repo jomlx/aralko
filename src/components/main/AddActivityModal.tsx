@@ -1,14 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Loader2, X } from 'lucide-react';
 import type { Activity } from '../../types';
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import JSZip from 'jszip';
-import { uploadAndQueueJob, pollCacheForResult } from '../../lib/apiClient';
-import { supabase } from '../../lib/supabase';
+import { generateWithBackend } from '../../lib/apiClient';
 import { getPersonalGeminiKey } from '../../lib/aiCall';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface AddActivityModalProps {
   isOpen: boolean;
@@ -74,8 +72,7 @@ export function AddActivityModal({ isOpen, onClose, onActivityAdded }: AddActivi
       setLoadingMsg('Uploading to secure cloud storage...');
 
       const personalKey = getPersonalGeminiKey();
-      const { fileHash, cachedData } = await uploadAndQueueJob(rawText, ['flashcards'], personalKey);
-      
+      const { cachedData } = await generateWithBackend(rawText, ['flashcards'], personalKey);
       const flashcards = Array.isArray(cachedData?.flashcards_result) ? cachedData.flashcards_result : [];
 
       const newActivity: Activity = {
@@ -276,3 +273,4 @@ export function AddActivityModal({ isOpen, onClose, onActivityAdded }: AddActivi
     </div>
   );
 }
+

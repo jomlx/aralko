@@ -1,4 +1,4 @@
-﻿-- Rate Limiter shared state (single row, ID=1 always)
+-- Rate Limiter shared state (single row, ID=1 always)
 CREATE TABLE IF NOT EXISTS public.rate_limit_state (
   id INT PRIMARY KEY DEFAULT 1,
   last_call_at TIMESTAMP WITH TIME ZONE DEFAULT ''1970-01-01 00:00:00+00''::timestamptz,
