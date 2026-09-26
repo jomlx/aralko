@@ -287,7 +287,8 @@ function TestScreen({
   }, [secondsLeft, answers, timeLimit, onSubmit]);
 
   const question = questions[currentIndex];
-  const isMulti = question?.answer_type === 'multiple';
+  if (!question) return <div className="flex-1 flex flex-col items-center justify-center p-8"><p className="text-secondary mb-4">No questions available.</p><button onClick={onExit} className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white">Exit</button></div>;
+    const isMulti = question.answer_type === 'multiple';
   const currentAnswer = answers[currentIndex] ?? [];
 
   const toggleOption = (option: string) => {
@@ -680,7 +681,7 @@ export function TestModeViewer({
     setTestAnswers(answers);
     setTimeUsed(used);
     setPhase('results');
-    onTestStateChange?.(false);
+    setPhase('setup'); setTestAnswers({}); setTimeUsed(0); onTestStateChange?.(false);
   }, [onTestStateChange]);
 
   const handleRetake = useCallback(() => {
@@ -690,7 +691,7 @@ export function TestModeViewer({
   }, [questions, onTestStateChange]);
 
   const handleExit = useCallback(() => {
-    onTestStateChange?.(false);
+    setPhase('setup'); setTestAnswers({}); setTimeUsed(0); onTestStateChange?.(false);
     onExit();
   }, [onExit, onTestStateChange]);
 
