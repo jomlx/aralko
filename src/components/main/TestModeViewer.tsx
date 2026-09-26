@@ -139,6 +139,28 @@ function SetupScreen({
           </p>
         </div>
 
+        {/* Time Limit */}
+        <div className="rounded-2xl border border-token bg-surface p-5 mb-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold text-primary">Time Limit</p>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {TIME_PRESETS.map((preset) => (
+              <button
+                key={preset.seconds}
+                onClick={() => setSelectedPreset(preset)}
+                className={`rounded-xl border py-3 text-sm font-semibold transition-colors ${
+                  selectedPreset.seconds === preset.seconds
+                    ? 'border-accent/50 bg-accent-muted text-accent'
+                    : 'border-token bg-white/[0.03] text-secondary hover:bg-white/[0.06]'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Generate / Regenerate */}
         <div className="rounded-2xl border border-token bg-surface p-5 mb-5">
           <div className="flex items-center justify-between mb-3">
@@ -196,28 +218,6 @@ function SetupScreen({
               Flashcards must exist before generating test questions.
             </p>
           )}
-        </div>
-
-        {/* Time Limit */}
-        <div className="rounded-2xl border border-token bg-surface p-5 mb-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-semibold text-primary">Time Limit</p>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {TIME_PRESETS.map((preset) => (
-              <button
-                key={preset.seconds}
-                onClick={() => setSelectedPreset(preset)}
-                className={`rounded-xl border py-3 text-sm font-semibold transition-colors ${
-                  selectedPreset.seconds === preset.seconds
-                    ? 'border-accent/50 bg-accent-muted text-accent'
-                    : 'border-token bg-white/[0.03] text-secondary hover:bg-white/[0.06]'
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Actions */}

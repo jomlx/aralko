@@ -247,8 +247,8 @@ function AppContent() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
         <div
-          className="flex-shrink-0 overflow-hidden transition-all duration-300"
-          style={{ width: isTestMode ? 0 : sidebarWidth, borderRightWidth: isTestMode ? 0 : 1 }}
+          className={`flex-shrink-0 overflow-hidden transition-all duration-300 ${isTestMode ? 'border-r-0' : 'border-r border-token'}`}
+          style={{ width: isTestMode ? 0 : sidebarWidth }}
         >
           <Sidebar width={sidebarWidth} onResizeStart={() => setIsDragging(true)}>
             <StudyTracker 
@@ -292,7 +292,7 @@ function AppContent() {
           onLogout={logout}
         />
 
-        <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-app">
+        <main className="flex-1 flex flex-col min-h-0 bg-app">
 
           {/* Content area */}
           <div className="flex-1 min-h-0 flex flex-col">
