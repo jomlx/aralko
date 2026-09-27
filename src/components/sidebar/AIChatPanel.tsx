@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, UserCog, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
+import { UserCog, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
 import type { ChatMessage, Activity } from '../../types';
 import { useGemini } from '../../hooks/useGemini';
 import { useChat } from '../../hooks/useChat';
@@ -107,66 +107,63 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
 
   return (
     <div className="rounded-2xl border border-token bg-surface flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="text-success">
-            <Sparkles size={16} />
-          </div>
-          <h2 className="text-primary font-medium text-xs">Aralko Assistant</h2>
+      {/* Header — single row: title+subtitle on left, Trash + Persona icons on right */}
+      <div className="flex-shrink-0 flex items-start justify-between px-4 pt-3 pb-3">
+        {/* Left: title + subtitle */}
+        <div>
+          <h3 className="text-primary font-semibold text-sm leading-tight">Aralko Assistant</h3>
+          <p className="text-muted text-xs mt-0.5">
+            {activeActivity?.name ?? 'New Chat'}
+          </p>
         </div>
 
-        {/* Persona icon-only button with dropdown */}
-        <div className="relative">
+        {/* Right: Trash icon + Persona icon */}
+        <div className="flex items-center gap-1 mt-0.5">
+          {/* Clear chat — always rendered but only active when messages exist */}
           <button
-            onClick={() => setPersonaMenuOpen(prev => !prev)}
-            title="Assistant settings"
+            onClick={handleClearRequest}
+            disabled={messages.length === 0}
+            title={confirmClear ? 'Click again to confirm' : 'Clear chat history'}
             className={`flex items-center justify-center w-7 h-7 rounded-lg transition-colors ${
-              personaMenuOpen
-                ? 'text-primary bg-white/[0.08]'
-                : 'text-secondary hover:text-primary hover:bg-white/[0.05]'
+              messages.length === 0
+                ? 'text-muted/30 cursor-not-allowed'
+                : confirmClear
+                  ? 'text-red-400 bg-red-400/10 hover:bg-red-400/20'
+                  : 'text-secondary hover:text-red-400 hover:bg-white/[0.05]'
             }`}
           >
-            <UserCog size={16} />
+            <Trash2 size={14} />
           </button>
 
-          {/* Dropdown menu */}
-          {personaMenuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-token bg-surface shadow-lg z-50 py-1 overflow-hidden">
-              <button
-                onClick={() => { setActiveView(prev => prev === 'chat' ? 'settings' : 'chat'); setPersonaMenuOpen(false); }}
-                className="w-full text-left px-3 py-2 text-xs text-secondary hover:text-primary hover:bg-white/[0.05] flex items-center gap-2 transition-colors"
-              >
-                <UserCog size={13} />
-                {activeView === 'settings' ? 'Back to chat' : 'AI Persona settings'}
-              </button>
-              {messages.length > 0 && (
+          {/* Persona icon with dropdown — settings only */}
+          <div className="relative">
+            <button
+              onClick={() => setPersonaMenuOpen(prev => !prev)}
+              title="Assistant settings"
+              className={`flex items-center justify-center w-7 h-7 rounded-lg transition-colors ${
+                personaMenuOpen
+                  ? 'text-primary bg-white/[0.08]'
+                  : 'text-secondary hover:text-primary hover:bg-white/[0.05]'
+              }`}
+            >
+              <UserCog size={14} />
+            </button>
+
+            {personaMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-token bg-surface shadow-lg z-50 py-1 overflow-hidden">
                 <button
-                  onClick={() => { handleClearRequest(); if (confirmClear) setPersonaMenuOpen(false); }}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${
-                    confirmClear
-                      ? 'text-red-400 bg-red-400/10 hover:bg-red-400/20'
-                      : 'text-secondary hover:text-red-400 hover:bg-white/[0.05]'
-                  }`}
+                  onClick={() => { setActiveView(prev => prev === 'chat' ? 'settings' : 'chat'); setPersonaMenuOpen(false); }}
+                  className="w-full text-left px-3 py-2 text-xs text-secondary hover:text-primary hover:bg-white/[0.05] flex items-center gap-2 transition-colors"
                 >
-                  <Trash2 size={13} />
-                  {confirmClear ? 'Click again to confirm' : 'Clear chat history'}
+                  <UserCog size={13} />
+                  {activeView === 'settings' ? 'Back to chat' : 'AI Persona settings'}
                 </button>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Title + subtitle */}
-      <div className="flex-shrink-0 px-4 pb-3">
-        <h3 className="text-primary font-semibold text-sm leading-tight">
-          {activeActivity?.name ?? 'New Chat'}
-        </h3>
-        <p className="text-muted text-xs mt-0.5">
-          {activeActivity?.subject ?? 'How can I help you today?'}
-        </p>
-      </div>
 
       {activeView === 'settings' ? (
         <div className="flex-1 flex flex-col p-4 mx-3 mb-3 bg-app rounded-xl border border-token">
