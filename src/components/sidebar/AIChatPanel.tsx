@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { UserCog, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
 import type { ChatMessage, Activity } from '../../types';
 import { useGemini } from '../../hooks/useGemini';
@@ -83,11 +83,11 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
       console.error('Chat error:', err);
       let errorMsg: string;
       if (err.message === 'Gemini API key not configured') {
-        errorMsg = 'Ã°Å¸â€™Â¡ Please add your Gemini API key in Settings to use the AI assistant.';
+        errorMsg = 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¡ Please add your Gemini API key in Settings to use the AI assistant.';
       } else if (err.message?.includes('Invalid API Key')) {
-        errorMsg = 'Ã¢ÂÅ’ Your API key appears to be invalid. Please check your settings.';
+        errorMsg = 'ÃƒÂ¢Ã‚ÂÃ…â€™ Your API key appears to be invalid. Please check your settings.';
       } else {
-        errorMsg = 'Ã¢Å¡Â Ã¯Â¸Â ' + (err.message || 'Unknown error connecting to the AI.');
+        errorMsg = 'ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â ' + (err.message || 'Unknown error connecting to the AI.');
       }
 
       await addMessage({
@@ -108,7 +108,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
 
   return (
     <div className="rounded-2xl border border-token bg-surface flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* Header Ã¢â‚¬â€ single row: title+subtitle on left, Trash + Persona icons on right */}
+      {/* Header ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â single row: title+subtitle on left, Trash + Persona icons on right */}
       <div className="flex-shrink-0 flex items-start justify-between px-4 pt-3 pb-3 border-b border-token">
         {/* Left: title + subtitle */}
         <div>
@@ -120,7 +120,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
 
         {/* Right: Trash icon + Persona icon */}
         <div className="flex items-center gap-0.5">
-          {/* Clear chat Ã¢â‚¬â€ always rendered but only active when messages exist */}
+          {/* Clear chat ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â always rendered but only active when messages exist */}
           <AlertDialog>
             <AlertDialogTrigger className="p-0 m-0 border-none bg-transparent hover:bg-transparent">
               <button
@@ -195,7 +195,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
           <MessageScrollerProvider>
             <MessageScroller className="flex-1 min-h-0 relative">
               <MessageScrollerViewport className="[scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/[0.12] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:mr-0">
-                <MessageScrollerContent className="space-y-3 py-4">
+                <MessageScrollerContent className="space-y-2 py-4">
                   {historyLoading ? (
                     <div className="flex items-center justify-center mt-10 gap-2 text-muted text-xs">
                       <Loader2 size={14} className="animate-spin" />
@@ -215,7 +215,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
                         <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                           <div className={`text-[13px] leading-relaxed break-words whitespace-pre-wrap ${
                             msg.role === 'user'
-                              ? 'max-w-[85%] bg-accent/20 text-primary rounded-2xl rounded-br-sm px-4 py-3 border border-accent/10 shadow-sm'
+                              ? 'max-w-[85%] bg-accent/20 text-primary rounded-2xl rounded-br-sm px-4 py-3 shadow-sm'
                               : 'w-full text-secondary px-2 py-1'
                           }`}>
                             {msg.content}
@@ -268,6 +268,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
     </div>
   );
 }
+
 
 
 
