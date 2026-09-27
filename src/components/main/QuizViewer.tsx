@@ -54,43 +54,46 @@ function QuizSummary({
 
       {/* Per-question Accordion review */}
       <div className="w-full flex flex-col gap-1">
-        <p className="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Question Review</p>
-        <Accordion className="w-full rounded-xl border border-token overflow-hidden">
-          {activeQuestions.map((q, i) => {
-            const isCorrect = results[i] === true;
-            const isWrong = results[i] === false;
-            return (
-              <AccordionItem
-                key={i}
-                value={String(i)}
-                className={`border-b border-token last:border-b-0 text-sm ${
-                  isCorrect ? 'bg-success-muted border-success/20'
-                  : isWrong  ? 'bg-red-500/10 border-red-500/20'
-                  : 'bg-white/[0.03] border-token'
-                }`}
-              >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-transparent gap-3">
-                  <span className="shrink-0">
-                    {isCorrect ? <CheckCircle2 size={16} className="text-success" />
-                    : isWrong  ? <XCircle size={16} className="text-red-400" />
-                    : <span className="w-4 h-4 rounded-full border border-slate-600 inline-block" />}
-                  </span>
-                  <span className="flex-1 text-left text-secondary line-clamp-2">{q.question}</span>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-3">
-                  {isWrong && (
-                    <p className="text-2xs text-success">✓ Correct answer: {q.answer}</p>
-                  )}
-                  {isCorrect && (
-                    <p className="text-2xs text-success">✓ {q.answer}</p>
-                  )}
-                  {results[i] === undefined && (
-                    <p className="text-2xs text-muted">Not answered — correct: {q.answer}</p>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-            );
-          })}
+        <Accordion className="w-full rounded-xl border border-token overflow-hidden bg-surface">
+          <AccordionItem value="review" className="border-none">
+            <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-white/[0.02]">
+              <span className="font-semibold text-secondary uppercase tracking-wider text-xs">Question Review</span>
+            </AccordionTrigger>
+            <AccordionContent className="p-0 border-t border-token flex flex-col">
+              {activeQuestions.map((q, i) => {
+                const isCorrect = results[i] === true;
+                const isWrong = results[i] === false;
+                return (
+                  <div
+                    key={i}
+                    className={`flex items-start gap-3 px-5 py-4 text-sm border-b border-token last:border-b-0 ${
+                      isCorrect ? 'bg-success-muted'
+                      : isWrong  ? 'bg-red-500/10'
+                      : 'bg-white/[0.01]'
+                    }`}
+                  >
+                    <span className="shrink-0 mt-0.5">
+                      {isCorrect ? <CheckCircle2 size={16} className="text-success" />
+                      : isWrong  ? <XCircle size={16} className="text-red-400" />
+                      : <span className="w-4 h-4 rounded-full border border-slate-600 inline-block" />}
+                    </span>
+                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                      <span className="text-secondary leading-snug">{q.question}</span>
+                      {isWrong && (
+                        <p className="mt-1 text-2xs text-success">✓ Correct answer: {q.answer}</p>
+                      )}
+                      {isCorrect && (
+                        <p className="mt-1 text-2xs text-success">✓ {q.answer}</p>
+                      )}
+                      {results[i] === undefined && (
+                        <p className="mt-1 text-2xs text-muted">Not answered — correct: {q.answer}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </div>
 

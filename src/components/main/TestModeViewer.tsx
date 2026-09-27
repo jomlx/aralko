@@ -538,64 +538,65 @@ function ResultsScreen({
         </div>
 
         {/* Per-question Accordion review */}
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">
-            Question Review
-          </p>
-          <Accordion className="w-full rounded-xl border border-token overflow-hidden">
-            {scored.map(({ q, correct, isCorrect, missed, wrong, skipped }, i) => (
-              <AccordionItem
-                key={i}
-                value={String(i)}
-                className={`border-b border-token last:border-b-0 text-sm ${
-                  isCorrect
-                    ? 'bg-success-muted border-success/20'
-                    : 'bg-red-500/10 border-red-500/20'
-                }`}
-              >
-                <AccordionTrigger className="px-4 py-3.5 hover:no-underline hover:bg-transparent gap-3">
-                  <span className="shrink-0">
-                    {isCorrect ? (
-                      <CheckCircle2 size={16} className="text-success" />
-                    ) : (
-                      <XCircle size={16} className="text-red-400" />
-                    )}
-                  </span>
-                  <span className="flex-1 text-left text-secondary leading-snug line-clamp-2">
-                    {q.question}
-                  </span>
-                  <span className="text-2xs text-muted shrink-0 mr-1">
-                    {q.answer_type === 'multiple' ? 'Multi' : 'Single'}
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-3.5">
-                  <div className="flex flex-col gap-1">
-                    {!isCorrect && !skipped && (
-                      <>
-                        {missed.length > 0 && (
-                          <p className="text-2xs text-success">✓ Missed: {missed.join(', ')}</p>
+        <div className="flex flex-col gap-2 w-full">
+          <Accordion className="w-full rounded-xl border border-token overflow-hidden bg-surface">
+            <AccordionItem value="review" className="border-none">
+              <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-white/[0.02]">
+                <span className="font-semibold text-secondary uppercase tracking-wider text-xs">Question Review</span>
+              </AccordionTrigger>
+              <AccordionContent className="p-0 border-t border-token flex flex-col">
+                {scored.map(({ q, correct, isCorrect, missed, wrong, skipped }, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-start gap-3 px-5 py-4 text-sm border-b border-token last:border-b-0 ${
+                      isCorrect
+                        ? 'bg-success-muted'
+                        : 'bg-red-500/10'
+                    }`}
+                  >
+                    <span className="shrink-0 mt-0.5">
+                      {isCorrect ? (
+                        <CheckCircle2 size={16} className="text-success" />
+                      ) : (
+                        <XCircle size={16} className="text-red-400" />
+                      )}
+                    </span>
+                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="text-secondary leading-snug">{q.question}</span>
+                        <span className="text-2xs text-muted shrink-0 mt-1">
+                          {q.answer_type === 'multiple' ? 'Multi' : 'Single'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1 mt-1">
+                        {!isCorrect && !skipped && (
+                          <>
+                            {missed.length > 0 && (
+                              <p className="text-2xs text-success">✓ Missed: {missed.join(', ')}</p>
+                            )}
+                            {wrong.length > 0 && (
+                              <p className="text-2xs text-red-400">✗ Wrong: {wrong.join(', ')}</p>
+                            )}
+                          </>
                         )}
-                        {wrong.length > 0 && (
-                          <p className="text-2xs text-red-400">✗ Wrong: {wrong.join(', ')}</p>
+                        {skipped && (
+                          <p className="text-2xs text-muted">Not answered</p>
                         )}
-                      </>
-                    )}
-                    {skipped && (
-                      <p className="text-2xs text-muted">Not answered</p>
-                    )}
-                    {!isCorrect && (
-                      <p className="text-2xs text-success">✓ Correct: {correct.join(', ')}</p>
-                    )}
-                    {isCorrect && (
-                      <p className="text-2xs text-success">✓ {correct.join(', ')}</p>
-                    )}
-                    {q.explanation && (
-                      <p className="mt-1 text-2xs text-muted italic">{q.explanation}</p>
-                    )}
+                        {!isCorrect && (
+                          <p className="text-2xs text-success">✓ Correct: {correct.join(', ')}</p>
+                        )}
+                        {isCorrect && (
+                          <p className="text-2xs text-success">✓ {correct.join(', ')}</p>
+                        )}
+                        {q.explanation && (
+                          <p className="mt-1 text-2xs text-muted italic">{q.explanation}</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
+                ))}
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </div>
 
