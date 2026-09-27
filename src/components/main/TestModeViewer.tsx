@@ -379,7 +379,7 @@ function TestScreen({
 
       {/* Green timer progress bar (only progress indicator) */}
       <div className="flex-shrink-0 h-1 px-8">
-        <div className="h-full w-full bg-white/[0.05] rounded-full overflow-hidden">
+        <div className="h-full w-full bg-white/[0.05] overflow-hidden">
           <div
             className={`h-full transition-all duration-1000 ease-linear ${timerBarColor}`}
             style={{ width: `${timerPct}%` }}
@@ -413,17 +413,17 @@ function TestScreen({
                 <button
                   key={idx}
                   onClick={() => toggleOption(option)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-medium transition-all border ${
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm transition-all border ${
                     isSelected
-                      ? 'border-accent bg-accent/20 text-white shadow-sm'
-                      : 'border-token bg-white/[0.03] text-secondary hover:bg-white/[0.07] hover:border-accent/20 cursor-pointer'
+                      ? 'border-accent bg-accent-muted font-semibold text-primary'
+                      : 'border-token bg-white/[0.03] font-medium text-secondary hover:bg-white/[0.07] hover:border-accent/20 cursor-pointer'
                   }`}
                 >
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center border text-xs font-bold transition-colors ${
                       isMulti
-                        ? `rounded-md ${isSelected ? 'border-accent/50 bg-accent text-white' : 'border-token'}`
-                        : `rounded-full ${isSelected ? 'border-accent/50 bg-accent text-white' : 'border-token text-muted'}`
+                        ? `rounded-md ${isSelected ? 'bg-accent border-accent' : 'border-token'}`
+                        : `rounded-full ${isSelected ? 'bg-accent border-accent' : 'border-token text-muted'}`
                     }`}
                   >
                     {isMulti
