@@ -15,6 +15,14 @@ export type QuizQuestion = {
   explanation?: string  // brief explanation of correct answer
 }
 
+export type TestQuestion = {
+  question: string
+  answer_type: 'single' | 'multiple'
+  options: string[]         // 4 options
+  correct_options: string[] // 1 item for single, 2+ for multiple
+  explanation?: string
+}
+
 export type Activity = {
   id: number
   name: string
@@ -26,6 +34,7 @@ export type Activity = {
   techniqueData?: Flashcard[]
   reviewedCards?: Flashcard[]
   quizData?: QuizQuestion[]
+  testData?: TestQuestion[]
 }
 
 export type ChatMessage = {

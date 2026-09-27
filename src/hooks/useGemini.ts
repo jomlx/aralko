@@ -1,21 +1,25 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import type { ChatMessage } from '../types';
 import { getReviewerPrompt } from '../prompts/reviewerPrompt';
 import { callAI } from '../lib/aiCall';
 import type { AIBody } from '../lib/aiCall';
+import { getPersonalGeminiKey } from '../lib/aiCall';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 export function useGemini() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isConfigured, setIsConfigured] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(true); // always true: shared key is server-side
   const [retryStatus, setRetryStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    const key = import.meta.env.VITE_GEMINI_API_KEY;
-    setIsConfigured(!!key);
+    // isConfigured is always true: personal key OR server-side shared key both work
+    setIsConfigured(true);
   }, []);
 
-  const call = async (body: AIBody): Promise<string> => {
+  /** Call AI client-side (personal key path only) */
+  const callClientSide = async (body: AIBody): Promise<string> => {
     setIsLoading(true);
     setError(null);
     setRetryStatus(null);
@@ -23,19 +27,15 @@ export function useGemini() {
       const result = await callAI(body, {
         maxRetries: 1,
         onRetry: (attempt, waitMs) => {
-          if (attempt === 999) {
-            setRetryStatus('Switching to backup AI...');
-          } else {
-            setRetryStatus(`Rate limited — trying again in ${Math.round(waitMs / 1000)}s...`);
-          }
+          if (attempt === 999) setRetryStatus('Switching to backup AI...');
+          else setRetryStatus(`Rate limited — retrying in ${Math.round(waitMs / 1000)}s...`);
         },
-        onQueueWait: () => {
-          setRetryStatus('Waiting for another request to finish...');
-        }
+        onQueueWait: () => setRetryStatus('Waiting for another request to finish...'),
       });
       return result;
-    } catch (err: any) {
-      setError(err.message || 'An unknown error occurred');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
       throw err;
     } finally {
       setIsLoading(false);
@@ -43,39 +43,69 @@ export function useGemini() {
     }
   };
 
+  /**
+   * sendChat:
+   *   - Personal key present → call Gemini directly client-side (user's own key, their risk)
+   *   - No personal key     → call /functions/v1/chat Edge Function (shared key stays server-side)
+   */
   const sendChat = async (messages: ChatMessage[], systemPrompt: string): Promise<string> => {
-    const contents = messages.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }],
-    }));
-    const body: AIBody = {
-      contents,
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      generationConfig: { maxOutputTokens: 65536 },  // was 8192 — increased for large flashcard/quiz generation
-    };
-    return call(body);
+    const personalKey = getPersonalGeminiKey();
+
+    if (personalKey) {
+      // Client-side path: personal key
+      const contents = messages.map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }],
+      }));
+      const body: AIBody = {
+        contents,
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: { maxOutputTokens: 4096 },
+      };
+      return callClientSide(body);
+    }
+
+    // Server-side path: shared key via Edge Function
+    setIsLoading(true);
+    setError(null);
+    setRetryStatus(null);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          systemPrompt,
+        }),
+      });
+      const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+      if (!res.ok) throw new Error((data.error as string) || `Chat API error: ${res.status}`);
+      return (data.response as string) ?? '';
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
+      throw err;
+    } finally {
+      setIsLoading(false);
+      setRetryStatus(null);
+    }
   };
 
   const generateReviewer = async (notes: string): Promise<string> => {
     const body: AIBody = {
       contents: [{ role: 'user', parts: [{ text: getReviewerPrompt(notes) }] }],
-      systemInstruction: {
-        parts: [{ text: 'You are an expert study guide creator. Output ONLY the condensed cheat-sheet — no introductions, no commentary, no markdown code blocks.' }],
-      },
-      generationConfig: { maxOutputTokens: 32768 },  // was 8192 — reviewers for long docs need more room
+      generationConfig: { maxOutputTokens: 65536 },
     };
-    return call(body);
+    return callClientSide(body);
   };
 
   const generateExam = async (notes: string, topic: string): Promise<string> => {
+    const prompt = `Generate 10 exam questions about "${topic}" based on these notes:\n\n${notes}\n\nFormat as numbered list with answers at the end.`;
     const body: AIBody = {
-      contents: [{ role: 'user', parts: [{ text: `Topic: ${topic}\n\nNotes:\n${notes}` }] }],
-      systemInstruction: {
-        parts: [{ text: 'You are an expert examiner. Generate a set of challenging but fair exam questions based on the provided notes and topic. Provide multiple-choice and short-answer questions.' }],
-      },
-      generationConfig: { maxOutputTokens: 16384 },
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 8192 },
     };
-    return call(body);
+    return callClientSide(body);
   };
 
   return {
@@ -84,7 +114,7 @@ export function useGemini() {
     generateExam,
     isLoading,
     error,
-    retryStatus,
     isConfigured,
+    retryStatus,
   };
 }

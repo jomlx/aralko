@@ -3,11 +3,12 @@ import type { Activity } from '../../types';
 import { Loader2, X, ChevronDown, Share2 } from 'lucide-react';
 import { FlashcardsViewer } from './FlashcardsViewer';
 import { QuizViewer } from './QuizViewer';
+import { TestModeViewer } from './TestModeViewer';
+import { ErrorBoundary } from './ErrorBoundary';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { useGemini } from '../../hooks/useGemini';
-import { getQuizPromptFromFlashcards } from '../../prompts/quizPrompt';
-import { parseAIJson } from '../../lib/parseAIJson';
 import { useStudyGroups } from '../../hooks/useStudyGroups';
+import { generateWithBackend } from '../../lib/apiClient';
+import { getPersonalGeminiKey } from '../../lib/aiCall';
 
 function ShareActivityButton({ activityId }: { activityId: number }) {
   const { groups, shareActivity } = useStudyGroups();
@@ -74,9 +75,10 @@ export function LearnTab({
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [quizCooldown, setQuizCooldown] = useState(false);
   const [quizError, setQuizError] = useState<string | null>(null);
+  const [isGeneratingTest, setIsGeneratingTest] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
 
   const activeActivity = activities.find((a) => a.id === selectedActivity) || activities[0];
-  const gemini = useGemini() || { generateReviewer: async () => '', sendChat: async () => '' };
 
   // Reset test mode when switching activity
   useEffect(() => {
@@ -98,58 +100,28 @@ export function LearnTab({
   }, [isTestMode]);
 
   const handleGenerateQuizFromFlashcards = async () => {
-    const cards = activeActivity?.techniqueData;
-    
-    // LOGGING (a): What 'flashcards' actually contained when it failed
-    console.log('[Quiz Generation] Starting. Original flashcards data type:', typeof cards, 'IsArray:', Array.isArray(cards), 'Value:', cards);
-
-    if (!cards) return;
-    
-    // Explicit array validation to prevent .map() crashes
-    if (!Array.isArray(cards)) {
-      console.error('[Quiz Generation] Data error: expected techniqueData to be an array, but received:', cards);
-      setQuizError('Could not read flashcard data. Please try regenerating your flashcards first.');
-      return;
-    }
-    
-    if (cards.length === 0) return;
     if (quizCooldown || isGeneratingQuiz) return;
 
     setQuizError(null);
     setQuizCooldown(true);
     setTimeout(() => setQuizCooldown(false), 3000);
 
-    // Clamp to 80 cards max to avoid token overflow on large decks
-    const MAX_CARDS = 80;
-    const clampedCards = cards.length > MAX_CARDS ? cards.slice(0, MAX_CARDS) : cards;
-
     setIsGeneratingQuiz(true);
     try {
-      const prompt = getQuizPromptFromFlashcards(clampedCards);
-      // @ts-ignore
-      const response = await gemini.sendChat(
-        [{ id: '1', role: 'user', content: prompt, timestamp: 0 }],
-        'You are an expert quiz creator. Return ONLY valid JSON with no markdown formatting.'
-      );
-      const questions = parseAIJson<any[]>(response, 'quiz', 'array');
-      const validQuestions = Array.isArray(questions) ? questions : [];
+      const personalKey = getPersonalGeminiKey();
+      const { cachedData: qData } = await generateWithBackend(activeActivity.notes, ['quiz'], personalKey);
+      const validQuestions = Array.isArray(qData?.quiz_result) ? qData.quiz_result : [];
       
-      if (validQuestions.length > 0) {
-        // SAFEGUARD (b): Explicitly confirm we are ONLY updating quizData, and techniqueData is explicitly preserved
-        const updatePayload: Partial<Activity> = { 
-          quizData: validQuestions,
-          techniqueData: activeActivity.techniqueData // explicitly re-assign existing flashcards to prevent accidental wipe
-        };
-        
-        onUpdateActivity(activeActivity.id, updatePayload);
+      if (Array.isArray(validQuestions) && validQuestions.length > 0) {
+        // Safe-guard: explicitly merge if needed, though edge function already updates the DB!
+        // But since we have local state in 'activities' hook, we should update local state too.
+        onUpdateActivity(activeActivity.id, { quizData: validQuestions });
       } else {
-        console.warn('[Quiz Generation] AI returned empty or invalid quiz questions.');
         setQuizError('Could not generate quiz questions. Please try again.');
       }
     } catch (e: any) {
-      console.error('Quiz generation error:', e);
-      // FAILURE PATH: Do NOT call onUpdateActivity. Wipes/blanks cannot happen here.
-      setQuizError('Something went wrong while generating the quiz. Please try again.');
+      console.error('Quiz generation error via Queue:', e);
+      setQuizError(e.message || 'Something went wrong while generating the quiz. Please try again.');
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -165,12 +137,72 @@ export function LearnTab({
     }
   }, [activeActivity, onUpdateActivity]);
 
+  const handleGenerateTestQuestions = async (timeLimitSeconds: number) => {
+    if (isGeneratingTest) return;
+    setTestError(null);
+    setIsGeneratingTest(true);
+    try {
+      const personalKey = getPersonalGeminiKey();
+      const { cachedData: tData } = await generateWithBackend(activeActivity.notes, ['test'], personalKey);
+      const questions = Array.isArray(tData?.test_result) ? tData.test_result : [];
+      
+      const validQuestions = Array.isArray(questions)
+        ? questions.filter(
+            (q) =>
+              q.question &&
+              (q.answer_type === 'single' || q.answer_type === 'multiple') &&
+              Array.isArray(q.options) &&
+              Array.isArray(q.correct_options) &&
+              q.correct_options.length >= 1
+          )
+        : [];
+
+      if (validQuestions.length > 0) {
+        // Enforce the time cap locally by slicing the valid questions
+        const cap = timeLimitSeconds === 300 ? 8 : timeLimitSeconds === 600 ? 13 : 20;
+        const clampedQuestions = validQuestions.length > cap ? validQuestions.slice(0, cap) : validQuestions;
+
+        onUpdateActivity(activeActivity.id, { testData: clampedQuestions });
+      } else {
+        setTestError('AI returned no valid questions. Please try again.');
+      }
+    } catch (e: any) {
+      console.error('Test generation error via Queue:', e);
+      setTestError(e.message || 'Something went wrong generating the test. Please try again.');
+    } finally {
+      setIsGeneratingTest(false);
+    }
+  };
+
   if (!activeActivity) return null;
 
   const isFlashcardTechnique = !!activeActivity.technique?.toLowerCase().includes('flashcard');
   const isQuizTechnique = activeActivity.technique?.toLowerCase() === 'quiz';
+  const isTestModeTechnique = activeActivity.technique?.toLowerCase() === 'test mode';
 
-  // ── On-demand quiz generation ──
+  const headerControls = (
+    <div className="flex items-center gap-3">
+      <ShareActivityButton activityId={activeActivity.id} />
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex items-center gap-2 bg-surface border border-token text-secondary text-sm font-medium px-4 py-2 rounded-xl outline-none cursor-pointer hover:bg-white/[0.04] hover:text-primary transition-colors shadow-sm">
+          {activeActivity.technique || 'Study Notes'}
+          <ChevronDown size={16} className="opacity-70" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          {['Study Notes', 'Flashcards', 'Quiz', 'Test Mode', 'Feynman Technique', 'Active Recall', 'Spaced Repetition', 'Interleaving'].map((tech) => (
+            <DropdownMenuItem 
+              key={tech} 
+              onClick={() => onUpdateActivity(activeActivity.id, { technique: tech === 'Study Notes' ? undefined : tech })}
+            >
+              {tech === 'Test Mode' ? '?? ' : ''}{tech}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+
+  // â”€â”€ On-demand quiz generation â”€â”€
   // When the user switches to Quiz tab for the first time, auto-generate if there's no quiz yet.
   useEffect(() => {
     if (!isQuizTechnique) return;
@@ -192,7 +224,7 @@ export function LearnTab({
             {/* Left: Flashcard or notes */}
             <div className="flex-1 flex flex-col min-h-[520px] transition-all duration-300 min-w-0">
               {/* Header */}
-              <div className="mb-4 w-full flex items-start justify-between">
+              <div className={(isTestModeTechnique && isTestMode) ? "hidden" : "mb-4 w-full flex items-start justify-between"}>
                 <div>
                   <h2 className="text-xl font-semibold text-primary">Learn</h2>
                   <p className="mt-1 text-sm text-muted">
@@ -202,33 +234,16 @@ export function LearnTab({
                 </div>
 
                 {/* Right controls */}
-                <div className="flex items-center gap-3">
-                  <ShareActivityButton activityId={activeActivity.id} />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="flex items-center gap-2 bg-surface border border-token text-secondary text-sm font-medium px-4 py-2 rounded-xl outline-none cursor-pointer hover:bg-white/[0.04] hover:text-primary transition-colors shadow-sm">
-                      {activeActivity.technique || 'Study Notes'}
-                      <ChevronDown size={16} className="opacity-70" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      {['Study Notes', 'Flashcards', 'Quiz', 'Feynman Technique', 'Active Recall', 'Spaced Repetition', 'Interleaving'].map((tech) => (
-                        <DropdownMenuItem 
-                          key={tech} 
-                          onClick={() => onUpdateActivity(activeActivity.id, { technique: tech === 'Study Notes' ? undefined : tech })}
-                        >
-                          {tech}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                {headerControls}
               </div>
 
-              {/* Content area — always render all three, show/hide via CSS to preserve state */}
+              {/* Content area â€” always render all three, show/hide via CSS to preserve state */}
 
               {/* FLASHCARDS */}
               <div className={isFlashcardTechnique ? "flex-1 relative flex flex-col min-h-0" : "hidden"}>
                 {activeActivity.techniqueData && activeActivity.techniqueData.length > 0 ? (
                   <FlashcardsViewer
+                    key={`flashcard-${activeActivity.id}`}
                     cards={activeActivity.techniqueData}
                     onFlagForReview={handleFlagForReview}
                     reviewedCards={activeActivity.reviewedCards || []}
@@ -258,11 +273,12 @@ export function LearnTab({
                 {quizError && !isGeneratingQuiz && (
                   <div className="mb-3 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                     <span className="text-sm text-red-300">{quizError}</span>
-                    <button onClick={() => setQuizError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">×</button>
+                    <button onClick={() => setQuizError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">Ã—</button>
                   </div>
                 )}
                 {activeActivity.quizData && activeActivity.quizData.length > 0 ? (
                   <QuizViewer
+                    key={`quiz-${activeActivity.id}`}
                     questions={activeActivity.quizData}
                     onRegenerateQuiz={handleGenerateQuizFromFlashcards}
                     isRegenerating={isGeneratingQuiz}
@@ -282,8 +298,28 @@ export function LearnTab({
                 )}
               </div>
 
+              {/* TEST MODE */}
+              <div className={isTestModeTechnique ? "flex-1 flex flex-col min-h-0" : "hidden"}>
+                <ErrorBoundary onReset={() => onUpdateActivity(activeActivity.id, { technique: 'Flashcards' })}>
+                  <TestModeViewer
+                  key={`test-${activeActivity.id}`}
+                  activityName={activeActivity.name}
+                  questions={activeActivity.testData ?? []}
+                  totalFlashcards={activeActivity.techniqueData?.length || 0}
+                  isGenerating={isGeneratingTest}
+                  generateError={testError}
+                  onGenerateQuestions={handleGenerateTestQuestions}
+                  onExit={() => onUpdateActivity(activeActivity.id, { technique: 'Flashcards' })}
+                  onTestStateChange={(isActive) => {
+                    if (isActive) onEnterTestMode();
+                    else onExitTestMode();
+                  }}
+                />
+                </ErrorBoundary>
+              </div>
+
               {/* STUDY NOTES / other techniques */}
-              <div className={(!isFlashcardTechnique && !isQuizTechnique) ? "flex-1 flex flex-col min-h-0" : "hidden"}>
+              <div className={(!isFlashcardTechnique && !isQuizTechnique && !isTestModeTechnique) ? "flex-1 flex flex-col min-h-0" : "hidden"}>
                 <textarea
                   value={activeActivity.notes}
                   onChange={(e) => onUpdateActivity(activeActivity.id, { notes: e.target.value })}
@@ -297,8 +333,8 @@ export function LearnTab({
         </div>
       </div>
 
-      {/* ── Focus Test Mode Overlay ── */}
-      {renderOverlay && (
+      {/* â”€â”€ Focus Test Mode Overlay â”€â”€ */}
+      {renderOverlay && isFlashcardTechnique && (
         <div
           className={`fixed inset-0 z-50 bg-app flex flex-col transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
             overlayVisible ? 'opacity-100' : 'opacity-0'
@@ -345,3 +381,4 @@ export function LearnTab({
     </>
   );
 }
+

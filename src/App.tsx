@@ -206,9 +206,10 @@ function AppContent() {
   }, []);
 
   const handleActivityAdded = (newActivity: Activity) => {
-    // addActivity is fire-and-forget — returns tempId immediately, syncs DB in background
-    addActivity(newActivity).then(newId => {
+    // addActivity syncs DB in background and returns the real ID
+    return addActivity(newActivity).then(newId => {
       if (newId) setSelectedActivityId(newId);
+      return newId;
     });
   };
 
@@ -240,14 +241,14 @@ function AppContent() {
     >
       {/* Header */}
       <div className="flex-shrink-0 h-[60px]">
-        <Header activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} />
+        <Header activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} disabled={isTestMode} />
       </div>
       
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
         <div
-          className="flex-shrink-0 overflow-hidden"
-          style={{ width: sidebarWidth }}
+          className={`flex-shrink-0 overflow-hidden transition-all duration-300 ${isTestMode ? 'border-r-0' : 'border-r border-token'}`}
+          style={{ width: isTestMode ? 0 : sidebarWidth }}
         >
           <Sidebar width={sidebarWidth} onResizeStart={() => setIsDragging(true)}>
             <StudyTracker 

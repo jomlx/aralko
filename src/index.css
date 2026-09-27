@@ -9,6 +9,7 @@
    Dark mode is the default (:root). Light mode overrides via :root.light.
    ========================================================================== */
 :root {
+  --gutter: 16px;
   /* Backgrounds */
   --bg-app:     #202531;
   --bg-surface: #2B3140;
@@ -68,6 +69,7 @@
    GLOBAL RESET & UTILITIES
    ========================================================================== */
 :root {
+  --gutter: 16px;
   background-color: var(--bg-app);
   color: var(--text-primary);
 }
@@ -198,6 +200,8 @@ button, input, textarea {
 :root.light .text-white\/50  { color: rgba(15, 23, 42, 0.5) !important; }
 
 /* Accent buttons must stay white text in light mode */
+:root.light .bg-accent,
+:root.light button.bg-accent,
 :root.light button.bg-\[var\(--accent\)\],
 :root.light .bg-\[var\(--accent\)\] { color: white !important; }
 

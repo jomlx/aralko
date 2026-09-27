@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, Download, ChevronDown, Trash2, RotateCcw, MessageSquare, MessageSquareOff } from 'lucide-react';
 import type { Activity } from '../../types';
-import { useGemini } from '../../hooks/useGemini';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
+import { generateWithBackend } from '../../lib/apiClient';
+import { getPersonalGeminiKey } from '../../lib/aiCall';
 import { AIChatPanel } from '../sidebar/AIChatPanel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -28,9 +29,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
   const exportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const gemini = useGemini() || { generateReviewer: async () => '' };
-
-  // ── On-demand reviewer generation ──
+  // â”€â”€ On-demand reviewer generation â”€â”€
   // Automatically generate if the tab is opened for an activity that has notes
   // but hasn't had a reviewer generated yet (reviewerContent is empty).
   useEffect(() => {
@@ -52,14 +51,23 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
     setIsGenerating(true);
     if (fileName) setUploadedFileName(fileName);
     try {
-      // @ts-ignore
-      const res = await gemini.generateReviewer(text);
+      // If there's a file, we should update the notes first so the backend can read it!
+      // But actually ReviewerTab isn't an "Add Activity" tab, it's just updating the current activity.
+      if (fileName && activeActivity) {
+        onUpdateActivity(activeActivity.id, { notes: activeActivity.notes + '\n\n' + text });
+        // Wait a small bit for DB sync
+        await new Promise(r => setTimeout(r, 500));
+      }
+
       if (activeActivity) {
-        onUpdateActivity(activeActivity.id, { reviewerContent: res });
+        const personalKey = getPersonalGeminiKey();
+        const { cachedData } = await generateWithBackend(activeActivity.notes, ['reviewer'], personalKey);
+        const content = typeof cachedData?.reviewer_result === 'string' ? cachedData.reviewer_result : '';
+        onUpdateActivity(activeActivity.id, { reviewerContent: content });
         addXP?.(5, `reviewer-${activeActivity.id}`);
       }
     } catch (e: any) {
-      console.error('Generate Reviewer error:', e);
+      console.error('Generate Reviewer error via Queue:', e);
       setInlineError('Something went wrong while generating the reviewer. Please try again.');
     } finally {
       setIsGenerating(false);
@@ -133,7 +141,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-      {/* Outer padding wrapper — does NOT scroll */}
+      {/* Outer padding wrapper â€” does NOT scroll */}
       <div className="flex-1 min-h-0 flex gap-5 px-8 py-4 overflow-hidden">
 
         {/* Center: Reviewer Content */}
@@ -146,7 +154,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               <div>
                 <h2 className="text-xl font-semibold text-primary">Reviewer</h2>
                 <p className="mt-1 text-sm text-muted">
-                  {activeActivity.name}{activeActivity.subject ? `: ${activeActivity.subject}` : ''} — Upload a file or use activity notes to auto-generate a cheat sheet.
+                  {activeActivity.name}{activeActivity.subject ? `: ${activeActivity.subject}` : ''} â€” Upload a file or use activity notes to auto-generate a cheat sheet.
                 </p>
               </div>
 
@@ -169,7 +177,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                   <BookOpen size={15} className="text-amber-400" />
                   <span className="text-sm font-medium text-primary">Cheat Sheet</span>
                   {uploadedFileName && (
-                    <span className="text-xs text-muted">— {uploadedFileName}</span>
+                    <span className="text-xs text-muted">â€” {uploadedFileName}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -234,12 +242,12 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
           {/* --- END STATIC HEADER --- */}
 
           {/* --- SCROLLING CONTENT --- */}
-          <div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex-1 min-h-0 min-w-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {/* Inline error banner */}
             {inlineError && (
               <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                 <span className="text-sm text-red-300">{inlineError}</span>
-                <button onClick={() => setInlineError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">×</button>
+                <button onClick={() => setInlineError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">Ã—</button>
               </div>
             )}
 
@@ -289,10 +297,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
             {isGenerating && (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
                 <Loader2 size={40} className="animate-spin text-accent" />
-                <p className="text-sm font-medium text-primary">Generating your cheat sheet...</p>
-                {(gemini as any).retryStatus && (
-                  <p className="text-xs text-amber-400">{(gemini as any).retryStatus}</p>
-                )}
+                <p className="text-sm font-medium text-primary">Generating your cheat sheet (this may take a bit via Queue)...</p>
                 {uploadedFileName && (
                   <p className="text-xs text-muted">{uploadedFileName}</p>
                 )}
@@ -317,7 +322,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-secondary leading-relaxed pb-4">
+                  <div className="text-sm text-secondary leading-relaxed pb-4 min-w-0 w-full overflow-x-hidden">
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -332,8 +337,8 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         p: ({node, ...props}) => <p className="mb-4" {...props} />,
                         strong: ({node, ...props}) => <strong className="font-semibold text-primary" {...props} />,
                         code: ({node, inline, ...props}: any) => inline 
-                          ? <code className="bg-app border border-token text-accent px-1.5 py-0.5 rounded text-xs" {...props} />
-                          : <pre className="bg-app border border-token p-4 rounded-xl overflow-x-auto my-4 text-xs"><code {...props} /></pre>,
+                          ? <code className="bg-app border border-token text-accent px-1.5 py-0.5 rounded text-xs break-words" {...props} />
+                          : <pre className="bg-app border border-token p-4 rounded-xl overflow-x-auto my-4 text-xs max-w-full"><code {...props} /></pre>,
                         blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-accent pl-4 my-4 italic text-secondary bg-white/[0.02] py-2 pr-4 rounded-r-xl" {...props} />
                       }}
                     >
@@ -361,4 +366,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
     </div>
   );
 }
+
+
+
 

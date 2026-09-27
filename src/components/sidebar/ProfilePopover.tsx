@@ -90,6 +90,7 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
 
     const logo = await loadImg(`${window.location.origin}/logo.png`);
 
+    // Logo icon
     // "Aralko" + user email
     if (logo) {
       ctx.save();
@@ -105,6 +106,7 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
       ctx.fill();
     }
 
+    // "Aralko" + username
     ctx.fillStyle = textPri;
     ctx.font = 'bold 13px system-ui, sans-serif';
     ctx.fillText('Aralko', x0 + 34, y0 + 11);
@@ -117,6 +119,7 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
     ctx.font = '10px system-ui, sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText('Study Stats', W - pad - 16, y0 + 18);
+    ctx.textAlign = 'left';
     
     // Centered Avatar & Name
     const midX = W / 2;
