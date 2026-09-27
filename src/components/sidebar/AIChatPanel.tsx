@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, UserCog, ChevronDown, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
+import { Sparkles, UserCog, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
 import type { ChatMessage, Activity } from '../../types';
 import { useGemini } from '../../hooks/useGemini';
 import { useChat } from '../../hooks/useChat';
@@ -22,6 +22,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
   const [activeView, setActiveView] = useState<'chat' | 'settings'>('chat');
   const [isLoading, setIsLoading] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [personaMenuOpen, setPersonaMenuOpen] = useState(false);
 
   const [systemPrompt, setSystemPrompt] = useState(() =>
     localStorage.getItem('aralko-system-prompt') || 'You are a helpful study assistant.'
@@ -107,49 +108,64 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
   return (
     <div className="rounded-2xl border border-token bg-surface flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-4 mb-1">
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="text-success">
             <Sparkles size={16} />
           </div>
-          <h2 className="text-primary font-medium text-xs">Aralmo Assistant</h2>
+          <h2 className="text-primary font-medium text-xs">Aralko Assistant</h2>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Clear chat button — only visible when there are messages */}
-          {activeView === 'chat' && messages.length > 0 && (
-            <button
-              onClick={handleClearRequest}
-              title={confirmClear ? 'Click again to confirm clear' : 'Clear chat history'}
-              className={`flex items-center gap-1 text-xs transition-colors px-2 py-1 rounded-lg ${
-                confirmClear
-                  ? 'text-red-400 bg-red-400/10 hover:bg-red-400/20'
-                  : 'text-muted hover:text-red-400 hover:bg-white/[0.05]'
-              }`}
-            >
-              <Trash2 size={12} />
-              {confirmClear && <span>Confirm?</span>}
-            </button>
-          )}
-
-          {/* Persona / settings toggle */}
+        {/* Persona icon-only button with dropdown */}
+        <div className="relative">
           <button
-            onClick={() => setActiveView(prev => prev === 'chat' ? 'settings' : 'chat')}
-            className="flex items-center gap-1.5 text-xs text-secondary hover:text-primary transition-colors"
+            onClick={() => setPersonaMenuOpen(prev => !prev)}
+            title="Assistant settings"
+            className={`flex items-center justify-center w-7 h-7 rounded-lg transition-colors ${
+              personaMenuOpen
+                ? 'text-primary bg-white/[0.08]'
+                : 'text-secondary hover:text-primary hover:bg-white/[0.05]'
+            }`}
           >
-            <UserCog size={13} />
-            Persona
-            <ChevronDown size={11} className={`transition-transform ${activeView === 'settings' ? 'rotate-180' : ''}`} />
+            <UserCog size={16} />
           </button>
+
+          {/* Dropdown menu */}
+          {personaMenuOpen && (
+            <div className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-token bg-surface shadow-lg z-50 py-1 overflow-hidden">
+              <button
+                onClick={() => { setActiveView(prev => prev === 'chat' ? 'settings' : 'chat'); setPersonaMenuOpen(false); }}
+                className="w-full text-left px-3 py-2 text-xs text-secondary hover:text-primary hover:bg-white/[0.05] flex items-center gap-2 transition-colors"
+              >
+                <UserCog size={13} />
+                {activeView === 'settings' ? 'Back to chat' : 'AI Persona settings'}
+              </button>
+              {messages.length > 0 && (
+                <button
+                  onClick={() => { handleClearRequest(); if (confirmClear) setPersonaMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${
+                    confirmClear
+                      ? 'text-red-400 bg-red-400/10 hover:bg-red-400/20'
+                      : 'text-secondary hover:text-red-400 hover:bg-white/[0.05]'
+                  }`}
+                >
+                  <Trash2 size={13} />
+                  {confirmClear ? 'Click again to confirm' : 'Clear chat history'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Title + subtitle — always visible, matches reference header */}
+      {/* Title + subtitle */}
       <div className="flex-shrink-0 px-4 pb-3">
         <h3 className="text-primary font-semibold text-sm leading-tight">
           {activeActivity?.name ?? 'New Chat'}
         </h3>
-        <p className="text-muted text-xs mt-0.5">How can I help you today?</p>
+        <p className="text-muted text-xs mt-0.5">
+          {activeActivity?.subject ?? 'How can I help you today?'}
+        </p>
       </div>
 
       {activeView === 'settings' ? (
@@ -178,7 +194,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
           {/* Messages */}
           <MessageScrollerProvider>
             <MessageScroller className="flex-1 min-h-0 relative">
-              <MessageScrollerViewport className="[scrollbar-width:thin] [scrollbar-color:theme(colors.white/10)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-track]:bg-transparent">
+              <MessageScrollerViewport className="[scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/[0.12] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:mr-0">
                 <MessageScrollerContent className="space-y-6 py-4">
                   {historyLoading ? (
                     <div className="flex items-center justify-center mt-10 gap-2 text-muted text-xs">
