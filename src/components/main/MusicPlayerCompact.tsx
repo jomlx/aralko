@@ -289,7 +289,7 @@ export function MusicPlayerCompact() {
   // ─── Spotify Connected Mode ───
   if (isAuthenticated && accessToken) {
     return (
-      <div className="w-full h-full rounded-2xl border border-token bg-surface p-3 flex flex-col relative shadow-lg shadow-black/20">
+      <div className="w-full h-full rounded-2xl border border-token bg-surface p-3 flex flex-col relative">
         {/* Tab bar */}
         <div className="flex gap-1 mb-2 shrink-0 bg-app rounded-xl p-1">
           {([
@@ -328,7 +328,7 @@ export function MusicPlayerCompact() {
 
   // ─── YouTube / Default Mode ───
   return (
-    <div className="w-full h-full rounded-2xl border border-token bg-surface p-3 flex flex-col relative overflow-hidden shadow-lg shadow-black/20">
+    <div className="w-full h-full rounded-2xl border border-token bg-surface p-3 flex flex-col relative overflow-hidden">
       <div className="h-full flex flex-col">
         {/* Album art */}
         <div className="flex-1 min-h-0 rounded-xl bg-app relative flex items-center justify-center overflow-hidden mb-2 group">
