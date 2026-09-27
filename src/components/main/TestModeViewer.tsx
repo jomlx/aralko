@@ -413,17 +413,17 @@ function TestScreen({
                 <button
                   key={idx}
                   onClick={() => toggleOption(option)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm transition-all border ${
-                    isSelected
-                      ? 'border-accent bg-accent-muted font-semibold text-primary'
-                      : 'border-token bg-white/[0.03] font-medium text-secondary hover:bg-white/[0.07] hover:border-accent/20 cursor-pointer'
-                  }`}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-medium transition-all border"
+                  style={isSelected
+                    ? { backgroundColor: 'var(--accent)', borderColor: 'var(--accent)', color: '#ffffff', fontWeight: 600 }
+                    : { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'var(--border)', color: 'var(--text-secondary)', cursor: 'pointer' }
+                  }
                 >
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center border text-xs font-bold transition-colors ${
                       isMulti
-                        ? `rounded-md ${isSelected ? 'bg-accent border-accent' : 'border-token'}`
-                        : `rounded-full ${isSelected ? 'bg-accent border-accent' : 'border-token text-muted'}`
+                        ? `rounded-md ${isSelected ? 'bg-white/30 border-white/50' : 'border-token'}`
+                        : `rounded-full ${isSelected ? 'bg-white/30 border-white/50' : 'border-token text-muted'}`
                     }`}
                   >
                     {isMulti
