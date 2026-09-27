@@ -124,32 +124,32 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
         </div>
 
         {/* Right: Trash icon + Persona icon */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5">
           {/* Clear chat — always rendered but only active when messages exist */}
           <button
             onClick={handleClearRequest}
             disabled={messages.length === 0}
             title={confirmClear ? 'Click again to confirm' : 'Clear chat history'}
-            className={`h-[42px] w-[42px] rounded-full border border-token flex items-center justify-center transition-all ${
+            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
               messages.length === 0
-                ? 'opacity-40 cursor-not-allowed text-muted bg-transparent'
+                ? 'opacity-30 cursor-not-allowed text-muted'
                 : confirmClear
                   ? 'text-red-400 bg-red-400/10 hover:bg-red-400/20'
-                  : 'text-secondary bg-white/[0.05] hover:bg-white/[0.1] hover:scale-105 hover:text-red-400'
+                  : 'text-secondary hover:text-red-400 hover:bg-white/[0.05]'
             }`}
           >
-            <Trash2 size={18} />
+            <Trash2 size={16} />
           </button>
 
           {/* Persona icon with Dialog for settings */}
           <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DialogTrigger
               title="AI Persona settings"
-              className={`h-[42px] w-[42px] rounded-full border border-token flex items-center justify-center transition-all text-secondary bg-white/[0.05] hover:bg-white/[0.1] hover:scale-105 hover:text-primary ${
-                isSettingsOpen ? 'bg-white/[0.1] text-primary scale-105' : ''
+              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all text-secondary hover:text-primary hover:bg-white/[0.05] ${
+                isSettingsOpen ? 'bg-white/[0.08] text-primary' : ''
               }`}
             >
-              <UserCog size={18} />
+              <UserCog size={16} />
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] bg-app border-token text-primary">
               <DialogHeader>

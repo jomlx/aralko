@@ -217,7 +217,7 @@ export function LearnTab({
     <>
       {/* Main scrollable content */}
       <div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <div className="px-8 pt-4 pb-8">
+        <div className="px-[var(--gutter)] pt-4 pb-8">
 
           {/* Flex layout for sliding sidebar */}
           <div className="flex gap-5 relative overflow-hidden">
@@ -341,7 +341,7 @@ export function LearnTab({
           }`}
         >
           {/* Top bar */}
-          <div className="flex-shrink-0 flex items-center justify-between px-8 py-4 border-b border-token">
+          <div className="flex-shrink-0 flex items-center justify-between px-[var(--gutter)] py-4 border-b border-token">
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-primary">{activeActivity.name}</span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent-muted px-2.5 py-1 text-2xs font-semibold tracking-wide text-accent uppercase">
