@@ -11,6 +11,13 @@ import {
   MessageScrollerItem,
   MessageScrollerButton,
 } from '../ui/message-scroller';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../ui/dialog';
 
 interface AIChatPanelProps {
   activeActivity?: Activity;
@@ -19,10 +26,9 @@ interface AIChatPanelProps {
 
 export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
   const [input, setInput] = useState('');
-  const [activeView, setActiveView] = useState<'chat' | 'settings'>('chat');
   const [isLoading, setIsLoading] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
-  const [personaMenuOpen, setPersonaMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const [systemPrompt, setSystemPrompt] = useState(() =>
     localStorage.getItem('aralko-system-prompt') || 'You are a helpful study assistant.'
@@ -102,7 +108,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
 
   const saveSettings = () => {
     localStorage.setItem('aralko-system-prompt', systemPrompt);
-    setActiveView('chat');
+    setIsSettingsOpen(false);
   };
 
   return (
@@ -118,77 +124,64 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
         </div>
 
         {/* Right: Trash icon + Persona icon */}
-        <div className="flex items-center gap-1 mt-0.5">
+        <div className="flex items-center gap-2">
           {/* Clear chat — always rendered but only active when messages exist */}
           <button
             onClick={handleClearRequest}
             disabled={messages.length === 0}
             title={confirmClear ? 'Click again to confirm' : 'Clear chat history'}
-            className={`flex items-center justify-center w-7 h-7 rounded-lg transition-colors ${
+            className={`h-[42px] w-[42px] rounded-full border border-token flex items-center justify-center transition-all ${
               messages.length === 0
-                ? 'text-muted/30 cursor-not-allowed'
+                ? 'opacity-40 cursor-not-allowed text-muted bg-transparent'
                 : confirmClear
                   ? 'text-red-400 bg-red-400/10 hover:bg-red-400/20'
-                  : 'text-secondary hover:text-red-400 hover:bg-white/[0.05]'
+                  : 'text-secondary bg-white/[0.05] hover:bg-white/[0.1] hover:scale-105 hover:text-red-400'
             }`}
           >
-            <Trash2 size={14} />
+            <Trash2 size={18} />
           </button>
 
-          {/* Persona icon with dropdown — settings only */}
-          <div className="relative">
-            <button
-              onClick={() => setPersonaMenuOpen(prev => !prev)}
-              title="Assistant settings"
-              className={`flex items-center justify-center w-7 h-7 rounded-lg transition-colors ${
-                personaMenuOpen
-                  ? 'text-primary bg-white/[0.08]'
-                  : 'text-secondary hover:text-primary hover:bg-white/[0.05]'
+          {/* Persona icon with Dialog for settings */}
+          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DialogTrigger
+              title="AI Persona settings"
+              className={`h-[42px] w-[42px] rounded-full border border-token flex items-center justify-center transition-all text-secondary bg-white/[0.05] hover:bg-white/[0.1] hover:scale-105 hover:text-primary ${
+                isSettingsOpen ? 'bg-white/[0.1] text-primary scale-105' : ''
               }`}
             >
-              <UserCog size={14} />
-            </button>
-
-            {personaMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-token bg-surface shadow-lg z-50 py-1 overflow-hidden">
+              <UserCog size={18} />
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px] bg-app border-token text-primary">
+              <DialogHeader>
+                <DialogTitle>AI Persona Settings</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col mt-4">
+                <label className="text-sm text-secondary mb-2 block">System Prompt</label>
+                <textarea
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  className="w-full bg-surface border border-token rounded-lg py-3 px-4 text-sm text-primary h-32 mb-4 focus:outline-none focus:border-accent/50 resize-none"
+                />
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <button onClick={() => setSystemPrompt('You are a strict study tutor. Point out mistakes clearly.')} className="text-xs px-3 py-1.5 bg-surface border border-token rounded-full text-secondary hover:text-primary transition-colors">Strict tutor</button>
+                  <button onClick={() => setSystemPrompt('You are a friendly explainer. Use simple analogies.')} className="text-xs px-3 py-1.5 bg-surface border border-token rounded-full text-secondary hover:text-primary transition-colors">Friendly explainer</button>
+                  <button onClick={() => setSystemPrompt('You are a quiz master. Always ask follow-up questions.')} className="text-xs px-3 py-1.5 bg-surface border border-token rounded-full text-secondary hover:text-primary transition-colors">Quiz master</button>
+                </div>
                 <button
-                  onClick={() => { setActiveView(prev => prev === 'chat' ? 'settings' : 'chat'); setPersonaMenuOpen(false); }}
-                  className="w-full text-left px-3 py-2 text-xs text-secondary hover:text-primary hover:bg-white/[0.05] flex items-center gap-2 transition-colors"
+                  onClick={saveSettings}
+                  className="w-full bg-accent hover:bg-accent/90 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
                 >
-                  <UserCog size={13} />
-                  {activeView === 'settings' ? 'Back to chat' : 'AI Persona settings'}
+                  Save Settings
                 </button>
               </div>
-            )}
-          </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
 
-      {activeView === 'settings' ? (
-        <div className="flex-1 flex flex-col p-4 mx-3 mb-3 bg-app rounded-xl border border-token">
-          <h3 className="text-primary text-sm font-medium mb-3">AI Settings</h3>
-          <label className="text-xs text-secondary mb-1 block">System Prompt</label>
-          <textarea
-            value={systemPrompt}
-            onChange={(e) => setSystemPrompt(e.target.value)}
-            className="w-full bg-surface border border-token rounded-lg py-2 px-3 text-sm text-primary h-24 mb-3 focus:outline-none focus:border-accent/50 resize-none"
-          />
-          <div className="flex flex-wrap gap-2 mb-4">
-            <button onClick={() => setSystemPrompt('You are a strict study tutor. Point out mistakes clearly.')} className="text-xs px-2 py-1 bg-surface border border-token rounded-full text-secondary hover:text-primary">Strict tutor</button>
-            <button onClick={() => setSystemPrompt('You are a friendly explainer. Use simple analogies.')} className="text-xs px-2 py-1 bg-surface border border-token rounded-full text-secondary hover:text-primary">Friendly explainer</button>
-            <button onClick={() => setSystemPrompt('You are a quiz master. Always ask follow-up questions.')} className="text-xs px-2 py-1 bg-surface border border-token rounded-full text-secondary hover:text-primary">Quiz master</button>
-          </div>
-          <button
-            onClick={saveSettings}
-            className="mt-auto w-full bg-white/[0.05] hover:bg-white/[0.1] text-primary py-2 rounded-lg text-sm transition-colors"
-          >
-            Save Settings
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col flex-1 min-h-0 px-4 pb-4">
-          {/* Messages */}
+      <div className="flex flex-col flex-1 min-h-0 px-4 pb-4">
+        {/* Messages */}
           <MessageScrollerProvider>
             <MessageScroller className="flex-1 min-h-0 relative">
               <MessageScrollerViewport className="[scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/[0.12] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:mr-0">
@@ -262,7 +255,6 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
             </button>
           </div>
         </div>
-      )}
     </div>
   );
 }
