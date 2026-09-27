@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, MessageSquare, Send, Settings2, ChevronDown, Trash2, Loader2 } from 'lucide-react';
+import { Sparkles, Settings2, ChevronDown, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
 import type { ChatMessage, Activity } from '../../types';
 import { useGemini } from '../../hooks/useGemini';
 import { useChat } from '../../hooks/useChat';
@@ -214,29 +214,32 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
                   )}
                 </MessageScrollerContent>
               </MessageScrollerViewport>
-              <MessageScrollerButton className="!absolute !right-2 !left-auto !translate-x-0 !bottom-2 !rounded-full !w-8 !h-8 !border-token !bg-app/90 !text-primary shadow-md hover:!bg-surface backdrop-blur-sm" />
+              <MessageScrollerButton className="!absolute !left-1/2 !-translate-x-1/2 !bottom-2 !rounded-full !w-8 !h-8 !border-token !bg-app/90 !text-primary shadow-md hover:!bg-surface backdrop-blur-sm" />
             </MessageScroller>
           </MessageScrollerProvider>
 
           {/* Input */}
-          <div className="flex-shrink-0 pt-3 mt-2 border-t border-token flex gap-2">
-            <div className="flex-1 relative">
-              <MessageSquare size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Ask something..."
-                className="w-full bg-app border border-token rounded-lg py-2 pl-9 pr-3 text-sm text-primary placeholder-slate-500 focus:outline-none focus:border-accent/50"
-              />
-            </div>
+          <div className="flex-shrink-0 mt-2 flex items-center gap-2 bg-app border border-token rounded-[24px] p-1.5 shadow-sm">
+            <button 
+              className="w-8 h-8 flex items-center justify-center flex-shrink-0 rounded-full border border-token text-secondary hover:bg-surface hover:text-primary transition-colors"
+              title="Attach (coming soon)"
+            >
+              <Plus size={16} />
+            </button>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="Ask something..."
+              className="flex-1 bg-transparent border-none py-1.5 px-2 text-sm text-primary placeholder-slate-500 focus:outline-none focus:ring-0"
+            />
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="w-9 h-9 flex items-center justify-center flex-shrink-0 bg-accent hover:bg-accent disabled:opacity-50 text-primary rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center flex-shrink-0 bg-accent hover:bg-accent/90 disabled:opacity-50 text-white rounded-full transition-colors"
             >
-              <Send size={16} />
+              <ArrowUp size={16} strokeWidth={2.5} />
             </button>
           </div>
         </div>
