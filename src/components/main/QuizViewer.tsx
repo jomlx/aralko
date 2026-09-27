@@ -55,7 +55,7 @@ function QuizSummary({
       {/* Per-question Accordion review */}
       <div className="w-full flex flex-col gap-1">
         <p className="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Question Review</p>
-        <Accordion className="w-full flex flex-col gap-2">
+        <Accordion className="w-full rounded-xl border border-token overflow-hidden">
           {activeQuestions.map((q, i) => {
             const isCorrect = results[i] === true;
             const isWrong = results[i] === false;
@@ -63,13 +63,13 @@ function QuizSummary({
               <AccordionItem
                 key={i}
                 value={String(i)}
-                className={`rounded-xl border text-sm not-last:border-b-[inherit] ${
+                className={`border-b border-token last:border-b-0 text-sm ${
                   isCorrect ? 'bg-success-muted border-success/20'
                   : isWrong  ? 'bg-red-500/10 border-red-500/20'
                   : 'bg-white/[0.03] border-token'
                 }`}
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-transparent gap-3 rounded-xl">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-transparent gap-3">
                   <span className="shrink-0">
                     {isCorrect ? <CheckCircle2 size={16} className="text-success" />
                     : isWrong  ? <XCircle size={16} className="text-red-400" />

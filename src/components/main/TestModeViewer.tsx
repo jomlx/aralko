@@ -542,18 +542,18 @@ function ResultsScreen({
           <p className="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">
             Question Review
           </p>
-          <Accordion className="w-full flex flex-col gap-2">
+          <Accordion className="w-full rounded-xl border border-token overflow-hidden">
             {scored.map(({ q, correct, isCorrect, missed, wrong, skipped }, i) => (
               <AccordionItem
                 key={i}
                 value={String(i)}
-                className={`rounded-xl border text-sm not-last:border-b-[inherit] ${
+                className={`border-b border-token last:border-b-0 text-sm ${
                   isCorrect
                     ? 'bg-success-muted border-success/20'
                     : 'bg-red-500/10 border-red-500/20'
                 }`}
               >
-                <AccordionTrigger className="px-4 py-3.5 hover:no-underline hover:bg-transparent gap-3 rounded-xl">
+                <AccordionTrigger className="px-4 py-3.5 hover:no-underline hover:bg-transparent gap-3">
                   <span className="shrink-0">
                     {isCorrect ? (
                       <CheckCircle2 size={16} className="text-success" />
