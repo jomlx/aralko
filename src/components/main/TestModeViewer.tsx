@@ -377,14 +377,12 @@ function TestScreen({
         </button>
       </div>
 
-      {/* Green timer progress bar (only progress indicator) */}
-      <div className="flex-shrink-0 h-1 px-8">
-        <div className="h-full w-full bg-white/[0.05] overflow-hidden">
-          <div
-            className={`h-full transition-all duration-1000 ease-linear ${timerBarColor}`}
-            style={{ width: `${timerPct}%` }}
-          />
-        </div>
+      {/* Green timer progress bar */}
+      <div className="flex-shrink-0 h-0.5 bg-white/[0.06]">
+        <div
+          className={`h-full transition-all duration-1000 ease-linear ${timerBarColor}`}
+          style={{ width: `${timerPct}%` }}
+        />
       </div>
 
       {/* Scrollable question area */}
@@ -442,7 +440,10 @@ function TestScreen({
               <button
                 onClick={() => advance(answers)}
                 disabled={currentAnswer.length === 0}
-                className="flex items-center gap-2 rounded-xl bg-accent hover:bg-violet-700 px-5 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
+                onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = 'var(--accent-hover)'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--accent)'; }}
               >
                 {currentIndex < questions.length - 1 ? 'Confirm Selections' : 'Submit Test'}
                 <ChevronRight size={15} />
