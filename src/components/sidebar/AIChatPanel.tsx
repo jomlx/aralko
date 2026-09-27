@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Settings2, ChevronDown, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
+import { Sparkles, UserCog, ChevronDown, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
 import type { ChatMessage, Activity } from '../../types';
 import { useGemini } from '../../hooks/useGemini';
 import { useChat } from '../../hooks/useChat';
@@ -137,11 +137,19 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
             onClick={() => setActiveView(prev => prev === 'chat' ? 'settings' : 'chat')}
             className="flex items-center gap-1.5 text-xs text-secondary hover:text-primary transition-colors"
           >
-            <Settings2 size={13} />
+            <UserCog size={13} />
             Persona
             <ChevronDown size={11} className={`transition-transform ${activeView === 'settings' ? 'rotate-180' : ''}`} />
           </button>
         </div>
+      </div>
+
+      {/* Title + subtitle — always visible, matches reference header */}
+      <div className="flex-shrink-0 px-4 pb-3">
+        <h3 className="text-primary font-semibold text-sm leading-tight">
+          {activeActivity?.name ?? 'New Chat'}
+        </h3>
+        <p className="text-muted text-xs mt-0.5">How can I help you today?</p>
       </div>
 
       {activeView === 'settings' ? (
@@ -170,7 +178,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
           {/* Messages */}
           <MessageScrollerProvider>
             <MessageScroller className="flex-1 min-h-0 relative">
-              <MessageScrollerViewport className="[&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+              <MessageScrollerViewport className="[scrollbar-width:thin] [scrollbar-color:theme(colors.white/10)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-track]:bg-transparent">
                 <MessageScrollerContent className="space-y-6 py-4">
                   {historyLoading ? (
                     <div className="flex items-center justify-center mt-10 gap-2 text-muted text-xs">
@@ -216,9 +224,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
               </MessageScrollerViewport>
               <MessageScrollerButton className="!absolute !left-1/2 !-translate-x-1/2 !bottom-2 !rounded-full !w-8 !h-8 !border-token !bg-app/90 !text-primary shadow-md hover:!bg-surface backdrop-blur-sm" />
             </MessageScroller>
-          </MessageScrollerProvider>
-
-          {/* Input */}
+          </MessageScrollerProvider>          {/* Input */}
           <div className="flex-shrink-0 mt-2 flex items-center gap-2 bg-app border border-token rounded-[24px] p-1.5 shadow-sm">
             <button 
               className="w-8 h-8 flex items-center justify-center flex-shrink-0 rounded-full border border-token text-secondary hover:bg-surface hover:text-primary transition-colors"
@@ -232,7 +238,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Ask something..."
-              className="flex-1 bg-transparent border-none py-1.5 px-2 text-sm text-primary placeholder-slate-500 focus:outline-none focus:ring-0"
+              className="min-w-0 flex-1 bg-transparent border-none py-1.5 px-2 text-sm text-primary placeholder-slate-500 focus:outline-none focus:ring-0"
             />
             <button
               onClick={handleSend}
