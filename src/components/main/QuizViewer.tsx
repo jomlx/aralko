@@ -1,12 +1,119 @@
 import { useState, useEffect } from 'react';
 import { ChevronRight, CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react';
 import type { QuizQuestion } from '../../types';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 
 interface QuizViewerProps {
   questions: QuizQuestion[];
   onRegenerateQuiz?: () => void;
   isRegenerating?: boolean;
   onQuizComplete?: (score: number, total: number) => void;
+}
+
+function QuizSummary({
+  pct, passed, grade, totalCorrect, activeQuestions, results, onRestart, onRegenerate, isRegenerating,
+}: {
+  pct: number;
+  passed: boolean;
+  grade: string;
+  totalCorrect: number;
+  activeQuestions: QuizQuestion[];
+  results: Record<number, boolean>;
+  onRestart: () => void;
+  onRegenerate?: () => void;
+  isRegenerating?: boolean;
+}) {
+  useEffect(() => {
+    try {
+      const audio = new Audio(passed ? '/sounds/passed.wav' : '/sounds/failed.wav');
+      audio.volume = 0.6;
+      audio.play().catch(() => {});
+    } catch (_) {}
+  }, [passed]);
+
+  return (
+    <div className="w-full max-w-3xl mx-auto flex flex-col items-center gap-6 py-6">
+      {/* Score card */}
+      <div className="w-full bg-surface border border-token rounded-2xl p-8 flex flex-col items-center gap-4 text-center">
+        <p className="text-3xl">{grade}</p>
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-5xl font-bold text-primary">{pct}%</span>
+          <span className="text-sm text-secondary">{totalCorrect} / {activeQuestions.length} correct</span>
+        </div>
+        <div className="w-full h-3 bg-white/[0.05] rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${
+              pct >= 75 ? 'bg-gradient-to-r from-success to-emerald-500'
+              : pct >= 60 ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
+              : 'bg-gradient-to-r from-red-500 to-rose-400'
+            }`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Per-question Accordion review */}
+      <div className="w-full flex flex-col gap-1">
+        <p className="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Question Review</p>
+        <Accordion className="w-full flex flex-col gap-2">
+          {activeQuestions.map((q, i) => {
+            const isCorrect = results[i] === true;
+            const isWrong = results[i] === false;
+            return (
+              <AccordionItem
+                key={i}
+                value={String(i)}
+                className={`rounded-xl border text-sm not-last:border-b-[inherit] ${
+                  isCorrect ? 'bg-success-muted border-success/20'
+                  : isWrong  ? 'bg-red-500/10 border-red-500/20'
+                  : 'bg-white/[0.03] border-token'
+                }`}
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-transparent gap-3 rounded-xl">
+                  <span className="shrink-0">
+                    {isCorrect ? <CheckCircle2 size={16} className="text-success" />
+                    : isWrong  ? <XCircle size={16} className="text-red-400" />
+                    : <span className="w-4 h-4 rounded-full border border-slate-600 inline-block" />}
+                  </span>
+                  <span className="flex-1 text-left text-secondary line-clamp-2">{q.question}</span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-3">
+                  {isWrong && (
+                    <p className="text-2xs text-success">✓ Correct answer: {q.answer}</p>
+                  )}
+                  {isCorrect && (
+                    <p className="text-2xs text-success">✓ {q.answer}</p>
+                  )}
+                  {results[i] === undefined && (
+                    <p className="text-2xs text-muted">Not answered — correct: {q.answer}</p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        <button
+          onClick={onRestart}
+          className="flex items-center gap-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] px-5 py-2.5 text-sm font-medium text-primary transition-colors"
+        >
+          <RotateCcw size={15} /> Retake Quiz
+        </button>
+        {onRegenerate && (
+          <button
+            onClick={onRegenerate}
+            disabled={isRegenerating}
+            className="flex items-center gap-2 rounded-xl bg-accent hover:bg-violet-700 px-5 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+          >
+            {isRegenerating ? 'Generating…' : 'New Quiz'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -89,75 +196,23 @@ export function QuizViewer({ questions, onRegenerateQuiz, isRegenerating, onQuiz
   // ── Summary Screen ──
   if (showSummary) {
     const pct = Math.round((totalCorrect / activeQuestions.length) * 100);
+    const passed = pct >= 60;
     const grade = pct >= 90 ? '🏆 Excellent!' : pct >= 75 ? '🎉 Great job!' : pct >= 60 ? '👍 Good effort!' : '📚 Keep studying!';
     return (
-      <div className="w-full max-w-3xl mx-auto flex flex-col items-center gap-6 py-6">
-        <div className="w-full bg-surface border border-token rounded-2xl p-8 flex flex-col items-center gap-4 text-center">
-          <p className="text-3xl">{grade}</p>
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-5xl font-bold text-primary">{pct}%</span>
-            <span className="text-sm text-secondary">{totalCorrect} / {activeQuestions.length} correct</span>
-          </div>
-          <div className="w-full h-3 bg-white/[0.05] rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-700 ${
-                pct >= 75 ? 'bg-gradient-to-r from-success to-emerald-500'
-                : pct >= 60 ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
-                : 'bg-gradient-to-r from-red-500 to-rose-400'
-              }`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Per-question review */}
-        <div className="w-full flex flex-col gap-2">
-          {activeQuestions.map((q, i) => (
-            <div
-              key={i}
-              className={`flex items-start gap-3 rounded-xl px-4 py-3 text-sm border ${
-                results[i] === true
-                  ? 'bg-success-muted border-success/20'
-                  : results[i] === false
-                  ? 'bg-red-500/10 border-red-500/20'
-                  : 'bg-white/[0.03] border-token'
-              }`}
-            >
-              <span className="shrink-0 mt-0.5">
-                {results[i] === true ? <CheckCircle2 size={16} className="text-success" />
-                : results[i] === false ? <XCircle size={16} className="text-red-400" />
-                : <span className="w-4 h-4 rounded-full border border-slate-600 inline-block" />}
-              </span>
-              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                <span className="text-secondary line-clamp-2">{q.question}</span>
-                {results[i] === false && (
-                  <span className="text-2xs text-success">Answer: {q.answer}</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={handleRestart}
-            className="flex items-center gap-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] px-5 py-2.5 text-sm font-medium text-primary transition-colors"
-          >
-            <RotateCcw size={15} /> Retake Quiz
-          </button>
-          {onRegenerateQuiz && (
-            <button
-              onClick={onRegenerateQuiz}
-              disabled={isRegenerating}
-              className="flex items-center gap-2 rounded-xl bg-accent hover:bg-violet-700 px-5 py-2.5 text-sm font-medium text-primary transition-colors disabled:opacity-50"
-            >
-              {isRegenerating ? 'Generating…' : 'New Quiz'}
-            </button>
-          )}
-        </div>
-      </div>
+      <QuizSummary
+        pct={pct}
+        passed={passed}
+        grade={grade}
+        totalCorrect={totalCorrect}
+        activeQuestions={activeQuestions}
+        results={results}
+        onRestart={handleRestart}
+        onRegenerate={onRegenerateQuiz}
+        isRegenerating={isRegenerating}
+      />
     );
   }
+
 
   // ── Question Screen ──
   const optionLetters = ['A', 'B', 'C', 'D'];

@@ -12,6 +12,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import type { TestQuestion } from '../../types';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 
 // ─────────────────────────────────────────────
 // Types
@@ -486,6 +487,7 @@ function ResultsScreen({
 
   const correctCount = scored.filter((s) => s.isCorrect).length;
   const pct = Math.round((correctCount / questions.length) * 100);
+  const passed = pct >= 60;
   const grade =
     pct >= 90 ? '🏆 Excellent!'
     : pct >= 75 ? '🎉 Great job!'
@@ -493,6 +495,16 @@ function ResultsScreen({
     : '📚 Keep studying!';
 
   const timeUsedDisplay = formatTime(Math.min(timeUsed, timeLimit));
+
+  // Play pass/fail sound once on mount
+  useEffect(() => {
+    try {
+      const audio = new Audio(passed ? '/sounds/passed.wav' : '/sounds/failed.wav');
+      audio.volume = 0.6;
+      audio.play().catch(() => {});
+    } catch (_) {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -525,56 +537,66 @@ function ResultsScreen({
           </div>
         </div>
 
-        {/* Per-question review */}
+        {/* Per-question Accordion review */}
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">
             Question Review
           </p>
-          {scored.map(({ q, correct, isCorrect, missed, wrong, skipped }, i) => (
-            <div
-              key={i}
-              className={`rounded-xl border px-4 py-3.5 text-sm ${
-                isCorrect
-                  ? 'bg-success-muted border-success/20'
-                  : 'bg-red-500/10 border-red-500/20'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <span className="shrink-0 mt-0.5">
-                  {isCorrect ? (
-                    <CheckCircle2 size={16} className="text-success" />
-                  ) : (
-                    <XCircle size={16} className="text-red-400" />
-                  )}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-secondary leading-snug line-clamp-3">{q.question}</p>
-                  <span className="inline-block mt-1 text-2xs font-semibold text-muted uppercase tracking-wide">
-                    {q.answer_type === 'multiple' ? 'Multi-select' : 'Single answer'}
+          <Accordion className="w-full flex flex-col gap-2">
+            {scored.map(({ q, correct, isCorrect, missed, wrong, skipped }, i) => (
+              <AccordionItem
+                key={i}
+                value={String(i)}
+                className={`rounded-xl border text-sm not-last:border-b-[inherit] ${
+                  isCorrect
+                    ? 'bg-success-muted border-success/20'
+                    : 'bg-red-500/10 border-red-500/20'
+                }`}
+              >
+                <AccordionTrigger className="px-4 py-3.5 hover:no-underline hover:bg-transparent gap-3 rounded-xl">
+                  <span className="shrink-0">
+                    {isCorrect ? (
+                      <CheckCircle2 size={16} className="text-success" />
+                    ) : (
+                      <XCircle size={16} className="text-red-400" />
+                    )}
                   </span>
-                  {!isCorrect && !skipped && (
-                    <div className="mt-2 flex flex-col gap-1">
-                      {missed.length > 0 && (
-                        <p className="text-2xs text-success">Missed: {missed.join(', ')}</p>
-                      )}
-                      {wrong.length > 0 && (
-                        <p className="text-2xs text-red-400">Wrongly selected: {wrong.join(', ')}</p>
-                      )}
-                    </div>
-                  )}
-                  {skipped && (
-                    <p className="mt-1 text-2xs text-muted">Not answered</p>
-                  )}
-                  {!isCorrect && (
-                    <p className="mt-1 text-2xs text-success">Correct: {correct.join(', ')}</p>
-                  )}
-                  {q.explanation && (
-                    <p className="mt-1.5 text-2xs text-muted italic">{q.explanation}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+                  <span className="flex-1 text-left text-secondary leading-snug line-clamp-2">
+                    {q.question}
+                  </span>
+                  <span className="text-2xs text-muted shrink-0 mr-1">
+                    {q.answer_type === 'multiple' ? 'Multi' : 'Single'}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-3.5">
+                  <div className="flex flex-col gap-1">
+                    {!isCorrect && !skipped && (
+                      <>
+                        {missed.length > 0 && (
+                          <p className="text-2xs text-success">✓ Missed: {missed.join(', ')}</p>
+                        )}
+                        {wrong.length > 0 && (
+                          <p className="text-2xs text-red-400">✗ Wrong: {wrong.join(', ')}</p>
+                        )}
+                      </>
+                    )}
+                    {skipped && (
+                      <p className="text-2xs text-muted">Not answered</p>
+                    )}
+                    {!isCorrect && (
+                      <p className="text-2xs text-success">✓ Correct: {correct.join(', ')}</p>
+                    )}
+                    {isCorrect && (
+                      <p className="text-2xs text-success">✓ {correct.join(', ')}</p>
+                    )}
+                    {q.explanation && (
+                      <p className="mt-1 text-2xs text-muted italic">{q.explanation}</p>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
 
         {/* Actions */}
