@@ -142,7 +142,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
       {/* Outer padding wrapper â€” does NOT scroll */}
-      <div className="flex-1 min-h-0 flex gap-5 px-8 py-4 overflow-hidden">
+      <div className="flex-1 min-h-0 flex gap-[var(--gutter)] px-[var(--gutter)] py-4 overflow-hidden">
 
         {/* Center: Reviewer Content */}
         <div className="flex-1 min-w-0 flex flex-col min-h-0">

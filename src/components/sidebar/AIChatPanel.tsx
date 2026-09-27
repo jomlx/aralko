@@ -1,8 +1,19 @@
-import { useState, useEffect } from 'react';
+﻿import { useState } from 'react';
 import { UserCog, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
 import type { ChatMessage, Activity } from '../../types';
 import { useGemini } from '../../hooks/useGemini';
 import { useChat } from '../../hooks/useChat';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../ui/alert-dialog';
 import {
   MessageScrollerProvider,
   MessageScroller,
@@ -27,7 +38,6 @@ interface AIChatPanelProps {
 export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const [systemPrompt, setSystemPrompt] = useState(() =>
@@ -42,11 +52,6 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
       `Simulated response to: ${msgs[msgs.length - 1]?.content || 'Hello'}`,
     generateReviewer: async () => ''
   };
-
-  // Reset confirm-clear state when switching activity
-  useEffect(() => {
-    setConfirmClear(false);
-  }, [activeActivity?.id]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -78,11 +83,11 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
       console.error('Chat error:', err);
       let errorMsg: string;
       if (err.message === 'Gemini API key not configured') {
-        errorMsg = '💡 Please add your Gemini API key in Settings to use the AI assistant.';
+        errorMsg = 'Ã°Å¸â€™Â¡ Please add your Gemini API key in Settings to use the AI assistant.';
       } else if (err.message?.includes('Invalid API Key')) {
-        errorMsg = '❌ Your API key appears to be invalid. Please check your settings.';
+        errorMsg = 'Ã¢ÂÅ’ Your API key appears to be invalid. Please check your settings.';
       } else {
-        errorMsg = '⚠️ ' + (err.message || 'Unknown error connecting to the AI.');
+        errorMsg = 'Ã¢Å¡Â Ã¯Â¸Â ' + (err.message || 'Unknown error connecting to the AI.');
       }
 
       await addMessage({
@@ -96,16 +101,6 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
     }
   };
 
-  const handleClearRequest = () => {
-    if (confirmClear) {
-      clearMessages();
-      setConfirmClear(false);
-    } else {
-      setConfirmClear(true);
-      setTimeout(() => setConfirmClear(false), 4000);
-    }
-  };
-
   const saveSettings = () => {
     localStorage.setItem('aralko-system-prompt', systemPrompt);
     setIsSettingsOpen(false);
@@ -113,7 +108,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
 
   return (
     <div className="rounded-2xl border border-token bg-surface flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* Header — single row: title+subtitle on left, Trash + Persona icons on right */}
+      {/* Header Ã¢â‚¬â€ single row: title+subtitle on left, Trash + Persona icons on right */}
       <div className="flex-shrink-0 flex items-start justify-between px-4 pt-3 pb-3">
         {/* Left: title + subtitle */}
         <div>
@@ -125,21 +120,36 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
 
         {/* Right: Trash icon + Persona icon */}
         <div className="flex items-center gap-0.5">
-          {/* Clear chat — always rendered but only active when messages exist */}
-          <button
-            onClick={handleClearRequest}
-            disabled={messages.length === 0}
-            title={confirmClear ? 'Click again to confirm' : 'Clear chat history'}
-            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
-              messages.length === 0
-                ? 'opacity-30 cursor-not-allowed text-muted'
-                : confirmClear
-                  ? 'text-red-400 bg-red-400/10 hover:bg-red-400/20'
-                  : 'text-secondary hover:text-red-400 hover:bg-white/[0.05]'
-            }`}
-          >
-            <Trash2 size={16} />
-          </button>
+          {/* Clear chat Ã¢â‚¬â€ always rendered but only active when messages exist */}
+          <AlertDialog>
+            <AlertDialogTrigger className="p-0 m-0 border-none bg-transparent hover:bg-transparent">
+              <button
+                disabled={messages.length === 0}
+                title="Clear chat history"
+                className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
+                  messages.length === 0
+                    ? 'opacity-30 cursor-not-allowed text-muted'
+                    : 'text-secondary hover:text-red-400 hover:bg-white/[0.05]'
+                }`}
+              >
+                <Trash2 size={16} />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-app border-token">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-primary">Delete chat history?</AlertDialogTitle>
+                <AlertDialogDescription className="text-secondary">
+                  This will permanently remove all messages from this session. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={clearMessages} className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Persona icon with Dialog for settings */}
           <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
@@ -258,3 +268,11 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
     </div>
   );
 }
+
+
+
+
+
+
+
+
