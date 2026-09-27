@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { UserCog, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
 import type { ChatMessage, Activity } from '../../types';
 import { useGemini } from '../../hooks/useGemini';
@@ -109,7 +109,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
   return (
     <div className="rounded-2xl border border-token bg-surface flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Header Ã¢â‚¬â€ single row: title+subtitle on left, Trash + Persona icons on right */}
-      <div className="flex-shrink-0 flex items-start justify-between px-4 pt-3 pb-3">
+      <div className="flex-shrink-0 flex items-start justify-between px-4 pt-3 pb-3 border-b border-token">
         {/* Left: title + subtitle */}
         <div>
           <h3 className="text-primary font-semibold text-sm leading-tight">Aralko Assistant</h3>
@@ -195,7 +195,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
           <MessageScrollerProvider>
             <MessageScroller className="flex-1 min-h-0 relative">
               <MessageScrollerViewport className="[scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/[0.12] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:mr-0">
-                <MessageScrollerContent className="space-y-6 py-4">
+                <MessageScrollerContent className="space-y-3 py-4">
                   {historyLoading ? (
                     <div className="flex items-center justify-center mt-10 gap-2 text-muted text-xs">
                       <Loader2 size={14} className="animate-spin" />
@@ -213,10 +213,10 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
                         scrollAnchor={msg.role === "user"}
                       >
                         <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                          <div className={`text-[13px] leading-relaxed max-w-[85%] break-words whitespace-pre-wrap ${
+                          <div className={`text-[13px] leading-relaxed break-words whitespace-pre-wrap ${
                             msg.role === 'user'
-                              ? 'bg-accent/20 text-primary rounded-2xl rounded-br-sm px-4 py-3 border border-accent/10 shadow-sm'
-                              : 'bg-app border border-token text-secondary rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm'
+                              ? 'max-w-[85%] bg-accent/20 text-primary rounded-2xl rounded-br-sm px-4 py-3 border border-accent/10 shadow-sm'
+                              : 'w-full text-secondary px-2 py-1'
                           }`}>
                             {msg.content}
                           </div>
@@ -228,7 +228,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
                   {isLoading && (
                     <MessageScrollerItem messageId="loading-indicator">
                       <div className="flex items-start">
-                        <div className="bg-app border border-token rounded-2xl rounded-bl-sm px-4 py-4 shadow-sm flex gap-1.5 items-center">
+                        <div className="px-2 py-2 flex gap-1.5 items-center">
                           <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                           <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                           <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -268,6 +268,8 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
     </div>
   );
 }
+
+
 
 
 
