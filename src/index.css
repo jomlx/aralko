@@ -9,7 +9,7 @@
    Dark mode is the default (:root). Light mode overrides via :root.light.
    ========================================================================== */
 :root {
-  --gutter: 24px;
+  --gutter: 16px;
   /* Backgrounds */
   --bg-app:     #202531;
   --bg-surface: #2B3140;
@@ -69,7 +69,7 @@
    GLOBAL RESET & UTILITIES
    ========================================================================== */
 :root {
-  --gutter: 24px;
+  --gutter: 16px;
   background-color: var(--bg-app);
   color: var(--text-primary);
 }
