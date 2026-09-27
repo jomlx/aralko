@@ -21,7 +21,7 @@ function NavButton({ label, icon: Icon, isActive, onClick, disabled }: NavButton
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center gap-2 rounded-xl px-4 py-2.5 transition-colors ${
+      className={`flex items-center gap-2 rounded-xl pl-[var(--gutter)] pr-[var(--gutter)] py-2.5 transition-colors ${
         disabled ? 'opacity-40 pointer-events-none' : ''
       } ${
         isActive
@@ -37,7 +37,7 @@ function NavButton({ label, icon: Icon, isActive, onClick, disabled }: NavButton
 
 export function Header({ activeTab, onTabChange, onOpenSettings, disabled }: HeaderProps) {
   return (
-    <header className="flex h-[60px] w-full items-center justify-between border-b border-token bg-app px-4">
+    <header className="flex h-[60px] w-full items-center justify-between border-b border-token bg-app pl-[var(--gutter)] pr-[var(--gutter)]">
       {/* Logo */}
       <div className="flex items-center gap-4">
         <div className="flex h-11 w-11 shrink-0 overflow-hidden rounded-2xl shadow-lg">

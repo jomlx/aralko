@@ -3,6 +3,7 @@ import { Sparkles, MessageSquare, Send, Settings2, ChevronDown, Trash2, Loader2 
 import type { ChatMessage, Activity } from '../../types';
 import { useGemini } from '../../hooks/useGemini';
 import { useChat } from '../../hooks/useChat';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface AIChatPanelProps {
   activeActivity?: Activity;
@@ -166,41 +167,43 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
       ) : (
         <div className="flex flex-col flex-1 min-h-0 px-4 pb-4">
           {/* Messages */}
-          <div className="flex-1 min-h-[100px] overflow-y-auto overflow-x-hidden space-y-4 py-2 pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10">
-            {historyLoading ? (
-              <div className="flex items-center justify-center mt-10 gap-2 text-muted text-xs">
-                <Loader2 size={14} className="animate-spin" />
-                Loading chat history…
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="text-muted text-sm text-center mt-10">
-                Ask a question about your study material.
-              </div>
-            ) : (
-              messages.map((msg) => (
-                <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`text-sm max-w-[90%] break-words whitespace-pre-wrap ${
-                    msg.role === 'user'
-                      ? 'bg-accent/20 text-primary rounded-lg px-3 py-2'
-                      : 'text-secondary'
-                  }`}>
-                    {msg.content}
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="flex flex-col space-y-4 py-2 pr-3">
+              {historyLoading ? (
+                <div className="flex items-center justify-center mt-10 gap-2 text-muted text-xs">
+                  <Loader2 size={14} className="animate-spin" />
+                  Loading chat history…
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="text-muted text-sm text-center mt-10">
+                  Ask a question about your study material.
+                </div>
+              ) : (
+                messages.map((msg) => (
+                  <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`text-sm max-w-[90%] break-words whitespace-pre-wrap ${
+                      msg.role === 'user'
+                        ? 'bg-accent/20 text-primary rounded-lg px-3 py-2'
+                        : 'text-secondary'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {isLoading && (
+                <div className="flex items-start">
+                  <div className="p-3 rounded-xl bg-app border border-token flex gap-1">
+                    <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
-              ))
-            )}
-
-            {isLoading && (
-              <div className="flex items-start">
-                <div className="p-3 rounded-xl bg-app border border-token flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+          </ScrollArea>
 
           {/* Input */}
           <div className="flex-shrink-0 pt-3 mt-2 border-t border-token flex gap-2">

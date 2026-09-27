@@ -210,7 +210,7 @@ export function MainWorkspace({
 
   return (
     <>
-    <div className="px-8 pt-4 pb-8">
+    <div className="pl-[var(--gutter)] pr-[var(--gutter)] pt-4 pb-8">
 
       <div className="mb-3 flex-shrink-0 flex items-center gap-2 overflow-x-auto border-b border-token pb-3">
         {activities.map((activity) => {
@@ -262,7 +262,7 @@ export function MainWorkspace({
         </button>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+      <div className="grid gap-[var(--gutter)] xl:grid-cols-[1fr_320px]">
         <div className="flex flex-col rounded-2xl border border-token bg-surface p-6 min-h-[520px]">
           <div className="mb-4 flex-shrink-0 flex items-start justify-between">
             <div>

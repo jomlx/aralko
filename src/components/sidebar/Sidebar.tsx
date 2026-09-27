@@ -10,7 +10,7 @@ export function Sidebar({ width, children, onResizeStart }: SidebarProps) {
   return (
     <aside
       style={{ width }}
-      className="relative flex-shrink-0 h-full border-r border-token bg-app p-4 flex flex-col gap-4 overflow-hidden"
+      className="relative flex-shrink-0 h-full border-r border-token bg-app py-4 pr-4 pl-[var(--gutter)] flex flex-col gapy-4 pr-4 pl-[var(--gutter)] overflow-hidden"
     >
       {children}
       <div
