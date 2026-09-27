@@ -215,7 +215,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
                         <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                           <div className={`text-[13px] leading-relaxed break-words whitespace-pre-wrap ${
                             msg.role === 'user'
-                              ? 'max-w-[85%] bg-accent/35 text-primary rounded-2xl rounded-br-sm px-3 py-2 shadow-sm'
+                              ? 'max-w-[85%] bg-accent text-white rounded-2xl rounded-br-sm px-3 py-2 shadow-sm'
                               : 'w-full text-secondary px-2 py-1'
                           }`}>
                             {msg.content}
