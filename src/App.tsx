@@ -232,8 +232,6 @@ function AppContent() {
               phase={pomodoro.phase}
               isRunning={pomodoro.isRunning}
               sessionsCompleted={pomodoro.sessionsCompleted}
-              streak={streakLogic.displayedStreak}
-              streakFreezes={userSettings.streakFreezes}
               onStart={pomodoro.start}
               onPause={pomodoro.pause}
               onReset={pomodoro.reset}
@@ -253,6 +251,7 @@ function AppContent() {
               xp={userSettings.xp}
               totalMinutes={sessions.reduce((a, s) => a + s.minutes, 0)}
               sessionsCount={sessions.length}
+              freezes={userSettings.streakFreezes}
             />
           </Sidebar>
         </div>

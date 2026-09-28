@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { LogOut, Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays } from 'lucide-react';
+import { LogOut, Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays, Snowflake } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
@@ -12,9 +12,10 @@ interface ProfilePopoverProps {
   xp: number;
   totalMinutes: number;
   sessionsCount: number;
+  freezes: number;
 }
 
-export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCount }: ProfilePopoverProps) {
+export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCount, freezes }: ProfilePopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const { showToast } = useToast();
@@ -271,9 +272,21 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
           {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
           <AvatarFallback className="bg-accent text-primary font-bold text-xs">{initials}</AvatarFallback>
         </Avatar>
-        <div className="flex flex-col min-w-0">
+        <div className="flex flex-col min-w-0 flex-1">
           <span className="text-sm font-semibold text-primary truncate">{displayName}</span>
           <span className="text-xs text-secondary truncate">{displayEmail}</span>
+          <div className="flex items-center gap-1 mt-1 flex-wrap">
+            <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 text-2xs font-medium">
+              <Flame size={10} />
+              <span>{streak} {streak === 1 ? 'day' : 'days'}</span>
+            </div>
+            {freezes > 0 && (
+              <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 text-2xs font-medium" title="Streak Freezes">
+                <Snowflake size={10} />
+                <span>{freezes}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
