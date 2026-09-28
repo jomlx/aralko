@@ -20,52 +20,59 @@ function getTodayStr() {
   return toLocalDateStr(new Date().toISOString());
 }
 
-function getYesterdayStr() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return toLocalDateStr(d.toISOString());
-}
+
 
 export function useStreakLogic({ sessions, sessionsLoaded, settingsLoaded = true, streakFreezes, savedStreak, updateStreakData }: StreakLogicProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const evaluatedRef = useRef(false);
 
   const dates = [...new Set(sessions.map(s => toLocalDateStr(s.date)))].sort().reverse();
-  const todayStr = getTodayStr();
-  const yesterdayStr = getYesterdayStr();
-  const lastStudyDate = dates.length > 0 ? dates[0] : null;
+  const rawLastStudy = dates.length > 0 ? dates[0] : null;
+  const freezeCovered = localStorage.getItem('aralko-freeze-covered');
+  
+  // Use whichever is later: the last actual session, or the last freeze-covered date
+  const lastStudyDate = !rawLastStudy ? freezeCovered : (!freezeCovered ? rawLastStudy : (rawLastStudy > freezeCovered ? rawLastStudy : freezeCovered));
 
-  const hasStudiedToday = dates.includes(todayStr);
-  const hasStudiedYesterday = dates.includes(yesterdayStr);
+  function daysBetween(dateStr: string): number {
+    const last = new Date(dateStr);
+    last.setHours(0, 0, 0, 0);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return Math.round((now.getTime() - last.getTime()) / 86_400_000);
+  }
 
-  // A freeze only covers exactly one missed day (last study = the day before yesterday).
-  // Missed 2+ days → no freeze protects the streak.
-  const isAlive = hasStudiedToday || hasStudiedYesterday;
-  const oneMissedDay = !isAlive && lastStudyDate === yesterdayStr;
-  const displayedStreak = isAlive ? savedStreak : (streakFreezes > 0 && oneMissedDay ? savedStreak : 0);
+  const gap = lastStudyDate ? daysBetween(lastStudyDate) : Infinity;
+  // gap 0 or 1 → alive (studied today or yesterday)
+  // gap 2 → missed exactly yesterday → freeze eligible
+  // gap ≥ 3 → missed 2+ days → always reset
+  const isAlive = gap <= 1;
+  const freezeEligible = gap === 2 && streakFreezes > 0;
+  const displayedStreak = isAlive ? savedStreak : (freezeEligible ? savedStreak : 0);
 
   useEffect(() => {
     if (!sessionsLoaded || !settingsLoaded) return;
     if (evaluatedRef.current) return;
 
-    if (savedStreak === 0) {
-      // nothing to evaluate
-    } else if (hasStudiedToday || hasStudiedYesterday) {
-      // streak is alive — no action needed
-    } else if (streakFreezes > 0 && lastStudyDate === yesterdayStr) {
-      // exactly one missed day and a freeze available
+    if (savedStreak === 0 || isAlive) {
+      // nothing to do
+    } else if (freezeEligible) {
+      // gap = 2, freeze available: consume one freeze and persist yesterday as covered
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      localStorage.setItem('aralko-freeze-covered', toLocalDateStr(yesterday.toISOString()));
+      
       updateStreakData(streakFreezes - 1, savedStreak);
       setToastMessage('Your streak was protected! ❄️ 1 freeze used.');
       setTimeout(() => setToastMessage(null), 5000);
     } else {
-      // missed 2+ days, or no freezes
-      updateStreakData(0, 0);
+      // gap ≥ 3, or gap = 2 with no freezes
+      updateStreakData(streakFreezes, 0);
       setToastMessage('Your streak was lost. Keep trying! 🔥');
       setTimeout(() => setToastMessage(null), 5000);
     }
 
     evaluatedRef.current = true;
-  }, [sessionsLoaded, settingsLoaded, sessions, streakFreezes, savedStreak, updateStreakData]);
+  }, [sessionsLoaded, settingsLoaded, isAlive, freezeEligible, streakFreezes, savedStreak, updateStreakData]);
 
   const incrementStreak = useCallback(() => {
     if (dates.includes(getTodayStr())) return;
