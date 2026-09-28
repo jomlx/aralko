@@ -96,42 +96,6 @@ function AppContent() {
     }
   }, []);
 
-  // â”€â”€ Supabase connection diagnostic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  useEffect(() => {
-    import('./lib/supabase').then(async ({ supabase }) => {
-      console.group('[Supabase Diagnostic]');
-      console.log('URL:', import.meta.env.VITE_SUPABASE_URL);
-
-      // 1. Auth session â€” app uses anon key, so we expect NO session
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Auth session:', sessionData?.session ? 'LOGGED IN' : 'anon (no session â€” expected)');
-
-      // 2. Test read
-      const { data, error } = await supabase.from('user_settings').select('*').limit(1);
-      if (error) {
-        console.error('âŒ user_settings SELECT failed:', error.code, '-', error.message);
-        if (error.code === '42501') console.error('  â†’ CAUSE: RLS is blocking the anon role. Run the fix SQL below.');
-        if (error.code === 'PGRST301') console.error('  â†’ CAUSE: JWT expired or invalid.');
-      } else {
-        console.log('âœ… SELECT succeeded. Rows:', data);
-      }
-
-      // 3. Test write
-      const { error: we } = await supabase
-        .from('user_settings')
-        .upsert({ user_id: 'diagnostic-test' }, { onConflict: 'user_id' });
-      if (we) {
-        console.error('âŒ user_settings UPSERT failed:', we.code, '-', we.message);
-      } else {
-        console.log('âœ… UPSERT succeeded.');
-        // Clean up the test row
-        await supabase.from('user_settings').delete().eq('user_id', 'diagnostic-test');
-      }
-
-      console.groupEnd();
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Apply theme class to <html>
   useEffect(() => {

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '../ui/Toast';
 import {
   Clock,
@@ -668,12 +668,17 @@ export function TestModeViewer({
     
     const pct = Math.round((correctCount / activeQuestions.length) * 100);
     if (pct === 100 && activeQuestions.length >= 3 && awardFreeze) {
-      const awarded = awardFreeze();
-      if (awarded) {
-        showToast('Perfect score! You earned a Streak Freeze! ❄️ (Max 2)', 'success');
+      const today = new Date().toISOString().slice(0, 10);
+      const key = `aralko-freeze-award:${activityName}:${today}`;
+      if (!localStorage.getItem(key)) {
+        const awarded = awardFreeze();
+        if (awarded) {
+          localStorage.setItem(key, '1');
+          showToast('Perfect score! You earned a Streak Freeze! ❄️ (Max 2)', 'success');
+        }
       }
     }
-  }, [onTestStateChange, activeQuestions, awardFreeze, showToast]);
+  }, [onTestStateChange, activeQuestions, awardFreeze, showToast, activityName]);
 
   const handleRetake = useCallback(() => {
     setActiveQuestions(shuffleArray(questions));

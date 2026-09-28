@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import type { StudySession } from '../types';
 
 interface StreakLogicProps {
@@ -38,41 +38,31 @@ export function useStreakLogic({ sessions, sessionsLoaded, settingsLoaded = true
   const hasStudiedToday = dates.includes(todayStr);
   const hasStudiedYesterday = dates.includes(yesterdayStr);
 
+  // A freeze only covers exactly one missed day (last study = the day before yesterday).
+  // Missed 2+ days → no freeze protects the streak.
   const isAlive = hasStudiedToday || hasStudiedYesterday;
-  const displayedStreak = isAlive ? savedStreak : (streakFreezes > 0 ? savedStreak : 0);
+  const oneMissedDay = !isAlive && lastStudyDate === yesterdayStr;
+  const displayedStreak = isAlive ? savedStreak : (streakFreezes > 0 && oneMissedDay ? savedStreak : 0);
 
   useEffect(() => {
     if (!sessionsLoaded || !settingsLoaded) return;
     if (evaluatedRef.current) return;
 
-    let branch = 'unknown';
-
     if (savedStreak === 0) {
-      branch = 'no-op (savedStreak is 0)';
+      // nothing to evaluate
     } else if (hasStudiedToday || hasStudiedYesterday) {
-      branch = 'skipped (streak is alive)';
-    } else if (streakFreezes > 0) {
-      branch = 'freeze used';
+      // streak is alive — no action needed
+    } else if (streakFreezes > 0 && lastStudyDate === yesterdayStr) {
+      // exactly one missed day and a freeze available
       updateStreakData(streakFreezes - 1, savedStreak);
       setToastMessage('Your streak was protected! ❄️ 1 freeze used.');
       setTimeout(() => setToastMessage(null), 5000);
     } else {
-      branch = 'reset to 0';
+      // missed 2+ days, or no freezes
       updateStreakData(0, 0);
       setToastMessage('Your streak was lost. Keep trying! 🔥');
       setTimeout(() => setToastMessage(null), 5000);
     }
-
-    console.log('--- STREAK DIAGNOSTIC ---', {
-      savedStreak,
-      lastStudyDate,
-      streakFreezes,
-      sessionsLoaded,
-      settingsLoaded,
-      todayStr,
-      yesterdayStr,
-      branch
-    });
 
     evaluatedRef.current = true;
   }, [sessionsLoaded, settingsLoaded, sessions, streakFreezes, savedStreak, updateStreakData]);
