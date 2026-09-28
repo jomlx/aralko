@@ -18,6 +18,16 @@ import {
   ThumbsUp,
   BookOpen,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '../ui/alert-dialog';
 import type { TestQuestion } from '../../types';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 
@@ -63,40 +73,6 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a;
 }
 
-// ─────────────────────────────────────────────
-// ExitConfirmDialog
-// ─────────────────────────────────────────────
-function ExitConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-token bg-surface p-6 shadow-2xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-10 w-10 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
-            <AlertTriangle size={20} className="text-warning" />
-          </div>
-          <div>
-            <p className="font-semibold text-primary">Exit Test?</p>
-            <p className="text-xs text-secondary mt-0.5">Your progress will be lost.</p>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 rounded-xl border border-token py-2.5 text-sm font-medium text-secondary hover:bg-white/[0.05] transition-colors"
-          >
-            Keep going
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 rounded-xl bg-danger/10 hover:bg-danger/20 border border-danger/30 py-2.5 text-sm font-semibold text-danger transition-colors"
-          >
-            Exit
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────
 // Setup Screen
@@ -350,12 +326,25 @@ function TestScreen({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {showExitConfirm && (
-        <ExitConfirmDialog
-          onConfirm={onExit}
-          onCancel={() => setShowExitConfirm(false)}
-        />
-      )}
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle size={18} className="text-warning" />
+              Exit Test?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Your progress will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep going</AlertDialogCancel>
+            <AlertDialogAction onClick={onExit} className="bg-danger text-white hover:bg-danger/90 border-danger/30">
+              Exit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Unified top bar: activity name + badge left; counter, timer, exit, dropdown right */}
       <div className="flex-shrink-0 flex items-center gap-4 px-8 py-3 border-b border-token bg-surface/50">
