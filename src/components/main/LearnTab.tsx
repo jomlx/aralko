@@ -183,21 +183,22 @@ export function LearnTab({
   const isQuizTechnique = activeActivity.technique?.toLowerCase() === 'quiz';
   const isTestModeTechnique = activeActivity.technique?.toLowerCase() === 'test mode';
 
+  const validTechniques = ['Study Notes', 'Flashcards', 'Quiz', 'Test Mode'];
+  const currentTechnique = activeActivity.technique && validTechniques.includes(activeActivity.technique) 
+    ? activeActivity.technique 
+    : 'Study Notes';
+
   const headerControls = (
     <div className="flex items-center gap-3">
       <ShareActivityButton activityId={activeActivity.id} />
       <NativeSelect
-        value={activeActivity.technique || 'Study Notes'}
+        value={currentTechnique}
         onChange={(e) => onUpdateActivity(activeActivity.id, { technique: e.target.value === 'Study Notes' ? undefined : e.target.value })}
       >
         <NativeSelectOption value="Study Notes">Study Notes</NativeSelectOption>
         <NativeSelectOption value="Flashcards">Flashcards</NativeSelectOption>
         <NativeSelectOption value="Quiz">Knowledge Check</NativeSelectOption>
         <NativeSelectOption value="Test Mode">Assessment</NativeSelectOption>
-        <NativeSelectOption value="Feynman Technique">Feynman Technique</NativeSelectOption>
-        <NativeSelectOption value="Active Recall">Active Recall</NativeSelectOption>
-        <NativeSelectOption value="Spaced Repetition">Spaced Repetition</NativeSelectOption>
-        <NativeSelectOption value="Interleaving">Interleaving</NativeSelectOption>
       </NativeSelect>
     </div>
   );
