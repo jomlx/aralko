@@ -83,11 +83,11 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
       console.error('Chat error:', err);
       let errorMsg: string;
       if (err.message === 'Gemini API key not configured') {
-        errorMsg = '\u{1f4a1} Please add your Gemini API key in Settings to use the AI assistant.';
+        errorMsg = '[Tip] Please add your Gemini API key in Settings to use the AI assistant.';
       } else if (err.message?.includes('Invalid API Key')) {
-        errorMsg = '\u{274c} Your API key appears to be invalid. Please check your settings.';
+        errorMsg = '[Error] Your API key appears to be invalid. Please check your settings.';
       } else {
-        errorMsg = '\u{26a0}\u{fe0f} ' + (err.message || 'Unknown error connecting to the AI.');
+        errorMsg = '[Warning] ' + (err.message || 'Unknown error connecting to the AI.');
       }
 
       await addMessage({

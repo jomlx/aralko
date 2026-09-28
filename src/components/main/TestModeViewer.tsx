@@ -13,6 +13,10 @@ import {
   RefreshCw,
   Timer,
   Check,
+  SkipForward,
+  Sparkles,
+  ThumbsUp,
+  BookOpen,
 } from 'lucide-react';
 import type { TestQuestion } from '../../types';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
@@ -494,10 +498,10 @@ function ResultsScreen({
   const pct = Math.round((correctCount / questions.length) * 100);
   const passed = pct >= 60;
   const grade =
-    pct >= 90 ? '\u{1f3c6} Excellent!'
-    : pct >= 75 ? '\u{1f389} Great job!'
-    : pct >= 60 ? '\u{1f44d} Good effort!'
-    : '\u{1f4da} Keep studying!';
+    pct >= 90 ? <span className="flex items-center justify-center gap-2"><Trophy className="text-yellow-400" /> Excellent!</span>
+    : pct >= 75 ? <span className="flex items-center justify-center gap-2"><Sparkles className="text-emerald-400" /> Great job!</span>
+    : pct >= 60 ? <span className="flex items-center justify-center gap-2"><ThumbsUp className="text-amber-400" /> Good effort!</span>
+    : <span className="flex items-center justify-center gap-2"><BookOpen className="text-red-400" /> Keep studying!</span>;
 
   const timeUsedDisplay = formatTime(Math.min(timeUsed, timeLimit));
 
@@ -538,7 +542,7 @@ function ResultsScreen({
           </div>
           <div className="flex gap-6 text-sm text-secondary mt-2">
             <span className="flex items-center gap-1"><Timer size={14} /> Time used: <strong className="text-primary">{timeUsedDisplay}</strong></span>
-            <span>{'\U0001F4DD'} Skipped: <strong className="text-primary">{scored.filter((s) => s.skipped).length}</strong></span>
+            <span className="flex items-center gap-1"><SkipForward size={14} /> Skipped: <strong className="text-primary">{scored.filter((s) => s.skipped).length}</strong></span>
           </div>
         </div>
 
