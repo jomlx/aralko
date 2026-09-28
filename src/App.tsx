@@ -96,24 +96,24 @@ function AppContent() {
     }
   }, []);
 
-  // ── Supabase connection diagnostic ──────────────────────────────────────
+  // â”€â”€ Supabase connection diagnostic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     import('./lib/supabase').then(async ({ supabase }) => {
       console.group('[Supabase Diagnostic]');
       console.log('URL:', import.meta.env.VITE_SUPABASE_URL);
 
-      // 1. Auth session — app uses anon key, so we expect NO session
+      // 1. Auth session â€” app uses anon key, so we expect NO session
       const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Auth session:', sessionData?.session ? 'LOGGED IN' : 'anon (no session — expected)');
+      console.log('Auth session:', sessionData?.session ? 'LOGGED IN' : 'anon (no session â€” expected)');
 
       // 2. Test read
       const { data, error } = await supabase.from('user_settings').select('*').limit(1);
       if (error) {
-        console.error('❌ user_settings SELECT failed:', error.code, '-', error.message);
-        if (error.code === '42501') console.error('  → CAUSE: RLS is blocking the anon role. Run the fix SQL below.');
-        if (error.code === 'PGRST301') console.error('  → CAUSE: JWT expired or invalid.');
+        console.error('âŒ user_settings SELECT failed:', error.code, '-', error.message);
+        if (error.code === '42501') console.error('  â†’ CAUSE: RLS is blocking the anon role. Run the fix SQL below.');
+        if (error.code === 'PGRST301') console.error('  â†’ CAUSE: JWT expired or invalid.');
       } else {
-        console.log('✅ SELECT succeeded. Rows:', data);
+        console.log('âœ… SELECT succeeded. Rows:', data);
       }
 
       // 3. Test write
@@ -121,9 +121,9 @@ function AppContent() {
         .from('user_settings')
         .upsert({ user_id: 'diagnostic-test' }, { onConflict: 'user_id' });
       if (we) {
-        console.error('❌ user_settings UPSERT failed:', we.code, '-', we.message);
+        console.error('âŒ user_settings UPSERT failed:', we.code, '-', we.message);
       } else {
-        console.log('✅ UPSERT succeeded.');
+        console.log('âœ… UPSERT succeeded.');
         // Clean up the test row
         await supabase.from('user_settings').delete().eq('user_id', 'diagnostic-test');
       }
@@ -169,6 +169,7 @@ function AppContent() {
   const streakLogic = useStreakLogic({
     sessions,
     sessionsLoaded,
+    settingsLoaded: userSettings.settingsLoaded,
     streakFreezes: userSettings.streakFreezes,
     savedStreak: userSettings.savedStreak,
     updateStreakData: userSettings.updateStreakData
@@ -189,6 +190,14 @@ function AppContent() {
     addSession(newSession);
     streakLogic.incrementStreak();
   }, [addSession, streakLogic]);
+
+  const awardFreeze = useCallback(() => {
+    if (userSettings.streakFreezes < 2) {
+      userSettings.updateStreakData(userSettings.streakFreezes + 1, streakLogic.displayedStreak);
+      return true;
+    }
+    return false;
+  }, [userSettings, streakLogic.displayedStreak]);
   const pomodoro = usePomodoro({
     onSessionComplete: handleSessionComplete,
     preset:    userSettings.preset,
@@ -256,7 +265,7 @@ function AppContent() {
               phase={pomodoro.phase}
               isRunning={pomodoro.isRunning}
               sessionsCompleted={pomodoro.sessionsCompleted}
-              streak={userSettings.savedStreak}
+              streak={streakLogic.displayedStreak}
               streakFreezes={userSettings.streakFreezes}
               onStart={pomodoro.start}
               onPause={pomodoro.pause}
@@ -273,7 +282,7 @@ function AppContent() {
             
             <ProfilePopover 
               onLogout={logout}
-              streak={userSettings.savedStreak}
+              streak={streakLogic.displayedStreak}
               xp={userSettings.xp}
               totalMinutes={sessions.reduce((a, s) => a + s.minutes, 0)}
               sessionsCount={sessions.length}
@@ -300,7 +309,7 @@ function AppContent() {
               <div className="flex flex-1 items-center justify-center text-muted">Loading your workspace...</div>
             ) : (
               <>
-                {/* Main tab — Activity list */}
+                {/* Main tab â€” Activity list */}
                 <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'main' ? 'flex' : 'hidden'}`}>
                   {activities.length > 0 ? (
                     <ActivityList
@@ -324,7 +333,7 @@ function AppContent() {
                   )}
                 </div>
 
-                {/* Learn tab — always mounted so AIChatPanel never unmounts */}
+                {/* Learn tab â€” always mounted so AIChatPanel never unmounts */}
                 <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'learn' ? 'flex' : 'hidden'}`}>
                   {activities.length > 0 ? (
                     <LearnTab
@@ -335,6 +344,7 @@ function AppContent() {
                       onEnterTestMode={() => setIsTestMode(true)}
                       onExitTestMode={() => setIsTestMode(false)}
                       addXP={userSettings.addXP}
+                      awardFreeze={awardFreeze}
                     />
                   ) : (
                     <div className="flex flex-1 flex-col items-center justify-center text-secondary">
@@ -346,7 +356,7 @@ function AppContent() {
                   )}
                 </div>
 
-                {/* Reviewer tab — always mounted */}
+                {/* Reviewer tab â€” always mounted */}
                 <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'reviewer' ? 'flex' : 'hidden'}`}>
                   {activities.length > 0 ? (
                     <ReviewerTab
@@ -365,17 +375,17 @@ function AppContent() {
                   )}
                 </div>
 
-                {/* Techniques tab — always mounted */}
+                {/* Techniques tab â€” always mounted */}
                 <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'techniques' ? 'block' : 'hidden'}`}>
                   <TechniquesGrid />
                 </div>
 
-                {/* Stats tab — always mounted */}
+                {/* Stats tab â€” always mounted */}
                 <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'stats' ? 'block' : 'hidden'}`}>
-                  <StatsView sessions={sessions} streak={userSettings.savedStreak} />
+                  <StatsView sessions={sessions} streak={streakLogic.displayedStreak} />
                 </div>
 
-                {/* Community tab — always mounted */}
+                {/* Community tab â€” always mounted */}
                 <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'community' ? 'flex' : 'hidden'}`}>
                   <CommunityTab 
                     onOpenActivity={(id) => {
@@ -393,7 +403,7 @@ function AppContent() {
       {streakLogic.toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <div className="bg-sky-500/10 border border-sky-500/20 text-sky-400 px-6 py-3 rounded-2xl shadow-xl shadow-black/40 font-medium backdrop-blur-md flex items-center gap-3">
-            <span className="text-xl">❄️</span>
+            <span className="text-xl">â„ï¸</span>
             {streakLogic.toastMessage}
           </div>
         </div>
@@ -459,3 +469,5 @@ export default function App() {
     </ToastProvider>
   );
 }
+
+

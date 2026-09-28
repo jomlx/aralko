@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { useToast } from '../ui/Toast';
 import {
   Clock,
   LogOut,
@@ -14,9 +15,9 @@ import {
 import type { TestQuestion } from '../../types';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Types
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface TestModeViewerProps {
   activityName: string;
   questions: TestQuestion[];
@@ -26,6 +27,8 @@ interface TestModeViewerProps {
   onGenerateQuestions: (timeLimitSeconds: number) => void;
   onExit: () => void;
   onTestStateChange?: (isActive: boolean) => void;
+  addXP?: (amount: number, eventKey?: string) => void;
+  awardFreeze?: () => boolean;
 }
 
 type Phase = 'setup' | 'test' | 'results';
@@ -36,9 +39,9 @@ const TIME_PRESETS = [
   { label: '15 min', seconds: 900 },
 ];
 
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Helpers
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
   const s = (seconds % 60).toString().padStart(2, '0');
@@ -54,9 +57,9 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a;
 }
 
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // ExitConfirmDialog
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ExitConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -89,9 +92,9 @@ function ExitConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onC
   );
 }
 
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Setup Screen
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SetupScreen({
   activityName,
   questions,
@@ -131,7 +134,7 @@ function SetupScreen({
           <h1 className="text-2xl font-bold text-primary mb-2">{activityName}</h1>
           <p className="text-sm text-secondary">
             {hasQuestions && !isMismatch
-              ? `${questions.length} questions ready — single-answer & multi-select mixed`
+              ? `${questions.length} questions ready â€” single-answer & multi-select mixed`
               : 'Generate questions from your flashcards to begin'}
           </p>
         </div>
@@ -191,7 +194,7 @@ function SetupScreen({
             {isGenerating ? (
               <>
                 <Loader2 size={15} className="animate-spin" />
-                Generating with AI…
+                Generating with AIâ€¦
               </>
             ) : hasQuestions && !isMismatch ? (
               <>
@@ -240,9 +243,9 @@ function SetupScreen({
   );
 }
 
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Test Screen
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function TestScreen({
   activityName,
   questions,
@@ -268,7 +271,7 @@ function TestScreen({
     setShuffledOptions(shuffleArray(questions[currentIndex]?.options ?? []));
   }, [currentIndex, questions]);
 
-  // Countdown timer — auto-submit when time runs out
+  // Countdown timer â€” auto-submit when time runs out
   useEffect(() => {
     if (secondsLeft <= 0) {
       onSubmit(answers, timeLimit);
@@ -399,7 +402,7 @@ function TestScreen({
             )}
             <span className="text-2xs font-semibold uppercase tracking-widest text-muted mb-2 block">
               Question {currentIndex + 1}
-              {isMulti ? '' : ' · Single answer'}
+              {isMulti ? '' : ' Â· Single answer'}
             </span>
             <p className="text-base font-medium text-primary leading-relaxed">{question.question}</p>
           </div>
@@ -426,8 +429,8 @@ function TestScreen({
                     }`}
                   >
                     {isMulti
-                      ? isSelected ? '✓' : ''
-                      : isSelected ? '●' : String.fromCharCode(65 + idx)}
+                      ? isSelected ? 'âœ“' : ''
+                      : isSelected ? 'â—' : String.fromCharCode(65 + idx)}
                   </span>
                   <span className="flex-1">{option}</span>
                 </button>
@@ -435,7 +438,7 @@ function TestScreen({
             })}
           </div>
 
-          {/* Multi-select only: Confirm button (disabled until ≥1 selected) */}
+          {/* Multi-select only: Confirm button (disabled until â‰¥1 selected) */}
           {isMulti && (
             <div className="flex justify-end mt-2">
               <button
@@ -457,9 +460,9 @@ function TestScreen({
   );
 }
 
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Results Screen
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ResultsScreen({
   questions,
   answers,
@@ -489,10 +492,10 @@ function ResultsScreen({
   const pct = Math.round((correctCount / questions.length) * 100);
   const passed = pct >= 60;
   const grade =
-    pct >= 90 ? '🏆 Excellent!'
-    : pct >= 75 ? '🎉 Great job!'
-    : pct >= 60 ? '👍 Good effort!'
-    : '📚 Keep studying!';
+    pct >= 90 ? 'ðŸ† Excellent!'
+    : pct >= 75 ? 'ðŸŽ‰ Great job!'
+    : pct >= 60 ? 'ðŸ‘ Good effort!'
+    : 'ðŸ“š Keep studying!';
 
   const timeUsedDisplay = formatTime(Math.min(timeUsed, timeLimit));
 
@@ -532,8 +535,8 @@ function ResultsScreen({
             />
           </div>
           <div className="flex gap-6 text-sm text-secondary mt-2">
-            <span>⏱ Time used: <strong className="text-primary">{timeUsedDisplay}</strong></span>
-            <span>📝 Skipped: <strong className="text-primary">{scored.filter((s) => s.skipped).length}</strong></span>
+            <span>â± Time used: <strong className="text-primary">{timeUsedDisplay}</strong></span>
+            <span>ðŸ“ Skipped: <strong className="text-primary">{scored.filter((s) => s.skipped).length}</strong></span>
           </div>
         </div>
 
@@ -572,10 +575,10 @@ function ResultsScreen({
                         {!isCorrect && !skipped && (
                           <>
                             {missed.length > 0 && (
-                              <p className="text-2xs text-success">✓ Missed: {missed.join(', ')}</p>
+                              <p className="text-2xs text-success">âœ“ Missed: {missed.join(', ')}</p>
                             )}
                             {wrong.length > 0 && (
-                              <p className="text-2xs text-red-400">✗ Wrong: {wrong.join(', ')}</p>
+                              <p className="text-2xs text-red-400">âœ— Wrong: {wrong.join(', ')}</p>
                             )}
                           </>
                         )}
@@ -583,10 +586,10 @@ function ResultsScreen({
                           <p className="text-2xs text-muted">Not answered</p>
                         )}
                         {!isCorrect && (
-                          <p className="text-2xs text-success">✓ Correct: {correct.join(', ')}</p>
+                          <p className="text-2xs text-success">âœ“ Correct: {correct.join(', ')}</p>
                         )}
                         {isCorrect && (
-                          <p className="text-2xs text-success">✓ {correct.join(', ')}</p>
+                          <p className="text-2xs text-success">âœ“ {correct.join(', ')}</p>
                         )}
                         {q.explanation && (
                           <p className="mt-1 text-2xs text-muted italic">{q.explanation}</p>
@@ -620,9 +623,9 @@ function ResultsScreen({
   );
 }
 
-// ─────────────────────────────────────────────
-// Main export — orchestrates phases
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Main export â€” orchestrates phases
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function TestModeViewer({
   activityName,
   questions,
@@ -632,7 +635,9 @@ export function TestModeViewer({
   onGenerateQuestions,
   onExit,
   onTestStateChange,
+  awardFreeze
 }: TestModeViewerProps) {
+  const { showToast } = useToast();
   const [phase, setPhase] = useState<Phase>('setup');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(600);
   const [testAnswers, setTestAnswers] = useState<Record<number, string[]>>({});
@@ -654,7 +659,21 @@ export function TestModeViewer({
     setTimeUsed(used);
     setPhase('results');
     onTestStateChange?.(false);
-  }, [onTestStateChange]);
+
+    const correctCount = activeQuestions.filter((q, i) => {
+      const given = answers[i] ?? [];
+      const correct = q.correct_options;
+      return given.length === correct.length && correct.every((c) => given.includes(c));
+    }).length;
+    
+    const pct = Math.round((correctCount / activeQuestions.length) * 100);
+    if (pct === 100 && activeQuestions.length >= 3 && awardFreeze) {
+      const awarded = awardFreeze();
+      if (awarded) {
+        showToast('Perfect score! You earned a Streak Freeze! ❄️ (Max 2)', 'success');
+      }
+    }
+  }, [onTestStateChange, activeQuestions, awardFreeze, showToast]);
 
   const handleRetake = useCallback(() => {
     setActiveQuestions(shuffleArray(questions));
@@ -709,3 +728,4 @@ export function TestModeViewer({
     />
   );
 }
+
