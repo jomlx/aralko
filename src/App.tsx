@@ -276,7 +276,7 @@ function AppContent() {
               <div className="flex flex-1 items-center justify-center text-muted">Loading your workspace...</div>
             ) : (
               <>
-                {/* Main tab â€” Activity list */}
+                {/* Main tab — Activity list */}
                 <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'main' ? 'flex' : 'hidden'}`}>
                   {activities.length > 0 ? (
                     <ActivityList
@@ -300,7 +300,7 @@ function AppContent() {
                   )}
                 </div>
 
-                {/* Learn tab â€” always mounted so AIChatPanel never unmounts */}
+                {/* Learn tab — always mounted so AIChatPanel never unmounts */}
                 <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'learn' ? 'flex' : 'hidden'}`}>
                   {activities.length > 0 ? (
                     <LearnTab
@@ -323,7 +323,7 @@ function AppContent() {
                   )}
                 </div>
 
-                {/* Reviewer tab â€” always mounted */}
+                {/* Reviewer tab — always mounted */}
                 <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'reviewer' ? 'flex' : 'hidden'}`}>
                   {activities.length > 0 ? (
                     <ReviewerTab
@@ -342,17 +342,17 @@ function AppContent() {
                   )}
                 </div>
 
-                {/* Techniques tab â€” always mounted */}
+                {/* Techniques tab — always mounted */}
                 <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'techniques' ? 'block' : 'hidden'}`}>
                   <TechniquesGrid />
                 </div>
 
-                {/* Stats tab â€” always mounted */}
+                {/* Stats tab — always mounted */}
                 <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'stats' ? 'block' : 'hidden'}`}>
                   <StatsView sessions={sessions} streak={streakLogic.displayedStreak} />
                 </div>
 
-                {/* Community tab â€” always mounted */}
+                {/* Community tab — always mounted */}
                 <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'community' ? 'flex' : 'hidden'}`}>
                   <CommunityTab 
                     onOpenActivity={(id) => {

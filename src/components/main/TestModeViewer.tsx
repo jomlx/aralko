@@ -11,6 +11,7 @@ import {
   Trophy,
   Loader2,
   RefreshCw,
+  Timer,
 } from 'lucide-react';
 import type { TestQuestion } from '../../types';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
@@ -134,7 +135,7 @@ function SetupScreen({
           <h1 className="text-2xl font-bold text-primary mb-2">{activityName}</h1>
           <p className="text-sm text-secondary">
             {hasQuestions && !isMismatch
-              ? `${questions.length} questions ready â€” single-answer & multi-select mixed`
+              ? `${questions.length} questions ready — single-answer & multi-select mixed`
               : 'Generate questions from your flashcards to begin'}
           </p>
         </div>
@@ -194,7 +195,7 @@ function SetupScreen({
             {isGenerating ? (
               <>
                 <Loader2 size={15} className="animate-spin" />
-                Generating with AIâ€¦
+                Generating with AI…
               </>
             ) : hasQuestions && !isMismatch ? (
               <>
@@ -271,7 +272,7 @@ function TestScreen({
     setShuffledOptions(shuffleArray(questions[currentIndex]?.options ?? []));
   }, [currentIndex, questions]);
 
-  // Countdown timer â€” auto-submit when time runs out
+  // Countdown timer — auto-submit when time runs out
   useEffect(() => {
     if (secondsLeft <= 0) {
       onSubmit(answers, timeLimit);
@@ -429,7 +430,7 @@ function TestScreen({
                     }`}
                   >
                     {isMulti
-                      ? isSelected ? 'âœ“' : ''
+                      ? isSelected ? '✓' : ''
                       : isSelected ? 'â—' : String.fromCharCode(65 + idx)}
                   </span>
                   <span className="flex-1">{option}</span>
@@ -492,10 +493,10 @@ function ResultsScreen({
   const pct = Math.round((correctCount / questions.length) * 100);
   const passed = pct >= 60;
   const grade =
-    pct >= 90 ? 'ðŸ† Excellent!'
-    : pct >= 75 ? 'ðŸŽ‰ Great job!'
-    : pct >= 60 ? 'ðŸ‘ Good effort!'
-    : 'ðŸ“š Keep studying!';
+    pct >= 90 ? '\u{1f3c6} Excellent!'
+    : pct >= 75 ? '\u{1f389} Great job!'
+    : pct >= 60 ? '\u{1f44d} Good effort!'
+    : '\u{1f4da} Keep studying!';
 
   const timeUsedDisplay = formatTime(Math.min(timeUsed, timeLimit));
 
@@ -535,8 +536,8 @@ function ResultsScreen({
             />
           </div>
           <div className="flex gap-6 text-sm text-secondary mt-2">
-            <span>â± Time used: <strong className="text-primary">{timeUsedDisplay}</strong></span>
-            <span>ðŸ“ Skipped: <strong className="text-primary">{scored.filter((s) => s.skipped).length}</strong></span>
+            <span className="flex items-center gap-1"><Timer size={14} /> Time used: <strong className="text-primary">{timeUsedDisplay}</strong></span>
+            <span>{"\u{1f4dd}"} Skipped: <strong className="text-primary">{scored.filter((s) => s.skipped).length}</strong></span>
           </div>
         </div>
 
@@ -575,10 +576,10 @@ function ResultsScreen({
                         {!isCorrect && !skipped && (
                           <>
                             {missed.length > 0 && (
-                              <p className="text-2xs text-success">âœ“ Missed: {missed.join(', ')}</p>
+                              <p className="text-2xs text-success">✓ Missed: {missed.join(', ')}</p>
                             )}
                             {wrong.length > 0 && (
-                              <p className="text-2xs text-red-400">âœ— Wrong: {wrong.join(', ')}</p>
+                              <p className="text-2xs text-red-400">✗ Wrong: {wrong.join(', ')}</p>
                             )}
                           </>
                         )}
@@ -586,10 +587,10 @@ function ResultsScreen({
                           <p className="text-2xs text-muted">Not answered</p>
                         )}
                         {!isCorrect && (
-                          <p className="text-2xs text-success">âœ“ Correct: {correct.join(', ')}</p>
+                          <p className="text-2xs text-success">✓ Correct: {correct.join(', ')}</p>
                         )}
                         {isCorrect && (
-                          <p className="text-2xs text-success">âœ“ {correct.join(', ')}</p>
+                          <p className="text-2xs text-success">✓ {correct.join(', ')}</p>
                         )}
                         {q.explanation && (
                           <p className="mt-1 text-2xs text-muted italic">{q.explanation}</p>
@@ -624,7 +625,7 @@ function ResultsScreen({
 }
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Main export â€” orchestrates phases
+// Main export — orchestrates phases
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function TestModeViewer({
   activityName,

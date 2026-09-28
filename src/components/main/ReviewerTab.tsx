@@ -141,7 +141,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-      {/* Outer padding wrapper â€” does NOT scroll */}
+      {/* Outer padding wrapper — does NOT scroll */}
       <div className="flex-1 min-h-0 flex gap-[var(--gutter)] px-[var(--gutter)] py-4 overflow-hidden">
 
         {/* Center: Reviewer Content */}
@@ -154,7 +154,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               <div>
                 <h2 className="text-xl font-semibold text-primary">Reviewer</h2>
                 <p className="mt-1 text-sm text-muted">
-                  {activeActivity.name}{activeActivity.subject ? `: ${activeActivity.subject}` : ''} â€” Upload a file or use activity notes to auto-generate a cheat sheet.
+                  {activeActivity.name}{activeActivity.subject ? `: ${activeActivity.subject}` : ''} — Upload a file or use activity notes to auto-generate a cheat sheet.
                 </p>
               </div>
 
@@ -177,7 +177,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                   <BookOpen size={15} className="text-amber-400" />
                   <span className="text-sm font-medium text-primary">Cheat Sheet</span>
                   {uploadedFileName && (
-                    <span className="text-xs text-muted">â€” {uploadedFileName}</span>
+                    <span className="text-xs text-muted">— {uploadedFileName}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">

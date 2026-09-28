@@ -83,11 +83,11 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
       console.error('Chat error:', err);
       let errorMsg: string;
       if (err.message === 'Gemini API key not configured') {
-        errorMsg = 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¡ Please add your Gemini API key in Settings to use the AI assistant.';
+        errorMsg = '\u{1f4a1} Please add your Gemini API key in Settings to use the AI assistant.';
       } else if (err.message?.includes('Invalid API Key')) {
-        errorMsg = 'ÃƒÂ¢Ã‚ÂÃ…â€™ Your API key appears to be invalid. Please check your settings.';
+        errorMsg = '\u{274c} Your API key appears to be invalid. Please check your settings.';
       } else {
-        errorMsg = 'ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â ' + (err.message || 'Unknown error connecting to the AI.');
+        errorMsg = '\u{26a0}\u{fe0f} ' + (err.message || 'Unknown error connecting to the AI.');
       }
 
       await addMessage({
@@ -108,7 +108,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
 
   return (
     <div className="rounded-2xl border border-token bg-surface flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* Header ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â single row: title+subtitle on left, Trash + Persona icons on right */}
+      {/* Header — single row: title+subtitle on left, Trash + Persona icons on right */}
       <div className="flex-shrink-0 flex items-start justify-between px-4 pt-3 pb-3 border-b border-token">
         {/* Left: title + subtitle */}
         <div>
@@ -120,7 +120,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
 
         {/* Right: Trash icon + Persona icon */}
         <div className="flex items-center gap-0.5">
-          {/* Clear chat ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â always rendered but only active when messages exist */}
+          {/* Clear chat — always rendered but only active when messages exist */}
           <AlertDialog>
             <AlertDialogTrigger className="p-0 m-0 border-none bg-transparent hover:bg-transparent">
               <button

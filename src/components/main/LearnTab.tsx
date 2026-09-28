@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { Activity } from '../../types';
 import { Loader2, X, ChevronDown, Share2 } from 'lucide-react';
 import { FlashcardsViewer } from './FlashcardsViewer';
@@ -204,7 +204,7 @@ export function LearnTab({
     </div>
   );
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ On-demand quiz generation Ã¢â€â‚¬Ã¢â€â‚¬
+  // \u{2500}\u{2500} On-demand quiz generation \u{2500}\u{2500}
   // When the user switches to Quiz tab for the first time, auto-generate if there's no quiz yet.
   useEffect(() => {
     if (!isQuizTechnique) return;
@@ -239,7 +239,7 @@ export function LearnTab({
                 {headerControls}
               </div>
 
-              {/* Content area Ã¢â‚¬â€ always render all three, show/hide via CSS to preserve state */}
+              {/* Content area — always render all three, show/hide via CSS to preserve state */}
 
               {/* FLASHCARDS */}
               <div className={isFlashcardTechnique ? "flex-1 relative flex flex-col min-h-0" : "hidden"}>
@@ -275,7 +275,7 @@ export function LearnTab({
                 {quizError && !isGeneratingQuiz && (
                   <div className="mb-3 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                     <span className="text-sm text-red-300">{quizError}</span>
-                    <button onClick={() => setQuizError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">Ãƒâ€”</button>
+                    <button onClick={() => setQuizError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">{"\u{d7}"}</button>
                   </div>
                 )}
                 {activeActivity.quizData && activeActivity.quizData.length > 0 ? (
@@ -336,7 +336,7 @@ export function LearnTab({
         </div>
       </div>
 
-      {/* Ã¢â€â‚¬Ã¢â€â‚¬ Focus Test Mode Overlay Ã¢â€â‚¬Ã¢â€â‚¬ */}
+      {/* \u{2500}\u{2500} Focus Test Mode Overlay \u{2500}\u{2500} */}
       {renderOverlay && isFlashcardTechnique && (
         <div
           className={`fixed inset-0 z-50 bg-app flex flex-col transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
