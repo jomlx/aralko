@@ -370,7 +370,7 @@ function AppContent() {
       {streakLogic.toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <div className="bg-sky-500/10 border border-sky-500/20 text-sky-400 px-6 py-3 rounded-2xl shadow-xl shadow-black/40 font-medium backdrop-blur-md flex items-center gap-3">
-            <span className="text-xl">â„ï¸</span>
+            <span className="text-xl">{"\u{2744}\u{fe0f}"}</span>
             {streakLogic.toastMessage}
           </div>
         </div>

@@ -29,7 +29,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
   const exportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // â”€â”€ On-demand reviewer generation â”€â”€
+  // ── On-demand reviewer generation ──
   // Automatically generate if the tab is opened for an activity that has notes
   // but hasn't had a reviewer generated yet (reviewerContent is empty).
   useEffect(() => {
@@ -247,7 +247,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
             {inlineError && (
               <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                 <span className="text-sm text-red-300">{inlineError}</span>
-                <button onClick={() => setInlineError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">Ã—</button>
+                <button onClick={() => setInlineError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">{"\u00d7"}</button>
               </div>
             )}
 

@@ -1,12 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Activity } from '../../types';
-import { Loader2, X, Share2 } from 'lucide-react';
+import { Loader2, X, ChevronDown, Share2 } from 'lucide-react';
 import { FlashcardsViewer } from './FlashcardsViewer';
 import { QuizViewer } from './QuizViewer';
 import { TestModeViewer } from './TestModeViewer';
 import { ErrorBoundary } from './ErrorBoundary';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { NativeSelect, NativeSelectOption } from '../ui/native-select';
 import { useStudyGroups } from '../../hooks/useStudyGroups';
 import { generateWithBackend } from '../../lib/apiClient';
 import { getPersonalGeminiKey } from '../../lib/aiCall';
@@ -186,19 +185,22 @@ export function LearnTab({
   const headerControls = (
     <div className="flex items-center gap-3">
       <ShareActivityButton activityId={activeActivity.id} />
-      <NativeSelect
-        value={activeActivity.technique || 'Study Notes'}
-        onChange={(e) => onUpdateActivity(activeActivity.id, { technique: e.target.value === 'Study Notes' ? undefined : e.target.value })}
-      >
-        <NativeSelectOption value="Study Notes">Study Notes</NativeSelectOption>
-        <NativeSelectOption value="Flashcards">Flashcards</NativeSelectOption>
-        <NativeSelectOption value="Quiz">Knowledge Check</NativeSelectOption>
-        <NativeSelectOption value="Test Mode">Assessment</NativeSelectOption>
-        <NativeSelectOption value="Feynman Technique">Feynman Technique</NativeSelectOption>
-        <NativeSelectOption value="Active Recall">Active Recall</NativeSelectOption>
-        <NativeSelectOption value="Spaced Repetition">Spaced Repetition</NativeSelectOption>
-        <NativeSelectOption value="Interleaving">Interleaving</NativeSelectOption>
-      </NativeSelect>
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex items-center gap-2 bg-surface border border-token text-secondary text-sm font-medium px-4 py-2 rounded-xl outline-none cursor-pointer hover:bg-white/[0.04] hover:text-primary transition-colors shadow-sm">
+          {activeActivity.technique || 'Study Notes'}
+          <ChevronDown size={16} className="opacity-70" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          {['Study Notes', 'Flashcards', 'Quiz', 'Test Mode', 'Feynman Technique', 'Active Recall', 'Spaced Repetition', 'Interleaving'].map((tech) => (
+            <DropdownMenuItem 
+              key={tech} 
+              onClick={() => onUpdateActivity(activeActivity.id, { technique: tech === 'Study Notes' ? undefined : tech })}
+            >
+              {tech === 'Test Mode' ? '?? ' : ''}{tech}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 
@@ -273,7 +275,7 @@ export function LearnTab({
                 {quizError && !isGeneratingQuiz && (
                   <div className="mb-3 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                     <span className="text-sm text-red-300">{quizError}</span>
-                    <button onClick={() => setQuizError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">{"\u{d7}"}</button>
+                    <button onClick={() => setQuizError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">{"\u00d7"}</button>
                   </div>
                 )}
                 {activeActivity.quizData && activeActivity.quizData.length > 0 ? (

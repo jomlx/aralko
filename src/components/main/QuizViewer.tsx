@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronRight, CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react';
+import { ChevronRight, CheckCircle2, XCircle, RotateCcw, Trophy, Check } from 'lucide-react';
 import type { QuizQuestion } from '../../types';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 
@@ -80,10 +80,10 @@ function QuizSummary({
                     <div className="flex flex-col gap-1 flex-1 min-w-0">
                       <span className="text-secondary leading-snug">{q.question}</span>
                       {isWrong && (
-                        <p className="mt-1 text-2xs text-success">✓ Correct answer: {q.answer}</p>
+                        <p className="mt-1 text-2xs text-success"><Check size={12} className="inline mr-1" />Correct answer: {q.answer}</p>
                       )}
                       {isCorrect && (
-                        <p className="mt-1 text-2xs text-success">✓ {q.answer}</p>
+                        <p className="mt-1 text-2xs text-success"><Check size={12} className="inline mr-1" />{q.answer}</p>
                       )}
                       {results[i] === undefined && (
                         <p className="mt-1 text-2xs text-muted">Not answered — correct: {q.answer}</p>

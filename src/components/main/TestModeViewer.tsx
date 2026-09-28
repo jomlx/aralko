@@ -12,13 +12,14 @@ import {
   Loader2,
   RefreshCw,
   Timer,
+  Check,
 } from 'lucide-react';
 import type { TestQuestion } from '../../types';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 // Types
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 interface TestModeViewerProps {
   activityName: string;
   questions: TestQuestion[];
@@ -40,9 +41,9 @@ const TIME_PRESETS = [
   { label: '15 min', seconds: 900 },
 ];
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 // Helpers
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
   const s = (seconds % 60).toString().padStart(2, '0');
@@ -58,9 +59,9 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a;
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 // ExitConfirmDialog
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 function ExitConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -93,9 +94,9 @@ function ExitConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onC
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 // Setup Screen
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 function SetupScreen({
   activityName,
   questions,
@@ -244,9 +245,9 @@ function SetupScreen({
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 // Test Screen
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 function TestScreen({
   activityName,
   questions,
@@ -403,7 +404,7 @@ function TestScreen({
             )}
             <span className="text-2xs font-semibold uppercase tracking-widest text-muted mb-2 block">
               Question {currentIndex + 1}
-              {isMulti ? '' : ' Â· Single answer'}
+              {isMulti ? '' : ' \u00b7 Single answer'}
             </span>
             <p className="text-base font-medium text-primary leading-relaxed">{question.question}</p>
           </div>
@@ -430,8 +431,8 @@ function TestScreen({
                     }`}
                   >
                     {isMulti
-                      ? isSelected ? '✓' : ''
-                      : isSelected ? 'â—' : String.fromCharCode(65 + idx)}
+                      ? isSelected ? <Check size={14} strokeWidth={3} /> : ''
+                      : isSelected ? <CheckCircle2 size={14} /> : String.fromCharCode(65 + idx)}
                   </span>
                   <span className="flex-1">{option}</span>
                 </button>
@@ -439,7 +440,7 @@ function TestScreen({
             })}
           </div>
 
-          {/* Multi-select only: Confirm button (disabled until â‰¥1 selected) */}
+          {/* Multi-select only: Confirm button (disabled until ≥1 selected) */}
           {isMulti && (
             <div className="flex justify-end mt-2">
               <button
@@ -461,9 +462,9 @@ function TestScreen({
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 // Results Screen
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 function ResultsScreen({
   questions,
   answers,
@@ -537,7 +538,7 @@ function ResultsScreen({
           </div>
           <div className="flex gap-6 text-sm text-secondary mt-2">
             <span className="flex items-center gap-1"><Timer size={14} /> Time used: <strong className="text-primary">{timeUsedDisplay}</strong></span>
-            <span>{"\u{1f4dd}"} Skipped: <strong className="text-primary">{scored.filter((s) => s.skipped).length}</strong></span>
+            <span>{'\U0001F4DD'} Skipped: <strong className="text-primary">{scored.filter((s) => s.skipped).length}</strong></span>
           </div>
         </div>
 
@@ -624,9 +625,9 @@ function ResultsScreen({
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 // Main export — orchestrates phases
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────
 export function TestModeViewer({
   activityName,
   questions,
