@@ -25,7 +25,6 @@ interface TestModeViewerProps {
   onGenerateQuestions: (timeLimitSeconds: number) => void;
   onExit: () => void;
   onTestStateChange?: (isActive: boolean) => void;
-  headerControls?: React.ReactNode;
 }
 
 type Phase = 'setup' | 'test' | 'results';
@@ -249,14 +248,12 @@ function TestScreen({
   timeLimit,
   onSubmit,
   onExit,
-  headerControls,
 }: {
   activityName: string;
   questions: TestQuestion[];
   timeLimit: number;
   onSubmit: (answers: Record<number, string[]>, timeUsed: number) => void;
   onExit: () => void;
-  headerControls?: React.ReactNode;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string[]>>({});
@@ -352,9 +349,9 @@ function TestScreen({
 
       {/* Unified top bar: activity name + badge left; counter, timer, exit, dropdown right */}
       <div className="flex-shrink-0 flex items-center gap-4 px-8 py-3 border-b border-token bg-surface/50">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="text-sm font-semibold text-primary truncate">{activityName}</span>
-          <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-accent/20 bg-accent-muted px-2 py-0.5 text-2xs font-semibold text-accent uppercase tracking-wider">
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-xl font-semibold text-primary truncate">{activityName}</span>
+          <span className="inline-flex items-center gap-1 w-fit rounded-full border border-accent/20 bg-accent-muted px-2 py-0.5 text-2xs font-semibold text-accent uppercase tracking-wider mt-0.5">
             Test Mode
           </span>
         </div>
@@ -378,15 +375,10 @@ function TestScreen({
           <LogOut size={14} />
           Exit
         </button>
-
-        {/* Technique dropdown passed down from LearnTab */}
-        {headerControls && (
-          <div className="shrink-0">{headerControls}</div>
-        )}
       </div>
 
-      {/* Green timer progress bar (only progress indicator) */}
-      <div className="flex-shrink-0 h-1 bg-white/[0.05]">
+      {/* Green timer progress bar */}
+      <div className="flex-shrink-0 h-0.5 bg-white/[0.06]">
         <div
           className={`h-full transition-all duration-1000 ease-linear ${timerBarColor}`}
           style={{ width: `${timerPct}%` }}
@@ -419,17 +411,17 @@ function TestScreen({
                 <button
                   key={idx}
                   onClick={() => toggleOption(option)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-medium transition-all border ${
-                    isSelected
-                      ? 'border-accent/50 bg-accent-muted text-accent'
-                      : 'border-token bg-white/[0.03] text-secondary hover:bg-white/[0.07] hover:border-accent/20 cursor-pointer'
-                  }`}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-medium transition-all border"
+                  style={isSelected
+                    ? { backgroundColor: 'var(--accent)', borderColor: 'var(--accent)', color: '#ffffff', fontWeight: 600 }
+                    : { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'var(--border)', color: 'var(--text-secondary)', cursor: 'pointer' }
+                  }
                 >
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center border text-xs font-bold transition-colors ${
                       isMulti
-                        ? `rounded-md ${isSelected ? 'border-accent/50 bg-accent text-white' : 'border-token'}`
-                        : `rounded-full ${isSelected ? 'border-accent/50 bg-accent text-white' : 'border-token text-muted'}`
+                        ? `rounded-md ${isSelected ? 'bg-white/30 border-white/50' : 'border-token'}`
+                        : `rounded-full ${isSelected ? 'bg-white/30 border-white/50' : 'border-token text-muted'}`
                     }`}
                   >
                     {isMulti
@@ -448,7 +440,10 @@ function TestScreen({
               <button
                 onClick={() => advance(answers)}
                 disabled={currentAnswer.length === 0}
-                className="flex items-center gap-2 rounded-xl bg-accent hover:bg-violet-700 px-5 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
+                onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = 'var(--accent-hover)'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--accent)'; }}
               >
                 {currentIndex < questions.length - 1 ? 'Confirm Selections' : 'Submit Test'}
                 <ChevronRight size={15} />
@@ -614,7 +609,6 @@ export function TestModeViewer({
   onGenerateQuestions,
   onExit,
   onTestStateChange,
-  headerControls,
 }: TestModeViewerProps) {
   const [phase, setPhase] = useState<Phase>('setup');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(600);
@@ -676,7 +670,6 @@ export function TestModeViewer({
         timeLimit={timeLimitSeconds}
         onSubmit={handleSubmit}
         onExit={handleExit}
-        headerControls={headerControls}
       />
     );
   }
