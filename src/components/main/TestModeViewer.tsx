@@ -327,19 +327,16 @@ function TestScreen({
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-app border-token">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle size={18} className="text-warning" />
-              Exit Test?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-primary">Exit Test?</AlertDialogTitle>
+            <AlertDialogDescription className="text-secondary">
               Your progress will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep going</AlertDialogCancel>
-            <AlertDialogAction onClick={onExit} className="bg-danger text-white hover:bg-danger/90 border-danger/30">
+            <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary">Keep going</AlertDialogCancel>
+            <AlertDialogAction onClick={onExit} className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300">
               Exit
             </AlertDialogAction>
           </AlertDialogFooter>
