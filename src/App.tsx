@@ -130,7 +130,10 @@ function AppContent() {
     }
   }, [loading, activities, selectedActivityId, setSelectedActivityId]);
 
+  const { user } = useAuth();
+  
   const streakLogic = useStreakLogic({
+    userId: user?.id,
     sessions,
     sessionsLoaded,
     settingsLoaded: userSettings.settingsLoaded,

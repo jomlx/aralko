@@ -1,8 +1,8 @@
-﻿import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import type { StudySession } from '../types';
-import { useAuth } from './useAuth';
 
 interface StreakLogicProps {
+  userId?: string;
   sessions: StudySession[];
   sessionsLoaded: boolean;
   settingsLoaded?: boolean;
@@ -73,16 +73,14 @@ export function evaluateStreak({
   return { displayedStreak, action };
 }
 
-export function useStreakLogic({ sessions, sessionsLoaded, settingsLoaded = true, streakFreezes, savedStreak, updateStreakData }: StreakLogicProps) {
+export function useStreakLogic({ userId, sessions, sessionsLoaded, settingsLoaded = true, streakFreezes, savedStreak, updateStreakData }: StreakLogicProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const evaluatedRef = useRef(false);
-  const { user } = useAuth();
-  const userId = user?.id || 'anon';
 
   const dates = [...new Set(sessions.map(s => toLocalDateStr(s.date)))].sort().reverse();
   const rawLastStudy = dates.length > 0 ? dates[0] : null;
-  const freezeCoverKey = `aralko-freeze-covered-${userId}`;
-  const freezeCovered = localStorage.getItem(freezeCoverKey);
+  const freezeCoverKey = userId ? `aralko-freeze-covered-${userId}` : null;
+  const freezeCovered = freezeCoverKey ? localStorage.getItem(freezeCoverKey) : null;
   
   // Use whichever is later: the last actual session, or the last freeze-covered date
   const lastStudyDate = !rawLastStudy ? freezeCovered : (!freezeCovered ? rawLastStudy : (rawLastStudy > freezeCovered ? rawLastStudy : freezeCovered));
@@ -96,10 +94,10 @@ export function useStreakLogic({ sessions, sessionsLoaded, settingsLoaded = true
   });
 
   useEffect(() => {
-    if (!sessionsLoaded || !settingsLoaded) return;
+    if (!userId || !sessionsLoaded || !settingsLoaded) return;
     if (evaluatedRef.current) return;
 
-    if (action === 'freeze') {
+    if (action === 'freeze' && freezeCoverKey) {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       localStorage.setItem(freezeCoverKey, toLocalDateStr(yesterday.toISOString()));
@@ -114,7 +112,7 @@ export function useStreakLogic({ sessions, sessionsLoaded, settingsLoaded = true
     }
 
     evaluatedRef.current = true;
-  }, [sessionsLoaded, settingsLoaded, action, streakFreezes, savedStreak, updateStreakData, freezeCoverKey]);
+  }, [userId, sessionsLoaded, settingsLoaded, action, streakFreezes, savedStreak, updateStreakData, freezeCoverKey]);
 
   const incrementStreak = useCallback(() => {
     if (dates.includes(todayStr)) return;
