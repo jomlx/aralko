@@ -14,6 +14,7 @@ import { AddActivityModal } from './components/main/AddActivityModal';
 import { ProfilePopover } from './components/sidebar/ProfilePopover';
 import { ToastProvider } from './components/ui/Toast';
 import { SettingsDialog } from './components/SettingsDialog';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
 
 import { useActivities } from './hooks/useActivities';
 import { useSessions } from './hooks/useSessions';
@@ -71,8 +72,6 @@ function useMobileDetect() {
 function AppContent() {
   const isMobile = useMobileDetect();
   const [activeTab, setActiveTab] = useState<MainTab>('main');
-  const [sidebarWidth, setSidebarWidth] = useState(340);
-  const [isDragging, setIsDragging] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
@@ -171,16 +170,6 @@ function AppContent() {
     autoStart: userSettings.autoStart,
   });
 
-  const handleResizeMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const newWidth = Math.max(280, Math.min(360, e.clientX));
-    setSidebarWidth(newWidth);
-  }, [isDragging]);
-
-  const handleResizeEnd = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
   const handleActivityAdded = (newActivity: Activity) => {
     // addActivity syncs DB in background and returns the real ID
     return addActivity(newActivity).then(newId => {
@@ -210,10 +199,7 @@ function AppContent() {
   return (
     <div 
       data-theme={theme}
-      className={`h-screen overflow-hidden bg-app text-slate-100 flex flex-col ${isDragging ? 'no-select' : ''}`}
-      onMouseMove={handleResizeMove}
-      onMouseUp={handleResizeEnd}
-      onMouseLeave={handleResizeEnd}
+      className="h-screen overflow-hidden bg-app text-slate-100 flex flex-col"
     >
       {/* Header */}
       <div className="flex-shrink-0 h-[60px]">
@@ -221,149 +207,160 @@ function AppContent() {
       </div>
       
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Sidebar */}
-        <div
-          className={`flex-shrink-0 overflow-hidden transition-all duration-300 ${isTestMode ? 'border-r-0' : 'border-r border-token'}`}
-          style={{ width: isTestMode ? 0 : sidebarWidth }}
-        >
-          <Sidebar width={sidebarWidth} onResizeStart={() => setIsDragging(true)}>
-            <StudyTracker 
-              secondsLeft={pomodoro.secondsLeft}
-              phase={pomodoro.phase}
-              isRunning={pomodoro.isRunning}
-              sessionsCompleted={pomodoro.sessionsCompleted}
-              onStart={pomodoro.start}
-              onPause={pomodoro.pause}
-              onReset={pomodoro.reset}
-              preset={userSettings.preset}
-              setPreset={userSettings.setPreset}
-              autoStart={userSettings.autoStart}
-              setAutoStart={userSettings.setAutoStart}
-              WORK_TIME={pomodoro.WORK_TIME}
-            />
-            <div className="flex-1 min-h-0 flex flex-col">
-              <MusicPlayerCompact />
-            </div>
-            
-            <ProfilePopover 
-              onLogout={logout}
-              streak={streakLogic.displayedStreak}
-              xp={userSettings.xp}
-              totalMinutes={sessions.reduce((a, s) => a + s.minutes, 0)}
-              sessionsCount={sessions.length}
-              freezes={userSettings.streakFreezes}
-            />
-          </Sidebar>
-        </div>
-
-        {/* Settings Dialog (rendered at app root to float above everything) */}
-        <SettingsDialog
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          isAuthenticated={isAuthenticated}
-          onLogin={login}
-          onLogout={logout}
-        />
-
-        <main className="flex-1 flex flex-col min-h-0 bg-app">
-
-          {/* Content area */}
-          <div className="flex-1 min-h-0 flex flex-col">
-            {loading ? (
-              <div className="flex flex-1 items-center justify-center text-muted">Loading your workspace...</div>
-            ) : (
-              <>
-                {/* Main tab — Activity list */}
-                <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'main' ? 'flex' : 'hidden'}`}>
-                  {activities.length > 0 ? (
-                    <ActivityList
-                      activities={activities}
-                      selectedActivity={selectedActivityId}
-                      onSelectActivity={setSelectedActivityId}
-                      onAddActivity={() => setIsModalOpen(true)}
-                      onRemoveActivity={removeActivity}
-                      onNavigateToLearn={() => setActiveTab('learn')}
-                    />
-                  ) : (
-                    <div className="flex flex-1 flex-col items-center justify-center text-secondary">
-                      <p className="mb-4">No activities found. Get started by adding one!</p>
-                      <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent"
-                      >
-                        + Add your first activity
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Learn tab — always mounted so AIChatPanel never unmounts */}
-                <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'learn' ? 'flex' : 'hidden'}`}>
-                  {activities.length > 0 ? (
-                    <LearnTab
-                      activities={activities}
-                      selectedActivity={selectedActivityId}
-                      onUpdateActivity={updateActivity}
-                      isTestMode={isTestMode}
-                      onEnterTestMode={() => setIsTestMode(true)}
-                      onExitTestMode={() => setIsTestMode(false)}
-                      addXP={userSettings.addXP}
-                      awardFreeze={awardFreeze}
-                    />
-                  ) : (
-                    <div className="flex flex-1 flex-col items-center justify-center text-secondary">
-                      <p className="mb-4">No activities yet. Add one from the Main tab.</p>
-                      <button onClick={() => setActiveTab('main')} className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent">
-                        Go to Main
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Reviewer tab — always mounted */}
-                <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'reviewer' ? 'flex' : 'hidden'}`}>
-                  {activities.length > 0 ? (
-                    <ReviewerTab
-                      activities={activities}
-                      selectedActivity={selectedActivityId}
-                      onUpdateActivity={updateActivity}
-                      addXP={userSettings.addXP}
-                    />
-                  ) : (
-                    <div className="flex flex-1 flex-col items-center justify-center text-secondary">
-                      <p className="mb-4">No activities yet. Add one from the Main tab.</p>
-                      <button onClick={() => setActiveTab('main')} className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent">
-                        Go to Main
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Techniques tab — always mounted */}
-                <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'techniques' ? 'block' : 'hidden'}`}>
-                  <TechniquesGrid />
-                </div>
-
-                {/* Stats tab — always mounted */}
-                <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'stats' ? 'block' : 'hidden'}`}>
-                  <StatsView sessions={sessions} streak={streakLogic.displayedStreak} />
-                </div>
-
-                {/* Community tab — always mounted */}
-                <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'community' ? 'flex' : 'hidden'}`}>
-                  <CommunityTab 
-                    onOpenActivity={(id) => {
-                      setSelectedActivityId(id);
-                      setActiveTab('learn');
-                    }}
+        <ResizablePanelGroup orientation="horizontal">
+          {/* Sidebar */}
+          {!isTestMode && (
+            <>
+              <ResizablePanel
+                defaultSize={22}
+                minSize={15}
+                maxSize={35}
+                className="flex-shrink-0 transition-all duration-300"
+              >
+                <Sidebar>
+                  <StudyTracker 
+                    secondsLeft={pomodoro.secondsLeft}
+                    phase={pomodoro.phase}
+                    isRunning={pomodoro.isRunning}
+                    sessionsCompleted={pomodoro.sessionsCompleted}
+                    onStart={pomodoro.start}
+                    onPause={pomodoro.pause}
+                    onReset={pomodoro.reset}
+                    preset={userSettings.preset}
+                    setPreset={userSettings.setPreset}
+                    autoStart={userSettings.autoStart}
+                    setAutoStart={userSettings.setAutoStart}
+                    WORK_TIME={pomodoro.WORK_TIME}
                   />
-                </div>
-              </>
-            )}
-          </div>
-        </main>
+                  <div className="flex-1 min-h-0 flex flex-col">
+                    <MusicPlayerCompact />
+                  </div>
+                  
+                  <ProfilePopover 
+                    onLogout={logout}
+                    streak={streakLogic.displayedStreak}
+                    xp={userSettings.xp}
+                    totalMinutes={sessions.reduce((a, s) => a + s.minutes, 0)}
+                    sessionsCount={sessions.length}
+                    freezes={userSettings.streakFreezes}
+                  />
+                </Sidebar>
+              </ResizablePanel>
+              
+              <ResizableHandle withHandle />
+            </>
+          )}
+
+          <ResizablePanel defaultSize={isTestMode ? 100 : 78}>
+            <main className="h-full flex flex-col min-h-0 bg-app">
+              {/* Settings Dialog (rendered at app root to float above everything) */}
+              <SettingsDialog
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                isAuthenticated={isAuthenticated}
+                onLogin={login}
+                onLogout={logout}
+              />
+
+              {/* Content area */}
+              <div className="flex-1 min-h-0 flex flex-col pr-[var(--gutter)]">
+                {loading ? (
+                  <div className="flex flex-1 items-center justify-center text-muted">Loading your workspace...</div>
+                ) : (
+                  <>
+                    {/* Main tab — Activity list */}
+                    <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'main' ? 'flex' : 'hidden'}`}>
+                      {activities.length > 0 ? (
+                        <ActivityList
+                          activities={activities}
+                          selectedActivity={selectedActivityId}
+                          onSelectActivity={setSelectedActivityId}
+                          onAddActivity={() => setIsModalOpen(true)}
+                          onRemoveActivity={removeActivity}
+                          onNavigateToLearn={() => setActiveTab('learn')}
+                        />
+                      ) : (
+                        <div className="flex flex-1 flex-col items-center justify-center text-secondary">
+                          <p className="mb-4">No activities found. Get started by adding one!</p>
+                          <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent"
+                          >
+                            + Add your first activity
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Learn tab — always mounted so AIChatPanel never unmounts */}
+                    <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'learn' ? 'flex' : 'hidden'}`}>
+                      {activities.length > 0 ? (
+                        <LearnTab
+                          activities={activities}
+                          selectedActivity={selectedActivityId}
+                          onUpdateActivity={updateActivity}
+                          isTestMode={isTestMode}
+                          onEnterTestMode={() => setIsTestMode(true)}
+                          onExitTestMode={() => setIsTestMode(false)}
+                          addXP={userSettings.addXP}
+                          awardFreeze={awardFreeze}
+                        />
+                      ) : (
+                        <div className="flex flex-1 flex-col items-center justify-center text-secondary">
+                          <p className="mb-4">No activities yet. Add one from the Main tab.</p>
+                          <button onClick={() => setActiveTab('main')} className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent">
+                            Go to Main
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reviewer tab — always mounted */}
+                    <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'reviewer' ? 'flex' : 'hidden'}`}>
+                      {activities.length > 0 ? (
+                        <ReviewerTab
+                          activities={activities}
+                          selectedActivity={selectedActivityId}
+                          onUpdateActivity={updateActivity}
+                          addXP={userSettings.addXP}
+                        />
+                      ) : (
+                        <div className="flex flex-1 flex-col items-center justify-center text-secondary">
+                          <p className="mb-4">No activities yet. Add one from the Main tab.</p>
+                          <button onClick={() => setActiveTab('main')} className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent">
+                            Go to Main
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Techniques tab — always mounted */}
+                    <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'techniques' ? 'block' : 'hidden'}`}>
+                      <TechniquesGrid />
+                    </div>
+
+                    {/* Stats tab — always mounted */}
+                    <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'stats' ? 'block' : 'hidden'}`}>
+                      <StatsView sessions={sessions} streak={streakLogic.displayedStreak} />
+                    </div>
+
+                    {/* Community tab — always mounted */}
+                    <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'community' ? 'flex' : 'hidden'}`}>
+                      <CommunityTab 
+                        onOpenActivity={(id) => {
+                          setSelectedActivityId(id);
+                          setActiveTab('learn');
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </main>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
 
       {streakLogic.toastMessage && (
