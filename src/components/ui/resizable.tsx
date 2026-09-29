@@ -24,8 +24,8 @@ function ResizableHandle({
   return (
     <ResizablePrimitive.Separator
       className={cn(
-        "relative flex items-center justify-center bg-token transition-all duration-150",
-        "w-px",
+        "relative flex items-center justify-center transition-all duration-150",
+        "w-px bg-[var(--border)]",
         "hover:bg-accent data-[separator=hover]:bg-accent",
         "active:bg-accent active:w-[3px] data-[separator=active]:bg-accent data-[separator=active]:w-[3px]",
         "after:absolute after:inset-y-0 after:left-1/2 after:w-5 after:-translate-x-1/2",
