@@ -1,38 +1,46 @@
-import { GripVertical } from 'lucide-react';
-import { Group, Panel, Separator } from 'react-resizable-panels';
-import React from 'react';
-import { cn } from '../../lib/utils';
+import { GripVertical } from "lucide-react"
+import * as ResizablePrimitive from "react-resizable-panels"
 
-const ResizablePanelGroup = ({
+import { cn } from "../../lib/utils"
+
+function ResizablePanelGroup({
   className,
   ...props
-}: React.ComponentProps<typeof Group>) => (
-  <Group
-    className={cn('flex h-full w-full', className)}
-    {...props}
-  />
-);
+}: ResizablePrimitive.GroupProps) {
+  return (
+    <ResizablePrimitive.Group
+      className={cn("flex h-full w-full", className)}
+      {...props}
+    />
+  )
+}
 
-const ResizablePanel = Panel;
+function ResizablePanel({ ...props }: ResizablePrimitive.PanelProps) {
+  return <ResizablePrimitive.Panel {...props} />
+}
 
-const ResizableHandle = ({
+function ResizableHandle({
   withHandle,
   className,
   ...props
-}: React.ComponentProps<typeof Separator> & { withHandle?: boolean }) => (
-  <Separator
-    className={cn(
-      'relative flex w-px items-center justify-center bg-token',
-      className
-    )}
-    {...props}
-  >
-    {withHandle && (
-      <div className="z-10 flex h-6 w-3 items-center justify-center rounded-sm border border-token bg-surface hover:bg-white/[0.07] transition-colors">
-        <GripVertical size={12} className="text-muted" />
-      </div>
-    )}
-  </Separator>
-);
+}: ResizablePrimitive.SeparatorProps & {
+  withHandle?: boolean
+}) {
+  return (
+    <ResizablePrimitive.Separator
+      className={cn(
+        "relative flex w-px items-center justify-center bg-token",
+        className
+      )}
+      {...props}
+    >
+      {withHandle && (
+        <div className="z-10 flex h-6 w-3 items-center justify-center rounded-sm border border-token bg-surface hover:bg-white/[0.07] transition-colors">
+          <GripVertical size={12} className="text-muted" />
+        </div>
+      )}
+    </ResizablePrimitive.Separator>
+  )
+}
 
-export { ResizablePanelGroup, ResizablePanel, ResizableHandle };
+export { ResizableHandle, ResizablePanel, ResizablePanelGroup }

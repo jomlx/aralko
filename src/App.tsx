@@ -207,7 +207,7 @@ function AppContent() {
         <Header activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} disabled={isTestMode} />
       </div>
       
-      <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0 overflow-hidden">
+      <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0">
         {/* Sidebar */}
         {!isTestMode && (
           <>
