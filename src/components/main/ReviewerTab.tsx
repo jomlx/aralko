@@ -154,12 +154,72 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               <div>
                 <h2 className="text-xl font-semibold text-primary">Reviewer</h2>
                 <p className="mt-1 text-sm text-muted">
-                  {activeActivity.name}{activeActivity.subject ? `: ${activeActivity.subject}` : ''} — Upload a file or use activity notes to auto-generate a cheat sheet.
+                  {activeActivity.name}{activeActivity.subject ? `: ${activeActivity.subject}` : ''}
                 </p>
               </div>
 
-              {/* Right controls: AI Chat Toggle */}
+              {/* Right controls */}
               <div className="flex items-center gap-3">
+                {hasContent && !isGenerating && (
+                  <div className="flex items-center gap-2 mr-2">
+                    {/* Re-upload */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                      title="Re-upload file"
+                    >
+                      <RotateCcw size={14} />
+                    </button>
+                    <input ref={fileInputRef} type="file" accept=".txt,.md,.json,.csv" className="hidden" onChange={onFileInput} />
+
+                    {!isEditing && (
+                      <button
+                        onClick={startEditing}
+                        className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                        title="Edit"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                    )}
+
+                    {/* Clear (Delete) */}
+                    <button
+                      onClick={clearReviewer}
+                      className="rounded-lg p-1.5 text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                      title="Clear"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+
+                    {/* Export */}
+                    <div ref={exportRef} className="relative">
+                      <button
+                        onClick={() => setExportOpen(p => !p)}
+                        className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors border border-token"
+                      >
+                        <Download size={12} /> Export <ChevronDown size={10} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {exportOpen && (
+                        <div className="absolute right-0 top-full mt-1 z-20 min-w-[130px] rounded-xl border border-token bg-surface p-1 shadow-xl">
+                          <button
+                            onClick={() => { exportReviewerAsPDF(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
+                          >
+                            <FileText size={11} /> As PDF
+                          </button>
+                          <button
+                            onClick={() => { exportReviewerAsDocx(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
+                          >
+                            <FileText size={11} /> As Word
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Chat Toggle */}
                 <button
                   onClick={() => setIsChatOpen(prev => !prev)}
                   className="flex items-center justify-center rounded-xl border border-token bg-white/[0.04] h-8 w-8 text-secondary transition-colors hover:bg-white/[0.08] hover:text-primary"
@@ -172,69 +232,13 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
 
             {/* Toolbar (Commands) */}
             {hasContent && !isGenerating && (
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex items-center mt-6">
                 <div className="flex items-center gap-2">
                   <BookOpen size={15} className="text-amber-400" />
                   <span className="text-sm font-medium text-primary">Cheat Sheet</span>
                   {uploadedFileName && (
                     <span className="text-xs text-muted">— {uploadedFileName}</span>
                   )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {!isEditing && (
-                    <button
-                      onClick={startEditing}
-                      className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
-                      title="Edit"
-                    >
-                      <Edit3 size={14} />
-                    </button>
-                  )}
-
-                  {/* Re-upload */}
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
-                    title="Re-upload file"
-                  >
-                    <RotateCcw size={14} />
-                  </button>
-                  <input ref={fileInputRef} type="file" accept=".txt,.md,.json,.csv" className="hidden" onChange={onFileInput} />
-
-                  {/* Export */}
-                  <div ref={exportRef} className="relative">
-                    <button
-                      onClick={() => setExportOpen(p => !p)}
-                      className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors border border-token"
-                    >
-                      <Download size={12} /> Export <ChevronDown size={10} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {exportOpen && (
-                      <div className="absolute right-0 top-full mt-1 z-20 min-w-[130px] rounded-xl border border-token bg-surface p-1 shadow-xl">
-                        <button
-                          onClick={() => { exportReviewerAsPDF(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
-                        >
-                          <FileText size={11} /> As PDF
-                        </button>
-                        <button
-                          onClick={() => { exportReviewerAsDocx(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
-                        >
-                          <FileText size={11} /> As Word
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Clear */}
-                  <button
-                    onClick={clearReviewer}
-                    className="rounded-lg p-1.5 text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                    title="Clear"
-                  >
-                    <Trash2 size={14} />
-                  </button>
                 </div>
               </div>
             )}

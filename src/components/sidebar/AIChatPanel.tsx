@@ -114,7 +114,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
         <div>
           <h3 className="text-primary font-semibold text-sm leading-tight">Aralko Assistant</h3>
           <p className="text-muted text-xs mt-0.5">
-            {activeActivity?.name ?? 'New Chat'}
+            AI study companion
           </p>
         </div>
 
