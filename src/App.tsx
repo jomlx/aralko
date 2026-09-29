@@ -212,9 +212,9 @@ function AppContent() {
           {!isTestMode && (
             <>
               <ResizablePanel
-                defaultSize={25}
-                minSize={20}
-                maxSize={35}
+                defaultSize={23}
+                minSize={23}
+                maxSize={28}
               >
                 <Sidebar>
                   <StudyTracker 
