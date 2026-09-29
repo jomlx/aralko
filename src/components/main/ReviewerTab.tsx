@@ -159,13 +159,13 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               </div>
 
               {/* Right controls */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {hasContent && !isGenerating && (
-                  <div className="flex items-center gap-2 mr-2">
+                  <>
                     {/* Re-upload */}
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                      className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
                       title="Re-upload file"
                     >
                       <RotateCcw size={14} />
@@ -175,7 +175,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     {!isEditing && (
                       <button
                         onClick={startEditing}
-                        className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                        className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
                         title="Edit"
                       >
                         <Edit3 size={14} />
@@ -185,7 +185,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     {/* Clear (Delete) */}
                     <button
                       onClick={clearReviewer}
-                      className="rounded-lg p-1.5 text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                      className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
                       title="Clear"
                     >
                       <Trash2 size={14} />
@@ -216,7 +216,10 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         </div>
                       )}
                     </div>
-                  </div>
+
+                    {/* Divider */}
+                    <div className="h-5 w-px bg-[var(--border)] mx-0.5" />
+                  </>
                 )}
 
                 {/* AI Chat Toggle */}
