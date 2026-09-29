@@ -212,8 +212,8 @@ function AppContent() {
           {!isTestMode && (
             <>
               <ResizablePanel
-                defaultSize={23}
-                minSize={23}
+                defaultSize={24}
+                minSize={21}
                 maxSize={28}
               >
                 <Sidebar>
