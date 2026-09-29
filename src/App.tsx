@@ -212,10 +212,9 @@ function AppContent() {
           {!isTestMode && (
             <>
               <ResizablePanel
-                defaultSize={22}
-                minSize={15}
+                defaultSize={25}
+                minSize={20}
                 maxSize={35}
-                className="flex-shrink-0 transition-all duration-300"
               >
                 <Sidebar>
                   <StudyTracker 
