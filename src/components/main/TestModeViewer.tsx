@@ -123,10 +123,7 @@ function SetupScreen({
     <div className="flex-1 flex flex-col items-center justify-center p-8">
       <div className="w-full max-w-lg">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent-muted px-3 py-1 text-xs font-semibold text-accent uppercase tracking-wider mb-4">
-            Test Mode
-          </div>
+        <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-primary mb-2">{activityName}</h1>
           <p className="text-sm text-secondary">
             {hasQuestions && !isMismatch
