@@ -241,7 +241,7 @@ function AppContent() {
                 />
               </Sidebar>
             </ResizablePanel>
-            <ResizableHandle withHandle />
+            <ResizableHandle />
           </>
         )}
 
