@@ -78,7 +78,7 @@ export function StudyTracker({
               className={`relative p-1 rounded-lg transition-colors ${showSettings ? 'bg-white/10 text-primary' : 'text-muted hover:text-secondary hover:bg-white/[0.05]'}`}
               title="Timer settings"
             >
-              <Settings2 size={13} />
+              <Settings2 size={18} />
             </button>
 
             {/* Settings popover — uses bg-surface which is mapped to #DCE3EE in light mode */}
@@ -178,7 +178,7 @@ export function StudyTracker({
           </button>
         )}
         <button onClick={onReset} className="btn btn-secondary px-2" title="Reset Timer">
-          <TimerReset size={14} />
+          <TimerReset size={18} />
         </button>
       </div>
     </div>

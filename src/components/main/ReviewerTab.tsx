@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, Download, ChevronDown, Trash2, RotateCcw, MessageSquare, MessageSquareOff } from 'lucide-react';
+import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, FileUp, ChevronDown, Trash2, RotateCcw, PanelRight } from 'lucide-react';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
 import { generateWithBackend } from '../../lib/apiClient';
@@ -159,36 +159,36 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               </div>
 
               {/* Right controls */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 {hasContent && !isGenerating && (
-                  <>
+                  <div className="flex items-center gap-2 mr-2">
                     {/* Re-upload */}
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                      className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
                       title="Re-upload file"
                     >
-                      <RotateCcw size={14} />
+                      <RotateCcw size={18} />
                     </button>
                     <input ref={fileInputRef} type="file" accept=".txt,.md,.json,.csv" className="hidden" onChange={onFileInput} />
 
                     {!isEditing && (
                       <button
                         onClick={startEditing}
-                        className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                        className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
                         title="Edit"
                       >
-                        <Edit3 size={14} />
+                        <Edit3 size={18} />
                       </button>
                     )}
 
                     {/* Clear (Delete) */}
                     <button
                       onClick={clearReviewer}
-                      className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                      className="rounded-lg p-1.5 text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
                       title="Clear"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={18} />
                     </button>
 
                     {/* Export */}
@@ -197,7 +197,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         onClick={() => setExportOpen(p => !p)}
                         className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors border border-token"
                       >
-                        <Download size={12} /> Export <ChevronDown size={10} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+                        <FileUp size={18} /> Export <ChevronDown size={10} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
                       </button>
                       {exportOpen && (
                         <div className="absolute right-0 top-full mt-1 z-20 min-w-[130px] rounded-xl border border-token bg-surface p-1 shadow-xl">
@@ -216,10 +216,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         </div>
                       )}
                     </div>
-
-                    {/* Divider */}
-                    <div className="h-5 w-px bg-[var(--border)] mx-0.5" />
-                  </>
+                  </div>
                 )}
 
                 {/* AI Chat Toggle */}
@@ -228,7 +225,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                   className="flex items-center justify-center rounded-xl border border-token bg-white/[0.04] h-8 w-8 text-secondary transition-colors hover:bg-white/[0.08] hover:text-primary"
                   title={isChatOpen ? "Hide Assistant" : "Show Assistant"}
                 >
-                  {isChatOpen ? <MessageSquareOff size={14} /> : <MessageSquare size={14} />}
+                  {isChatOpen ? <PanelRight size={18} /> : <PanelRight size={18} />}
                 </button>
               </div>
             </div>

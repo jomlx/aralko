@@ -119,7 +119,7 @@ export function LeaderboardView() {
               range === 'all_time' ? 'bg-accent text-primary shadow-sm' : 'text-secondary hover:text-slate-200'
             }`}
           >
-            <Target size={14} />
+            <Target size={18} />
             All Time
           </button>
           <button
@@ -128,7 +128,7 @@ export function LeaderboardView() {
               range === 'this_week' ? 'bg-accent text-primary shadow-sm' : 'text-secondary hover:text-slate-200'
             }`}
           >
-            <CalendarDays size={14} />
+            <CalendarDays size={18} />
             This Week
           </button>
         </div>
@@ -138,12 +138,12 @@ export function LeaderboardView() {
       <div className="bg-surface rounded-2xl border border-token overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-64">
-            <Loader2 size={32} className="animate-spin text-accent mb-4" />
+            <Loader2 size={18} className="animate-spin text-accent mb-4" />
             <p className="text-sm text-secondary">Loading rankings...</p>
           </div>
         ) : users.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
-            <Trophy size={48} className="text-slate-700 mb-4" />
+            <Trophy size={18} className="text-slate-700 mb-4" />
             <p className="text-secondary font-medium">No activity yet</p>
             <p className="text-sm text-muted mt-1">Complete study sessions to earn XP and climb the ranks!</p>
           </div>
@@ -254,10 +254,10 @@ export function LeaderboardView() {
 
               {/* Streak highlight */}
               <div className="flex justify-center items-center gap-2 mb-5">
-                <Flame size={28} className="text-amber-400 shrink-0" />
+                <Flame size={18} className="text-amber-400 shrink-0" />
                 <div className="flex items-baseline gap-1.5">
                   <p className="text-3xl font-extrabold text-primary leading-none">
-                    {selectedUserExtra ? selectedUserExtra.streak : <Loader2 size={24} className="animate-spin inline text-muted" />}
+                    {selectedUserExtra ? selectedUserExtra.streak : <Loader2 size={18} className="animate-spin inline text-muted" />}
                   </p>
                   <p className="text-xs text-muted font-medium">day streak</p>
                 </div>
@@ -267,7 +267,7 @@ export function LeaderboardView() {
               <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-xl bg-white/[0.07] p-2.5 text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <Zap size={11} className="text-accent" />
+                    <Zap size={18} className="text-accent" />
                   </div>
                   <p className="text-base font-bold text-primary leading-none">{selectedUser.level}</p>
                   <p className="text-[10px] text-muted mt-0.5">Level</p>
@@ -275,7 +275,7 @@ export function LeaderboardView() {
 
                 <div className="rounded-xl bg-white/[0.07] p-2.5 text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <Star size={11} className="text-amber-400" />
+                    <Star size={18} className="text-amber-400" />
                   </div>
                   <p className="text-base font-bold text-primary leading-none">{(range === 'all_time' ? selectedUser.xp : selectedUser.xp_this_week).toLocaleString()}</p>
                   <p className="text-[10px] text-muted mt-0.5">XP {range === 'this_week' && 'Week'}</p>
@@ -283,7 +283,7 @@ export function LeaderboardView() {
 
                 <div className="rounded-xl bg-white/[0.07] p-2.5 text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <BookOpen size={11} className="text-success" />
+                    <BookOpen size={18} className="text-success" />
                   </div>
                   <p className="text-base font-bold text-primary leading-none">
                     {selectedUserExtra ? selectedUserExtra.sessionsCount : '-'}
@@ -293,7 +293,7 @@ export function LeaderboardView() {
 
                 <div className="col-span-3 rounded-xl bg-white/[0.07] p-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock size={11} className="text-secondary" />
+                    <Clock size={18} className="text-secondary" />
                     <span className="text-[11px] text-secondary">Total study time</span>
                   </div>
                   <span className="text-[11px] font-bold text-primary">
@@ -304,7 +304,7 @@ export function LeaderboardView() {
                 {selectedUserExtra?.joinDate && (
                   <div className="col-span-3 rounded-xl bg-white/[0.07] p-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <CalendarDays size={11} className="text-secondary" />
+                      <CalendarDays size={18} className="text-secondary" />
                       <span className="text-[11px] text-secondary">Active since</span>
                     </div>
                     <span className="text-[11px] font-semibold text-primary">{selectedUserExtra.joinDate}</span>
@@ -317,7 +317,7 @@ export function LeaderboardView() {
               onClick={() => setSelectedUser(null)}
               className="rounded-xl bg-surface hover:bg-white/[0.05] border border-token px-6 py-2.5 text-sm font-semibold text-primary transition-colors flex items-center gap-2"
             >
-              <X size={16} />
+              <X size={18} />
               Close
             </button>
           </div>
