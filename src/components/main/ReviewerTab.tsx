@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, FileUp, ChevronDown, Trash2, RotateCcw, PanelRight } from 'lucide-react';
+import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, FileUp, Trash2, RotateCcw, PanelRight } from 'lucide-react';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
 import { generateWithBackend } from '../../lib/apiClient';
@@ -195,9 +195,11 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     <div ref={exportRef} className="relative">
                       <button
                         onClick={() => setExportOpen(p => !p)}
-                        className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors border border-token"
+                        className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                        aria-label="Export"
+                        title="Export"
                       >
-                        <FileUp size={18} /> Export <ChevronDown size={10} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+                        <FileUp size={18} />
                       </button>
                       {exportOpen && (
                         <div className="absolute right-0 top-full mt-1 z-20 min-w-[130px] rounded-xl border border-token bg-surface p-1 shadow-xl">
