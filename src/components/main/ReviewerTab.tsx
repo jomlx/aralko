@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, FileUp, Trash2, RotateCcw, PanelRight } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
 import { generateWithBackend } from '../../lib/apiClient';
@@ -165,60 +166,52 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                   <>
                     {/* Re-upload */}
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
+                      <TooltipTrigger
                           onClick={() => fileInputRef.current?.click()}
                           className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
                           aria-label="Re-upload file"
                         >
                           <RotateCcw size={18} />
-                        </button>
-                      </TooltipTrigger>
+                        </TooltipTrigger>
                       <TooltipContent>Re-upload file</TooltipContent>
                     </Tooltip>
                     <input ref={fileInputRef} type="file" accept=".txt,.md,.json,.csv" className="hidden" onChange={onFileInput} />
 
                     {!isEditing && (
                       <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
+                        <TooltipTrigger
                             onClick={startEditing}
                             className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
                             aria-label="Edit"
                           >
                             <Edit3 size={18} />
-                          </button>
-                        </TooltipTrigger>
+                          </TooltipTrigger>
                         <TooltipContent>Edit</TooltipContent>
                       </Tooltip>
                     )}
 
                     {/* Clear (Delete) */}
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
+                      <TooltipTrigger
                           onClick={clearReviewer}
                           className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
                           aria-label="Clear"
                         >
                           <Trash2 size={18} />
-                        </button>
-                      </TooltipTrigger>
+                        </TooltipTrigger>
                       <TooltipContent>Clear</TooltipContent>
                     </Tooltip>
 
                     {/* Export */}
                     <div ref={exportRef} className="relative">
                       <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
+                        <TooltipTrigger
                             onClick={() => setExportOpen(p => !p)}
                             className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
                             aria-label="Export"
                           >
                             <FileUp size={18} />
-                          </button>
-                        </TooltipTrigger>
+                          </TooltipTrigger>
                         <TooltipContent>Export</TooltipContent>
                       </Tooltip>
                       {exportOpen && (
@@ -246,15 +239,13 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
 
                 {/* AI Chat Toggle */}
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
+                  <TooltipTrigger
                       onClick={() => setIsChatOpen(prev => !prev)}
                       className="flex items-center justify-center rounded-xl border border-token bg-white/[0.04] h-8 w-8 text-secondary transition-colors hover:bg-white/[0.08] hover:text-primary"
                       aria-label={isChatOpen ? "Hide Assistant" : "Show Assistant"}
                     >
                       {isChatOpen ? <PanelRight size={18} /> : <PanelRight size={18} />}
-                    </button>
-                  </TooltipTrigger>
+                    </TooltipTrigger>
                   <TooltipContent>{isChatOpen ? "Hide Assistant" : "Show Assistant"}</TooltipContent>
                 </Tooltip>
               </div>

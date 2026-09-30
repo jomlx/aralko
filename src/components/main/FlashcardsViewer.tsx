@@ -373,22 +373,19 @@ export function FlashcardsViewer({
               {/* Left Component */}
               {studyMode === 'fast' ? (
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
+                  <TooltipTrigger
                       onClick={handlePrev}
                       disabled={currentIndex === 0}
                       aria-label="Previous Card"
                       className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] text-primary transition-colors disabled:opacity-30 disabled:hover:bg-white/[0.05] shrink-0"
                     >
                       <ChevronLeft size={20} />
-                    </button>
-                  </TooltipTrigger>
+                    </TooltipTrigger>
                   <TooltipContent>Previous Card</TooltipContent>
                 </Tooltip>
               ) : (
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
+                  <TooltipTrigger
                       onClick={() => {
                         const front = card.front;
                         setTestResults((prev) => ({ ...prev, [front]: false }));
@@ -402,8 +399,7 @@ export function FlashcardsViewer({
                       }`}
                     >
                       <Meh size={20} />
-                    </button>
-                  </TooltipTrigger>
+                    </TooltipTrigger>
                   <TooltipContent>Needs review</TooltipContent>
                 </Tooltip>
               )}
@@ -437,21 +433,18 @@ export function FlashcardsViewer({
               {/* Right Component */}
               {studyMode === 'fast' ? (
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
+                  <TooltipTrigger
                       onClick={handleNext}
                       aria-label="Next Card"
                       className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] text-primary transition-colors shrink-0"
                     >
                       <ChevronRight size={20} />
-                    </button>
-                  </TooltipTrigger>
+                    </TooltipTrigger>
                   <TooltipContent>Next Card</TooltipContent>
                 </Tooltip>
               ) : (
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
+                  <TooltipTrigger
                       onClick={() => {
                         const front = card.front;
                         setTestResults((prev) => ({ ...prev, [front]: true }));
@@ -465,8 +458,7 @@ export function FlashcardsViewer({
                       }`}
                     >
                       <Smile size={20} />
-                    </button>
-                  </TooltipTrigger>
+                    </TooltipTrigger>
                   <TooltipContent>Got it!</TooltipContent>
                 </Tooltip>
               )}

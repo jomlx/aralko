@@ -336,8 +336,7 @@ function GroupDetailView({
                       
                       {currentUserId === sa.shared_by && (
                         <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
+                          <TooltipTrigger
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 try {
@@ -352,8 +351,7 @@ function GroupDetailView({
                               aria-label="Remove shared activity"
                             >
                               <Trash2 size={18} />
-                            </button>
-                          </TooltipTrigger>
+                            </TooltipTrigger>
                           <TooltipContent>Remove shared activity</TooltipContent>
                         </Tooltip>
                       )}

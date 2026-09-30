@@ -75,15 +75,13 @@ export function StudyTracker({
           {/* Settings gear — dot indicates auto-start is on without changing card height */}
           <div className="relative" ref={settingsRef}>
             <Tooltip>
-              <TooltipTrigger asChild>
-                <button
+              <TooltipTrigger
                   onClick={() => setShowSettings(s => !s)}
                   className={`relative p-1 rounded-lg transition-colors ${showSettings ? 'bg-white/10 text-primary' : 'text-muted hover:text-secondary hover:bg-white/[0.05]'}`}
                   aria-label="Timer settings"
                 >
                   <Settings2 size={18} />
-                </button>
-              </TooltipTrigger>
+                </TooltipTrigger>
               <TooltipContent>Timer settings</TooltipContent>
             </Tooltip>
 
@@ -184,11 +182,9 @@ export function StudyTracker({
           </button>
         )}
         <Tooltip>
-          <TooltipTrigger asChild>
-            <button onClick={onReset} className="btn btn-secondary px-2" aria-label="Reset Timer">
+          <TooltipTrigger onClick={onReset} className="btn btn-secondary px-2" aria-label="Reset Timer">
               <TimerReset size={18} />
-            </button>
-          </TooltipTrigger>
+            </TooltipTrigger>
           <TooltipContent>Reset Timer</TooltipContent>
         </Tooltip>
       </div>
