@@ -5,6 +5,7 @@ import { Users, Plus, LogIn, Loader2, Copy, LogOut, BookOpen, PenTool, ChevronRi
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../ui/Toast';
 import { useAuth } from '../../hooks/useAuth';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 
 interface StudyGroupsViewProps {
   onOpenActivity?: (id: number) => void;
@@ -334,22 +335,27 @@ function GroupDetailView({
                       </div>
                       
                       {currentUserId === sa.shared_by && (
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            try {
-                              await onUnshareActivity(sa.id);
-                              setSharedActivities(prev => prev.filter(x => x.id !== sa.id));
-                              showToast('Shared activity removed.', 'success');
-                            } catch (err: any) {
-                              showToast(err.message || 'Failed to remove shared activity', 'error');
-                            }
-                          }}
-                          className="shrink-0 p-2 ml-2 transition-colors text-muted hover:text-red-400 rounded-lg hover:bg-white/[0.05]"
-                          title="Remove shared activity"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await onUnshareActivity(sa.id);
+                                  setSharedActivities(prev => prev.filter(x => x.id !== sa.id));
+                                  showToast('Shared activity removed.', 'success');
+                                } catch (err: any) {
+                                  showToast(err.message || 'Failed to remove shared activity', 'error');
+                                }
+                              }}
+                              className="shrink-0 p-2 ml-2 transition-colors text-muted hover:text-red-400 rounded-lg hover:bg-white/[0.05]"
+                              aria-label="Remove shared activity"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Remove shared activity</TooltipContent>
+                        </Tooltip>
                       )}
 
                       <ChevronRight size={18} className="shrink-0 ml-2 transition-colors text-muted group-hover:text-accent" />

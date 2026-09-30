@@ -1,4 +1,5 @@
 import { CalendarDays, Play, Pause, TimerReset, Settings2 } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { useState, useRef, useEffect } from 'react';
 import type { PomodoroPhase } from '../../types';
 import type { PomodoroPreset } from '../../hooks/usePomodoro';
@@ -73,13 +74,18 @@ export function StudyTracker({
         <div className="flex items-center gap-1.5">
           {/* Settings gear — dot indicates auto-start is on without changing card height */}
           <div className="relative" ref={settingsRef}>
-            <button
-              onClick={() => setShowSettings(s => !s)}
-              className={`relative p-1 rounded-lg transition-colors ${showSettings ? 'bg-white/10 text-primary' : 'text-muted hover:text-secondary hover:bg-white/[0.05]'}`}
-              title="Timer settings"
-            >
-              <Settings2 size={18} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShowSettings(s => !s)}
+                  className={`relative p-1 rounded-lg transition-colors ${showSettings ? 'bg-white/10 text-primary' : 'text-muted hover:text-secondary hover:bg-white/[0.05]'}`}
+                  aria-label="Timer settings"
+                >
+                  <Settings2 size={18} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Timer settings</TooltipContent>
+            </Tooltip>
 
             {/* Settings popover — uses bg-surface which is mapped to #DCE3EE in light mode */}
             {showSettings && (
@@ -177,9 +183,14 @@ export function StudyTracker({
             <Play size={14} /> Start
           </button>
         )}
-        <button onClick={onReset} className="btn btn-secondary px-2" title="Reset Timer">
-          <TimerReset size={18} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button onClick={onReset} className="btn btn-secondary px-2" aria-label="Reset Timer">
+              <TimerReset size={18} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Reset Timer</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );

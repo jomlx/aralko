@@ -159,48 +159,68 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               </div>
 
               {/* Right controls */}
-              <div className="flex items-center gap-3">
+              {/* Right controls */}
+              <div className="flex items-center gap-2">
                 {hasContent && !isGenerating && (
-                  <div className="flex items-center gap-2 mr-2">
+                  <>
                     {/* Re-upload */}
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
-                      title="Re-upload file"
-                    >
-                      <RotateCcw size={18} />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                          aria-label="Re-upload file"
+                        >
+                          <RotateCcw size={18} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Re-upload file</TooltipContent>
+                    </Tooltip>
                     <input ref={fileInputRef} type="file" accept=".txt,.md,.json,.csv" className="hidden" onChange={onFileInput} />
 
                     {!isEditing && (
-                      <button
-                        onClick={startEditing}
-                        className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
-                        title="Edit"
-                      >
-                        <Edit3 size={18} />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={startEditing}
+                            className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                            aria-label="Edit"
+                          >
+                            <Edit3 size={18} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit</TooltipContent>
+                      </Tooltip>
                     )}
 
                     {/* Clear (Delete) */}
-                    <button
-                      onClick={clearReviewer}
-                      className="rounded-lg p-1.5 text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                      title="Clear"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={clearReviewer}
+                          className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                          aria-label="Clear"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Clear</TooltipContent>
+                    </Tooltip>
 
                     {/* Export */}
                     <div ref={exportRef} className="relative">
-                      <button
-                        onClick={() => setExportOpen(p => !p)}
-                        className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
-                        aria-label="Export"
-                        title="Export"
-                      >
-                        <FileUp size={18} />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => setExportOpen(p => !p)}
+                            className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                            aria-label="Export"
+                          >
+                            <FileUp size={18} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Export</TooltipContent>
+                      </Tooltip>
                       {exportOpen && (
                         <div className="absolute right-0 top-full mt-1 z-20 min-w-[130px] rounded-xl border border-token bg-surface p-1 shadow-xl">
                           <button
@@ -218,17 +238,25 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         </div>
                       )}
                     </div>
-                  </div>
+
+                    {/* Divider */}
+                    <div className="h-5 w-px bg-[var(--border)] mx-0.5" />
+                  </>
                 )}
 
                 {/* AI Chat Toggle */}
-                <button
-                  onClick={() => setIsChatOpen(prev => !prev)}
-                  className="flex items-center justify-center rounded-xl border border-token bg-white/[0.04] h-8 w-8 text-secondary transition-colors hover:bg-white/[0.08] hover:text-primary"
-                  title={isChatOpen ? "Hide Assistant" : "Show Assistant"}
-                >
-                  {isChatOpen ? <PanelRight size={18} /> : <PanelRight size={18} />}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setIsChatOpen(prev => !prev)}
+                      className="flex items-center justify-center rounded-xl border border-token bg-white/[0.04] h-8 w-8 text-secondary transition-colors hover:bg-white/[0.08] hover:text-primary"
+                      aria-label={isChatOpen ? "Hide Assistant" : "Show Assistant"}
+                    >
+                      {isChatOpen ? <PanelRight size={18} /> : <PanelRight size={18} />}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{isChatOpen ? "Hide Assistant" : "Show Assistant"}</TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
