@@ -381,7 +381,7 @@ export function FlashcardsViewer({
                     >
                       <ChevronLeft size={20} />
                     </TooltipTrigger>
-                  <TooltipContent>Previous Card</TooltipContent>
+                  <TooltipContent side="top">Previous Card</TooltipContent>
                 </Tooltip>
               ) : (
                 <Tooltip>
@@ -400,7 +400,7 @@ export function FlashcardsViewer({
                     >
                       <Meh size={20} />
                     </TooltipTrigger>
-                  <TooltipContent>Needs review</TooltipContent>
+                  <TooltipContent side="top">Needs review</TooltipContent>
                 </Tooltip>
               )}
 
@@ -440,7 +440,7 @@ export function FlashcardsViewer({
                     >
                       <ChevronRight size={20} />
                     </TooltipTrigger>
-                  <TooltipContent>Next Card</TooltipContent>
+                  <TooltipContent side="top">Next Card</TooltipContent>
                 </Tooltip>
               ) : (
                 <Tooltip>
@@ -459,7 +459,7 @@ export function FlashcardsViewer({
                     >
                       <Smile size={20} />
                     </TooltipTrigger>
-                  <TooltipContent>Got it!</TooltipContent>
+                  <TooltipContent side="top">Got it!</TooltipContent>
                 </Tooltip>
               )}
             </div>

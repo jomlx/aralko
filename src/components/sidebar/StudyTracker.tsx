@@ -82,7 +82,7 @@ export function StudyTracker({
                 >
                   <Settings2 size={18} />
                 </TooltipTrigger>
-              <TooltipContent>Timer settings</TooltipContent>
+              <TooltipContent side="top">Timer settings</TooltipContent>
             </Tooltip>
 
             {/* Settings popover — uses bg-surface which is mapped to #DCE3EE in light mode */}
@@ -185,7 +185,7 @@ export function StudyTracker({
           <TooltipTrigger onClick={onReset} className="btn btn-secondary px-2" aria-label="Reset Timer">
               <TimerReset size={18} />
             </TooltipTrigger>
-          <TooltipContent>Reset Timer</TooltipContent>
+          <TooltipContent side="top">Reset Timer</TooltipContent>
         </Tooltip>
       </div>
     </div>

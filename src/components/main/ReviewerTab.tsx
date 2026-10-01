@@ -173,7 +173,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         >
                           <RotateCcw size={18} />
                         </TooltipTrigger>
-                      <TooltipContent>Re-upload file</TooltipContent>
+                      <TooltipContent side="bottom">Re-upload file</TooltipContent>
                     </Tooltip>
                     <input ref={fileInputRef} type="file" accept=".txt,.md,.json,.csv" className="hidden" onChange={onFileInput} />
 
@@ -186,7 +186,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                           >
                             <Edit3 size={18} />
                           </TooltipTrigger>
-                        <TooltipContent>Edit</TooltipContent>
+                        <TooltipContent side="bottom">Edit</TooltipContent>
                       </Tooltip>
                     )}
 
@@ -199,7 +199,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         >
                           <Trash2 size={18} />
                         </TooltipTrigger>
-                      <TooltipContent>Clear</TooltipContent>
+                      <TooltipContent side="bottom">Clear</TooltipContent>
                     </Tooltip>
 
                     {/* Export */}
@@ -212,7 +212,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                           >
                             <FileUp size={18} />
                           </TooltipTrigger>
-                        <TooltipContent>Export</TooltipContent>
+                        <TooltipContent side="bottom">Export</TooltipContent>
                       </Tooltip>
                       {exportOpen && (
                         <div className="absolute right-0 top-full mt-1 z-20 min-w-[130px] rounded-xl border border-token bg-surface p-1 shadow-xl">
@@ -246,7 +246,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     >
                       {isChatOpen ? <PanelRight size={18} /> : <PanelRight size={18} />}
                     </TooltipTrigger>
-                  <TooltipContent>{isChatOpen ? "Hide Assistant" : "Show Assistant"}</TooltipContent>
+                  <TooltipContent side="bottom">{isChatOpen ? "Hide Assistant" : "Show Assistant"}</TooltipContent>
                 </Tooltip>
               </div>
             </div>

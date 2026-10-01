@@ -352,7 +352,7 @@ function GroupDetailView({
                             >
                               <Trash2 size={18} />
                             </TooltipTrigger>
-                          <TooltipContent>Remove shared activity</TooltipContent>
+                          <TooltipContent side="top">Remove shared activity</TooltipContent>
                         </Tooltip>
                       )}
 
