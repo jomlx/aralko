@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, Sparkles, MessageSquare } from 'lucide-react';
+import { Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, Sparkles, MessageSquare } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -244,28 +244,34 @@ export function SettingsDialog({
 
         <Tabs defaultValue="account" orientation="vertical" className="flex flex-col md:flex-row w-full h-full">
           {/* Sidebar Nav */}
-          <div className="w-full md:w-[220px] shrink-0 border-b md:border-b-0 md:border-r border-token bg-surface p-4 flex flex-col gap-4">
-            <div className="flex items-center gap-2 mb-2 px-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent/20">
-                <Settings size={16} className="text-accent" />
+          <div className="w-full md:w-[240px] shrink-0 border-b md:border-b-0 md:border-r border-token bg-surface py-6 flex flex-col">
+            <div className="flex items-center gap-3 mb-6 px-6">
+              <Avatar className="h-10 w-10 shrink-0 border border-token">
+                <AvatarImage src={avatarUrl || ''} />
+                <AvatarFallback className="bg-accent text-white font-bold text-sm">
+                  {(displayName || user?.email || '?').charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-bold text-primary truncate">{displayName || user?.email?.split('@')[0] || 'User'}</span>
+                <span className="text-xs text-muted truncate">{user?.email}</span>
               </div>
-              <span className="text-base font-semibold text-primary">Settings</span>
             </div>
             
-            <TabsList className="flex flex-col h-auto bg-transparent p-0 items-stretch space-y-1">
-              <TabsTrigger value="account" className="w-full justify-start gap-2.5 data-[state=active]:bg-accent/15 data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-xl px-3 py-2.5 transition-colors">
+            <TabsList className="flex flex-col h-auto bg-transparent p-0 items-stretch space-y-0.5 w-full">
+              <TabsTrigger value="account" className="w-full justify-start gap-3 data-[state=active]:bg-accent data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <User size={15} />
                 Account
               </TabsTrigger>
-              <TabsTrigger value="general" className="w-full justify-start gap-2.5 data-[state=active]:bg-accent/15 data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-xl px-3 py-2.5 transition-colors">
+              <TabsTrigger value="general" className="w-full justify-start gap-3 data-[state=active]:bg-accent data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <Settings2 size={15} />
                 General
               </TabsTrigger>
-              <TabsTrigger value="ai" className="w-full justify-start gap-2.5 data-[state=active]:bg-accent/15 data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-xl px-3 py-2.5 transition-colors">
+              <TabsTrigger value="ai" className="w-full justify-start gap-3 data-[state=active]:bg-accent data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <Sparkles size={15} />
                 AI
               </TabsTrigger>
-              <TabsTrigger value="feedback" className="w-full justify-start gap-2.5 data-[state=active]:bg-accent/15 data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-xl px-3 py-2.5 transition-colors">
+              <TabsTrigger value="feedback" className="w-full justify-start gap-3 data-[state=active]:bg-accent data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <MessageSquare size={15} />
                 Feedback
               </TabsTrigger>
@@ -273,7 +279,7 @@ export function SettingsDialog({
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-8 relative" style={{ scrollbarGutter: 'stable' }}>
+          <div className="flex-1 overflow-y-auto px-6 pb-6 md:px-8 md:pb-8 pt-[88px] relative" style={{ scrollbarGutter: 'stable' }}>
             <TabsContent value="account" className="mt-0 outline-none h-full space-y-6">
               <h2 className="text-lg font-semibold text-primary mb-4">Account</h2>
               <>
