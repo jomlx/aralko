@@ -1,9 +1,11 @@
-﻿import { useState, useEffect, useRef } from 'react';
-import { Settings, Sun, Moon, Music2, Key, ExternalLink, Check, X, Trash2, Loader2, HelpCircle, LogOut, SquarePen, Camera, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Settings, Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2 } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -24,18 +26,9 @@ export function SettingsDialog({
   onLogin,
   onLogout,
 }: SettingsDialogProps) {
-  // -- Gemini key state (moved verbatim from ProfilePopover) --------------
-  const [keyInput, setKeyInput] = useState('');
-  const [savedKey, setSavedKey] = useState<string | null>(null);
-  const [validating, setValidating] = useState(false);
-  const [keyStatus, setKeyStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [keyError, setKeyError] = useState('');
-  const [showGuide, setShowGuide] = useState(false);
-  const guideRef = useRef<HTMLDivElement>(null);
-
   const { user } = useAuth();
   
-  // -- Account Name State ------------------------------------------------
+  // ── Account Name State ────────────────────────────────────────────────
   const [displayName, setDisplayName] = useState('');
   const [originalName, setOriginalName] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -43,20 +36,20 @@ export function SettingsDialog({
   const [nameError, setNameError] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
-  // -- Avatar State ------------------------------------------------------
+  // ── Avatar State ──────────────────────────────────────────────────────
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  // -- Email Change State ------------------------------------------------
+  // ── Email Change State ────────────────────────────────────────────────
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
   const [emailError, setEmailError] = useState('');
 
-  // -- Password Change State ---------------------------------------------
+  // ── Password Change State ─────────────────────────────────────────────
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -82,7 +75,6 @@ export function SettingsDialog({
     setNameSuccess(false);
     setNameError('');
     try {
-      // Soft unique check
       const { data: existing } = await supabase
         .from('user_settings')
         .select('user_id')
@@ -101,80 +93,22 @@ export function SettingsDialog({
       });
       if (error) throw error;
 
-      // Sync to user_settings so other checks catch it immediately
       await supabase.from('user_settings').upsert({ user_id: user.id, display_name: trimmed }, { onConflict: 'user_id' });
+      
+      await supabase.auth.refreshSession();
 
       setOriginalName(trimmed);
       setNameSuccess(true);
       setIsEditingName(false);
       setTimeout(() => setNameSuccess(false), 3000);
-    } catch (e) {
-      console.error(e);
+    } catch (err: any) {
       setNameError('An error occurred while saving.');
     } finally {
       setSavingName(false);
     }
   };
 
-  // Load saved key on mount
-  useEffect(() => {
-    setSavedKey(getPersonalGeminiKey());
-  }, []);
-
-  // Clear status when input changes
-  useEffect(() => {
-    if (keyStatus !== 'idle') setKeyStatus('idle');
-  }, [keyInput]);
-
-  // Close the step guide if user clicks outside of it
-  useEffect(() => {
-    if (!showGuide) return;
-    function handleClick(e: MouseEvent) {
-      if (guideRef.current && !guideRef.current.contains(e.target as Node)) {
-        setShowGuide(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [showGuide]);
-
-  const handleSaveKey = async () => {
-    const trimmed = keyInput.trim();
-    if (!trimmed) return;
-    setValidating(true);
-    setKeyStatus('idle');
-    try {
-      await validateGeminiKey(trimmed);
-      setPersonalGeminiKey(trimmed);
-      setSavedKey(trimmed);
-      setKeyInput('');
-      setKeyStatus('success');
-      // Persist to Supabase (fire-and-forget, localStorage is the live source)
-      supabase.from('user_settings')
-        .upsert({ user_id: user?.id ?? 'default-user', gemini_api_key: trimmed }, { onConflict: 'user_id' })
-        .then(({ error }) => { if (error) console.warn('Failed to sync Gemini key to Supabase:', error.message); });
-    } catch (err: any) {
-      setKeyError(err.message || 'Key validation failed.');
-      setKeyStatus('error');
-    } finally {
-      setValidating(false);
-    }
-  };
-
-  const handleRemoveKey = () => {
-    setPersonalGeminiKey(null);
-    setSavedKey(null);
-    setKeyInput('');
-    setKeyStatus('idle');
-    // Clear from Supabase too
-    supabase.from('user_settings')
-      .upsert({ user_id: user?.id ?? 'default-user', gemini_api_key: null }, { onConflict: 'user_id' })
-      .then(({ error }) => { if (error) console.warn('Failed to clear Gemini key in Supabase:', error.message); });
-  };
-  // ----------------------------------------------------------------------
-
-
-  // -- Avatar Upload -----------------------------------------------------
+  // ── Avatar Upload ─────────────────────────────────────────────────────
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -201,7 +135,7 @@ export function SettingsDialog({
     }
   };
 
-  // -- Email Change ------------------------------------------------------
+  // ── Email Change ──────────────────────────────────────────────────────
   const handleChangeEmail = async () => {
     if (!user || !newEmail.trim()) return;
     setSavingEmail(true);
@@ -218,7 +152,7 @@ export function SettingsDialog({
     }
   };
 
-  // -- Password Change ---------------------------------------------------
+  // ── Password Change ───────────────────────────────────────────────────
   const handleChangePassword = async () => {
     setPasswordError('');
     if (newPassword.length < 6) { setPasswordError('Password must be at least 6 characters.'); return; }
@@ -241,163 +175,426 @@ export function SettingsDialog({
 
   const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || user?.email?.[0]?.toUpperCase() || '?';
 
-  if (!isOpen) return null;
+  // ── Gemini key state ──────────────────────────────────────────────────
+  const [keyInput, setKeyInput] = useState('');
+  const [savedKey, setSavedKey] = useState<string | null>(null);
+  const [validating, setValidating] = useState(false);
+  const [keyStatus, setKeyStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [keyError, setKeyError] = useState('');
+  const [showGuide, setShowGuide] = useState(false);
+  const guideRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSavedKey(getPersonalGeminiKey());
+  }, []);
+
+  useEffect(() => {
+    if (keyStatus !== 'idle') setKeyStatus('idle');
+  }, [keyInput]);
+
+  useEffect(() => {
+    if (!showGuide) return;
+    const handleClick = (e: MouseEvent) => {
+      if (guideRef.current && !guideRef.current.contains(e.target as Node)) {
+        setShowGuide(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showGuide]);
+
+  const handleSaveKey = async () => {
+    const trimmed = keyInput.trim();
+    if (!trimmed) return;
+    setValidating(true);
+    setKeyStatus('idle');
+    try {
+      await validateGeminiKey(trimmed);
+      setPersonalGeminiKey(trimmed);
+      setSavedKey(trimmed);
+      setKeyInput('');
+      setKeyStatus('success');
+      supabase.from('user_settings')
+        .upsert({ user_id: user?.id ?? 'default-user', gemini_api_key: trimmed }, { onConflict: 'user_id' })
+        .then(({ error }) => { if (error) console.warn('Failed to sync Gemini key to Supabase:', error.message); });
+    } catch (err: any) {
+      setKeyError(err.message || 'Key validation failed.');
+      setKeyStatus('error');
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleRemoveKey = () => {
+    setPersonalGeminiKey(null);
+    setSavedKey(null);
+    setKeyInput('');
+    setKeyStatus('idle');
+    supabase.from('user_settings')
+      .upsert({ user_id: user?.id ?? 'default-user', gemini_api_key: null }, { onConflict: 'user_id' })
+      .then(({ error }) => { if (error) console.warn('Failed to clear key from Supabase:', error.message); });
+  };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div 
-        className="w-full max-w-md rounded-2xl border border-token bg-surface p-6 shadow-2xl shadow-black/60 max-h-[90vh] overflow-y-auto overflow-x-hidden"
-        style={{ scrollbarGutter: 'stable' }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent/20">
-              <Settings size={16} className="text-accent" />
-            </div>
-            <span className="text-base font-semibold text-primary">Settings</span>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-muted hover:bg-white/[0.06] hover:text-primary transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-[750px] h-[75vh] min-h-[500px] p-0 flex flex-col md:flex-row bg-app border-token text-primary overflow-hidden shadow-2xl">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Settings</DialogTitle>
+        </DialogHeader>
 
-        {/* -- Section 0: Account --------------------------- */}
-        <div className="mb-5">
-          <p className="text-2xs font-semibold uppercase tracking-widest text-muted mb-3">Account</p>
-          <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-secondary">Display Name</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={displayName}
-                  readOnly={!isEditingName}
-                  onChange={e => { setDisplayName(e.target.value); setNameError(''); }}
-                  className={`flex-1 rounded-xl border px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none transition-colors
-                    ${isEditingName
-                      ? 'border-accent/60 bg-app focus:border-accent cursor-text'
-                      : 'border-token bg-raised cursor-default select-none'
-                    }`}
-                  placeholder="Your display name"
-                />
-                {!isEditingName ? (
+        <Tabs defaultValue="account" orientation="vertical" className="flex flex-col md:flex-row w-full h-full">
+          {/* Sidebar Nav */}
+          <div className="w-full md:w-[220px] shrink-0 border-b md:border-b-0 md:border-r border-token bg-raised p-4 flex flex-col gap-4">
+            <div className="flex items-center gap-2 mb-2 px-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent/20">
+                <Settings size={16} className="text-accent" />
+              </div>
+              <span className="text-base font-semibold text-primary">Settings</span>
+            </div>
+            
+            <TabsList className="flex flex-col h-auto bg-transparent p-0 items-stretch space-y-1">
+              <TabsTrigger value="account" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+                Account
+              </TabsTrigger>
+              <TabsTrigger value="general" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+                General
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+                AI
+              </TabsTrigger>
+              <TabsTrigger value="feedback" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+                Feedback
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 overflow-y-auto p-6 md:p-8 relative" style={{ scrollbarGutter: 'stable' }}>
+            <TabsContent value="account" className="mt-0 outline-none h-full space-y-6">
+              <h2 className="text-lg font-semibold text-primary mb-4">Account</h2>
+              {!isAuthenticated ? (
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-raised p-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium text-primary">Sign in</span>
+                    <span className="text-2xs text-muted truncate">Log in to save your settings</span>
+                  </div>
                   <button
-                    onClick={() => { setIsEditingName(true); setNameError(''); setNameSuccess(false); }}
-                    className="flex h-[38px] w-[38px] items-center justify-center rounded-xl border border-token hover:border-accent/50 text-muted hover:text-accent transition-colors shrink-0"
-                    title="Edit Display Name"
+                    onClick={onLogin}
+                    className="shrink-0 rounded-xl bg-accent px-4 py-1.5 text-sm font-semibold text-primary hover:bg-accent/90 transition-colors"
                   >
-                    <SquarePen size={18} />
+                    Log in
                   </button>
-                ) : (
-                  <div className="flex items-center gap-1.5">
+                </div>
+              ) : (
+                <>
+                  {/* Display Name */}
+                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4">
+                    <label className="text-xs font-medium text-secondary">Display Name</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={displayName}
+                        readOnly={!isEditingName}
+                        onChange={e => { setDisplayName(e.target.value); setNameError(''); }}
+                        className={`flex-1 rounded-xl border px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none transition-colors
+                          ${isEditingName
+                            ? 'border-accent/60 bg-app focus:border-accent cursor-text'
+                            : 'border-token bg-raised cursor-default select-none'
+                          }`}
+                        placeholder="Your display name"
+                      />
+                      {!isEditingName ? (
+                        <button
+                          onClick={() => { setIsEditingName(true); setNameError(''); setNameSuccess(false); }}
+                          className="flex h-[38px] w-[38px] items-center justify-center rounded-xl border border-token hover:border-accent/50 text-muted hover:text-accent transition-colors shrink-0"
+                          title="Edit Display Name"
+                        >
+                          <SquarePen size={18} />
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => { setDisplayName(originalName); setIsEditingName(false); setNameError(''); }}
+                            className="rounded-xl border border-token px-3 py-2 text-sm text-muted hover:text-primary transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleSaveName}
+                            disabled={savingName || displayName.trim() === '' || displayName.trim() === originalName}
+                            className="rounded-xl bg-accent hover:bg-accent/90 px-4 py-2 text-sm font-semibold text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            {savingName ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {nameSuccess && (
+                      <p className="text-xs text-success mt-1 animate-in fade-in flex items-center gap-1">
+                        <Check size={12} /> Name updated successfully
+                      </p>
+                    )}
+                    {nameError && (
+                      <p className="text-xs text-danger mt-1 animate-in fade-in flex items-center gap-1">
+                        <X size={12} /> {nameError}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Profile Picture */}
+                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4 mt-3">
+                    <label className="text-xs font-medium text-secondary">Profile Picture</label>
+                    <div className="flex items-center gap-4">
+                      <div className="relative shrink-0">
+                        <Avatar className="h-14 w-14">
+                          {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
+                          <AvatarFallback className="bg-accent/20 text-accent font-bold text-lg">{initials}</AvatarFallback>
+                        </Avatar>
+                        <button
+                          onClick={() => avatarInputRef.current?.click()}
+                          disabled={uploadingAvatar}
+                          className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-token bg-surface text-secondary hover:text-primary transition-colors"
+                          title="Upload picture"
+                        >
+                          {uploadingAvatar ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                        </button>
+                        <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => avatarInputRef.current?.click()}
+                          disabled={uploadingAvatar}
+                          className="text-xs font-medium text-accent hover:text-accent/80 transition-colors text-left"
+                        >
+                          {uploadingAvatar ? 'Uploading...' : 'Upload new picture'}
+                        </button>
+                        <p className="text-2xs text-muted">JPEG, PNG, WebP - Max 2 MB</p>
+                      </div>
+                    </div>
+                    {avatarError && <p className="text-xs text-danger flex items-center gap-1"><X size={12} />{avatarError}</p>}
+                  </div>
+
+                  {/* Change Email */}
+                  <div className="flex flex-col gap-2 mt-3">
                     <button
-                      onClick={() => { setDisplayName(originalName); setIsEditingName(false); setNameError(''); }}
-                      className="rounded-xl border border-token px-3 py-2 text-sm text-muted hover:text-primary transition-colors"
+                      onClick={() => { setShowEmailDialog(true); setNewEmail(''); setEmailError(''); setEmailSuccess(false); }}
+                      className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
                     >
-                      Cancel
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
+                          <Mail size={14} className="text-accent" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-primary">Change Email</span>
+                          <span className="text-2xs text-muted">{user?.email ?? ''}</span>
+                        </div>
+                      </div>
+                      <SquarePen size={15} className="text-muted shrink-0" />
                     </button>
+
+                    {/* Change Password */}
                     <button
-                      onClick={handleSaveName}
-                      disabled={savingName || displayName.trim() === '' || displayName.trim() === originalName}
-                      className="rounded-xl bg-accent hover:bg-accent/90 px-4 py-2 text-sm font-semibold text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      onClick={() => { setShowPasswordDialog(true); setNewPassword(''); setConfirmPassword(''); setPasswordError(''); setPasswordSuccess(false); }}
+                      className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
                     >
-                      {savingName ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
+                          <Lock size={14} className="text-accent" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-primary">Change Password</span>
+                          <span className="text-2xs text-muted">Update your account password</span>
+                        </div>
+                      </div>
+                      <SquarePen size={15} className="text-muted shrink-0" />
                     </button>
                   </div>
+
+                  <div className="pt-4 flex justify-end">
+                    <button
+                      onClick={onLogout}
+                      className="flex items-center gap-2 rounded-xl border border-token px-4 py-2 text-sm font-medium text-secondary hover:bg-white/[0.04] hover:text-danger transition-colors"
+                    >
+                      <LogOut size={16} /> Sign out
+                    </button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="general" className="mt-0 outline-none h-full space-y-6">
+              <h2 className="text-lg font-semibold text-primary mb-4">General</h2>
+              <div className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
+                    {theme === 'dark'
+                      ? <Moon size={14} className="text-accent" />
+                      : <Sun size={14} className="text-amber-400" />
+                    }
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-primary">Theme</span>
+                    <span className="text-2xs text-muted">{theme === 'dark' ? 'Dark mode' : 'Light mode'}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={onToggleTheme}
+                  title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                  className="relative h-6 w-11 rounded-full border border-token bg-app transition-colors hover:border-accent/40 focus:outline-none"
+                >
+                  <span
+                    className={`absolute top-0.5 h-5 w-5 rounded-full transition-transform flex items-center justify-center
+                      ${theme === 'light' ? 'translate-x-5 bg-accent' : 'translate-x-0.5 bg-raised'}`}
+                  >
+                    {theme === 'dark'
+                      ? <Moon size={10} className="text-secondary" />
+                      : <Sun size={10} className="text-white" />
+                    }
+                  </span>
+                </button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="ai" className="mt-0 outline-none h-full space-y-6">
+              <h2 className="text-lg font-semibold text-primary mb-4">AI</h2>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
+                    <Key size={14} className="text-accent" />
+                  </div>
+                  <span className="text-sm font-semibold text-primary">Your own Gemini API key</span>
+                  <span className="rounded-full bg-accent/20 px-2 py-0.5 text-2xs font-semibold text-accent border border-accent/30">
+                    recommended
+                  </span>
+                  <div className="relative ml-auto" ref={guideRef}>
+                    <button
+                      onClick={() => setShowGuide(v => !v)}
+                      className="flex items-center justify-center rounded-full text-muted hover:text-accent transition-colors"
+                      title="How to get a free key"
+                    >
+                      <HelpCircle size={15} />
+                    </button>
+                    {showGuide && (
+                      <div className="absolute right-0 top-6 z-10 w-72 rounded-xl border border-token bg-surface p-4 shadow-xl shadow-black/20">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-2xs font-semibold text-primary">How to get your free key</p>
+                          <button onClick={() => setShowGuide(false)} className="text-secondary hover:text-secondary transition-colors">
+                            <X size={13} />
+                          </button>
+                        </div>
+                        {[
+                          <><span className="font-semibold text-accent">"Get my free key"</span> below</>,
+                          <>Click the blue <span className="font-semibold text-primary">"Create API key"</span> button on Google's page</>,
+                          <>Copy the key that appears (starts with <span className="font-mono text-accent">"AIza..."</span>)</>,
+                          <>Paste it below and click <span className="font-semibold text-primary">Save</span></>,
+                        ].map((step, i) => (
+                          <div key={i} className="flex items-start gap-2 mb-2 last:mb-0">
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent/30 text-2xs font-bold text-accent mt-0.5">
+                              {i + 1}
+                            </span>
+                            <p className="text-2xs text-secondary leading-relaxed">{step}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-xs text-secondary leading-relaxed">
+                  By default, Aralko uses a shared API key that is strictly rate-limited (one request every 2 seconds across all users). To avoid "Too many requests" errors and get faster responses, provide your own free Gemini API key.
+                </p>
+
+                <div className="flex items-center gap-2 my-2">
+                  <a 
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
+                  >
+                    Get my free key <ExternalLink size={12} />
+                  </a>
+                </div>
+
+                {savedKey ? (
+                  <div className="flex items-center justify-between rounded-xl border border-token bg-raised px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
+                        <Check size={16} className="text-success" />
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium text-primary">Key is active</span>
+                        <span className="text-xs text-secondary font-mono">
+                          {savedKey.slice(0, 4)}••••••••••{savedKey.slice(-4)}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleRemoveKey}
+                      className="rounded-lg p-2 text-muted hover:bg-white/[0.05] hover:text-danger transition-colors"
+                      title="Remove key"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="password"
+                        placeholder="AIzaSy..."
+                        value={keyInput}
+                        onChange={(e) => setKeyInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveKey(); }}
+                        className="flex-1 rounded-xl border border-token bg-app px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
+                      />
+                      <button
+                        onClick={handleSaveKey}
+                        disabled={validating || !keyInput.trim()}
+                        className="flex w-[80px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-primary hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {validating ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                      </button>
+                    </div>
+                    {keyStatus === 'success' && (
+                      <div className="flex items-center gap-2 text-xs text-success">
+                        <Check size={13} />
+                        Key added - you're all set!
+                      </div>
+                    )}
+                    {keyStatus === 'error' && (
+                      <div className="flex items-start gap-2 text-xs text-red-400">
+                        <X size={13} className="mt-0.5 shrink-0" />
+                        <span>{keyError || "That doesn't look right - please check you copied the full key."}</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
-              {nameSuccess && (
-                <p className="text-xs text-success mt-1 animate-in fade-in flex items-center gap-1">
-                  <Check size={12} /> Name updated successfully
-                </p>
-              )}
-              {nameError && (
-                <p className="text-xs text-danger mt-1 animate-in fade-in flex items-center gap-1">
-                  <X size={12} /> {nameError}
-                </p>
-              )}
-            </div>
+            </TabsContent>
+
+            <TabsContent value="feedback" className="mt-0 outline-none h-full space-y-4">
+              <h2 className="text-lg font-semibold text-primary mb-2">Send Feedback</h2>
+              <p className="text-sm text-secondary">
+                Have a suggestion, feature request, or found a bug? We'd love to hear from you.
+              </p>
+              <textarea
+                placeholder="What's on your mind?"
+                className="w-full h-32 rounded-xl border border-token bg-app p-3 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors resize-none"
+              ></textarea>
+              <button
+                className="self-start rounded-xl bg-accent hover:bg-accent/90 px-4 py-2 text-sm font-semibold text-primary transition-colors"
+                onClick={() => alert("Feedback submission is not yet wired to a backend! (Will be sent to Supabase in the future)")}
+              >
+                Submit Feedback
+              </button>
+              <p className="text-xs text-muted mt-2">
+                Note: Feedback submission is currently a UI placeholder and needs follow-up wiring to a Supabase table.
+              </p>
+            </TabsContent>
           </div>
+        </Tabs>
 
-          {/* -- Avatar row -- */}
-          <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4 mt-3">
-            <label className="text-xs font-medium text-secondary">Profile Picture</label>
-            <div className="flex items-center gap-4">
-              <div className="relative shrink-0">
-                <Avatar className="h-14 w-14">
-                  {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-                  <AvatarFallback className="bg-accent/20 text-accent font-bold text-lg">{initials}</AvatarFallback>
-                </Avatar>
-                <button
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-token bg-surface text-secondary hover:text-primary transition-colors"
-                  title="Upload picture"
-                >
-                  {uploadingAvatar ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
-                </button>
-                <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className="text-xs font-medium text-accent hover:text-accent/80 transition-colors text-left"
-                >
-                  {uploadingAvatar ? 'Uploading...' : 'Upload new picture'}
-                </button>
-                <p className="text-2xs text-muted">JPEG, PNG, WebP - Max 2 MB</p>
-              </div>
-            </div>
-            {avatarError && <p className="text-xs text-danger flex items-center gap-1"><X size={12} />{avatarError}</p>}
-          </div>
-
-          {/* -- Email & Password rows -- */}
-          <div className="flex flex-col gap-2 mt-3">
-            {/* Change Email */}
-            <button
-              onClick={() => { setShowEmailDialog(true); setNewEmail(''); setEmailError(''); setEmailSuccess(false); }}
-              className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
-                  <Mail size={14} className="text-accent" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-primary">Change Email</span>
-                  <span className="text-2xs text-muted">{user?.email ?? ''}</span>
-                </div>
-              </div>
-              <SquarePen size={15} className="text-muted shrink-0" />
-            </button>
-
-            {/* Change Password */}
-            <button
-              onClick={() => { setShowPasswordDialog(true); setNewPassword(''); setConfirmPassword(''); setPasswordError(''); setPasswordSuccess(false); }}
-              className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
-                  <Lock size={14} className="text-accent" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-primary">Change Password</span>
-                  <span className="text-2xs text-muted">Update your account password</span>
-                </div>
-              </div>
-              <SquarePen size={15} className="text-muted shrink-0" />
-            </button>
-          </div>
-        </div>
-
-        {/* -- Change Email overlay dialog -- */}
+        {/* ── Change Email overlay dialog ── */}
         {showEmailDialog && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="w-full max-w-sm rounded-2xl border border-token bg-surface p-6 shadow-2xl shadow-black/60">
@@ -445,7 +642,7 @@ export function SettingsDialog({
           </div>
         )}
 
-        {/* -- Change Password overlay dialog -- */}
+        {/* ── Change Password overlay dialog ── */}
         {showPasswordDialog && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="w-full max-w-sm rounded-2xl border border-token bg-surface p-6 shadow-2xl shadow-black/60">
@@ -512,200 +709,7 @@ export function SettingsDialog({
           </div>
         )}
 
-        <div className="border-t border-token mb-5" />
-
-        {/* -- Section 1: General --------------------------- */}
-        <div className="mb-5">
-          <p className="text-2xs font-semibold uppercase tracking-widest text-muted mb-3">General</p>
-          <div className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 mb-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
-                {theme === 'dark'
-                  ? <Moon size={14} className="text-accent" />
-                  : <Sun size={14} className="text-amber-400" />
-                }
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-primary">Theme</span>
-                <span className="text-2xs text-muted">{theme === 'dark' ? 'Dark mode' : 'Light mode'}</span>
-              </div>
-            </div>
-            <button
-              onClick={onToggleTheme}
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="relative h-6 w-11 rounded-full border border-token bg-app transition-colors hover:border-accent/40 focus:outline-none"
-            >
-              <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full transition-transform flex items-center justify-center
-                  ${theme === 'light' ? 'translate-x-5 bg-accent' : 'translate-x-0.5 bg-raised'}`}
-              >
-                {theme === 'dark'
-                  ? <Moon size={10} className="text-secondary" />
-                  : <Sun size={10} className="text-white" />
-                }
-              </span>
-            </button>
-          </div>
-
-          {!isAuthenticated ? (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-raised p-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
-                  <Music2 size={14} className="text-[#1db954]" />
-                </div>
-                <span className="text-xs text-secondary truncate">Link your Spotify Premium account</span>
-              </div>
-              <button
-                onClick={onLogin}
-                className="btn btn-spotify text-xs py-1.5 px-3 h-auto rounded-xl border-0"
-              >
-                Connect
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-raised p-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
-                  <Music2 size={14} className="text-[#1db954]" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-semibold text-primary truncate">Spotify Connected</span>
-                  <span className="text-2xs text-success">Premium active</span>
-                </div>
-              </div>
-              <button
-                onClick={onLogout}
-                className="flex items-center gap-1.5 shrink-0 text-xs px-2.5 py-1.5 rounded-lg text-danger hover:bg-danger/10 border border-danger/20 transition-colors"
-              >
-                <LogOut size={12} />
-                Disconnect
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* -- Section 2: AI / Gemini key --------------------- */}
-        <div className="border-t border-token mb-5" />
-        <div className="flex flex-col gap-3">
-          <p className="text-2xs font-semibold uppercase tracking-widest text-muted">AI</p>
-          {/* Heading row */}
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
-              <Key size={14} className="text-accent" />
-            </div>
-            <span className="text-sm font-semibold text-primary">Your own Gemini API key</span>
-            {/* Fixed badge */}
-            <span className="rounded-full bg-accent/20 px-2 py-0.5 text-2xs font-semibold text-accent border border-accent/30">
-              recommended
-            </span>
-            {/* "?" - click to open step guide */}
-            <div className="relative ml-auto" ref={guideRef}>
-              <button
-                onClick={() => setShowGuide(v => !v)}
-                className="flex items-center justify-center rounded-full text-muted hover:text-accent transition-colors"
-                title="How to get a free key"
-              >
-                <HelpCircle size={15} />
-              </button>
-
-              {showGuide && (
-                <div className="absolute right-0 top-6 z-10 w-72 rounded-xl border border-token bg-surface p-4 shadow-xl shadow-black/20">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-2xs font-semibold text-primary">How to get your free key</p>
-                    <button onClick={() => setShowGuide(false)} className="text-secondary hover:text-secondary transition-colors">
-                      <X size={13} />
-                    </button>
-                  </div>
-                  {[
-                    <><span className="font-semibold text-accent">"Get my free key"</span> below</>,
-                    <>Click the blue <span className="font-semibold text-primary">"Create API key"</span> button on Google's page</>,
-                    <>Copy the key that appears (starts with <span className="font-mono text-accent">"AIza..."</span>)</>,
-                    <>Paste it below and click <span className="font-semibold text-primary">Save</span></>,
-                  ].map((step, i) => (
-                    <div key={i} className="flex items-start gap-2 mb-2 last:mb-0">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent/30 text-2xs font-bold text-accent mt-0.5">
-                        {i + 1}
-                      </span>
-                      <p className="text-2xs text-secondary leading-relaxed">{step}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <p className="text-xs text-secondary leading-relaxed">
-            Aralko works out of the box using a shared AI key. Add your own free key for faster, unlimited use without sharing limits with other users.
-          </p>
-
-          {savedKey ? (
-            /* -- Key is saved -- */
-            <div className="rounded-xl bg-success-muted border border-success/20 p-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Check size={15} className="text-success shrink-0" />
-                <div className="flex flex-col">
-                  <span className="text-xs font-medium text-success">Personal key active</span>
-                  <span className="text-2xs text-muted font-mono">{savedKey.substring(0, 8)}...{savedKey.slice(-4)}</span>
-                </div>
-              </div>
-              <button
-                onClick={handleRemoveKey}
-                className="flex items-center gap-1 text-xs text-muted hover:text-red-400 transition-colors"
-              >
-                <Trash2 size={12} />
-                Remove
-              </button>
-            </div>
-          ) : (
-            /* -- No key saved -- */
-            <>
-              <a
-                href="https://aistudio.google.com/apikey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full rounded-xl border border-accent/40 bg-accent-muted hover:bg-accent/20 px-4 py-2 text-xs font-semibold text-accent transition-colors"
-              >
-                <ExternalLink size={13} />
-                Get my free key
-              </a>
-
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={keyInput}
-                  onChange={e => setKeyInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSaveKey()}
-                  placeholder='Paste your key here (AIza...)'
-                  className="flex-1 rounded-xl border border-token bg-app px-3 py-2 text-xs text-primary placeholder-slate-600 outline-none focus:border-accent/60 transition-colors"
-                />
-                <button
-                  onClick={handleSaveKey}
-                  disabled={!keyInput.trim() || validating}
-                  className="flex items-center gap-1.5 rounded-xl bg-accent hover:bg-violet-700 px-4 py-2 text-xs font-semibold text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {validating ? <Loader2 size={12} className="animate-spin" /> : null}
-                  {validating ? 'Checking...' : 'Save'}
-                </button>
-              </div>
-
-              {/* Validation feedback */}
-              {keyStatus === 'success' && (
-                <div className="flex items-center gap-2 text-xs text-success">
-                  <Check size={13} />
-                  Key added - you're all set!
-                </div>
-              )}
-              {keyStatus === 'error' && (
-                <div className="flex items-start gap-2 text-xs text-red-400">
-                  <X size={13} className="mt-0.5 shrink-0" />
-                  <span>{keyError || "That doesn't look right - please check you copied the full key."}</span>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
-
