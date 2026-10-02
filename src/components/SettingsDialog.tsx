@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2 } from 'lucide-react';
+import { Settings, Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, Sparkles, MessageSquare } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -244,7 +244,7 @@ export function SettingsDialog({
 
         <Tabs defaultValue="account" orientation="vertical" className="flex flex-col md:flex-row w-full h-full">
           {/* Sidebar Nav */}
-          <div className="w-full md:w-[220px] shrink-0 border-b md:border-b-0 md:border-r border-token bg-raised p-4 flex flex-col gap-4">
+          <div className="w-full md:w-[220px] shrink-0 border-b md:border-b-0 md:border-r border-token bg-surface p-4 flex flex-col gap-4">
             <div className="flex items-center gap-2 mb-2 px-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent/20">
                 <Settings size={16} className="text-accent" />
@@ -253,16 +253,20 @@ export function SettingsDialog({
             </div>
             
             <TabsList className="flex flex-col h-auto bg-transparent p-0 items-stretch space-y-1">
-              <TabsTrigger value="account" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+              <TabsTrigger value="account" className="w-full justify-start gap-2.5 data-[state=active]:bg-accent/15 data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-xl px-3 py-2.5 transition-colors">
+                <User size={15} />
                 Account
               </TabsTrigger>
-              <TabsTrigger value="general" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+              <TabsTrigger value="general" className="w-full justify-start gap-2.5 data-[state=active]:bg-accent/15 data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-xl px-3 py-2.5 transition-colors">
+                <Settings2 size={15} />
                 General
               </TabsTrigger>
-              <TabsTrigger value="ai" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+              <TabsTrigger value="ai" className="w-full justify-start gap-2.5 data-[state=active]:bg-accent/15 data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-xl px-3 py-2.5 transition-colors">
+                <Sparkles size={15} />
                 AI
               </TabsTrigger>
-              <TabsTrigger value="feedback" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+              <TabsTrigger value="feedback" className="w-full justify-start gap-2.5 data-[state=active]:bg-accent/15 data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-xl px-3 py-2.5 transition-colors">
+                <MessageSquare size={15} />
                 Feedback
               </TabsTrigger>
             </TabsList>
@@ -274,7 +278,7 @@ export function SettingsDialog({
               <h2 className="text-lg font-semibold text-primary mb-4">Account</h2>
               <>
                 {/* Display Name */}
-                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4">
+                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4">
                     <label className="text-xs font-medium text-secondary">Display Name</label>
                     <div className="flex items-center gap-2">
                       <input
@@ -328,7 +332,7 @@ export function SettingsDialog({
                   </div>
 
                   {/* Profile Picture */}
-                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4 mt-3">
+                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4 mt-3">
                     <label className="text-xs font-medium text-secondary">Profile Picture</label>
                     <div className="flex items-center gap-4">
                       <div className="relative shrink-0">
@@ -364,7 +368,7 @@ export function SettingsDialog({
                   <div className="flex flex-col gap-2 mt-3">
                     <button
                       onClick={() => { setShowEmailDialog(true); setNewEmail(''); setEmailError(''); setEmailSuccess(false); }}
-                      className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
+                      className="flex items-center justify-between rounded-xl border border-token bg-surface p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
@@ -381,7 +385,7 @@ export function SettingsDialog({
                     {/* Change Password */}
                     <button
                       onClick={() => { setShowPasswordDialog(true); setNewPassword(''); setConfirmPassword(''); setPasswordError(''); setPasswordSuccess(false); }}
-                      className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
+                      className="flex items-center justify-between rounded-xl border border-token bg-surface p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
@@ -409,7 +413,7 @@ export function SettingsDialog({
 
             <TabsContent value="general" className="mt-0 outline-none h-full space-y-6">
               <h2 className="text-lg font-semibold text-primary mb-4">General</h2>
-              <div className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 mb-3">
+              <div className="flex items-center justify-between rounded-xl border border-token bg-surface p-3 mb-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
                     {theme === 'dark'
@@ -442,7 +446,7 @@ export function SettingsDialog({
               <div className="pt-2">
                 <h3 className="text-sm font-semibold text-primary mb-3">Integrations</h3>
                 {!isAuthenticated ? (
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-raised p-3">
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-surface p-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
                         <Music2 size={14} className="text-[#1db954]" />
@@ -457,7 +461,7 @@ export function SettingsDialog({
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-raised p-3">
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-surface p-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
                         <Music2 size={14} className="text-[#1db954]" />
@@ -540,7 +544,7 @@ export function SettingsDialog({
                 </div>
 
                 {savedKey ? (
-                  <div className="flex items-center justify-between rounded-xl border border-token bg-raised px-4 py-3">
+                  <div className="flex items-center justify-between rounded-xl border border-token bg-surface px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
                         <Check size={16} className="text-success" />
