@@ -259,19 +259,19 @@ export function SettingsDialog({
             </div>
             
             <TabsList className="flex flex-col h-auto bg-transparent p-0 items-stretch space-y-0.5 w-full">
-              <TabsTrigger value="account" className="w-full justify-start gap-3 data-active:!bg-accent data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
+              <TabsTrigger value="account" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <User size={18} />
                 Account
               </TabsTrigger>
-              <TabsTrigger value="general" className="w-full justify-start gap-3 data-active:!bg-accent data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
+              <TabsTrigger value="general" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <Settings2 size={18} />
                 General
               </TabsTrigger>
-              <TabsTrigger value="ai" className="w-full justify-start gap-3 data-active:!bg-accent data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
+              <TabsTrigger value="ai" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <Bot size={18} />
                 AI
               </TabsTrigger>
-              <TabsTrigger value="feedback" className="w-full justify-start gap-3 data-active:!bg-accent data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
+              <TabsTrigger value="feedback" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <MessageSquare size={18} />
                 Feedback
               </TabsTrigger>
@@ -279,7 +279,7 @@ export function SettingsDialog({
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto px-6 pb-6 md:px-8 md:pb-8 pt-[26px] relative" style={{ scrollbarGutter: 'stable' }}>
+          <div className="flex-1 overflow-y-auto px-6 pb-6 md:px-8 md:pb-8 pt-[23.5px] relative" style={{ scrollbarGutter: 'stable' }}>
             <TabsContent value="account" className="mt-0 outline-none h-full space-y-6">
               <h2 className="text-lg font-semibold text-primary mb-4">Account</h2>
               <>
