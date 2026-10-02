@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { Settings, Sun, Moon, Music2, Key, ExternalLink, Check, X, Trash2, Loader2, HelpCircle, LogOut, SquarePen } from 'lucide-react';
+﻿import { useState, useEffect, useRef } from 'react';
+import { Settings, Sun, Moon, Music2, Key, ExternalLink, Check, X, Trash2, Loader2, HelpCircle, LogOut, SquarePen, Camera, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ export function SettingsDialog({
   onLogin,
   onLogout,
 }: SettingsDialogProps) {
-  // ── Gemini key state (moved verbatim from ProfilePopover) ──────────────
+  // -- Gemini key state (moved verbatim from ProfilePopover) --------------
   const [keyInput, setKeyInput] = useState('');
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
@@ -34,7 +35,7 @@ export function SettingsDialog({
 
   const { user } = useAuth();
   
-  // ── Account Name State ────────────────────────────────────────────────
+  // -- Account Name State ------------------------------------------------
   const [displayName, setDisplayName] = useState('');
   const [originalName, setOriginalName] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -42,11 +43,35 @@ export function SettingsDialog({
   const [nameError, setNameError] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
+  // -- Avatar State ------------------------------------------------------
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // -- Email Change State ------------------------------------------------
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailSuccess, setEmailSuccess] = useState(false);
+  const [emailError, setEmailError] = useState('');
+
+  // -- Password Change State ---------------------------------------------
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+
   useEffect(() => {
     if (user) {
       const name = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? '';
       setDisplayName(name);
       setOriginalName(name);
+      setAvatarUrl(user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null);
     }
   }, [user]);
 
@@ -75,11 +100,6 @@ export function SettingsDialog({
         data: { full_name: trimmed, name: trimmed }
       });
       if (error) throw error;
-
-      // Refresh the session so the updated user_metadata is reflected in the
-      // in-memory JWT immediately — without this, the old name shows after reload
-      // because getSession() returns the stale cached token.
-      await supabase.auth.refreshSession();
 
       // Sync to user_settings so other checks catch it immediately
       await supabase.from('user_settings').upsert({ user_id: user.id, display_name: trimmed }, { onConflict: 'user_id' });
@@ -151,7 +171,75 @@ export function SettingsDialog({
       .upsert({ user_id: user?.id ?? 'default-user', gemini_api_key: null }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) console.warn('Failed to clear Gemini key in Supabase:', error.message); });
   };
-  // ──────────────────────────────────────────────────────────────────────
+  // ----------------------------------------------------------------------
+
+
+  // -- Avatar Upload -----------------------------------------------------
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) { setAvatarError('Please upload an image file.'); return; }
+    if (file.size > 2 * 1024 * 1024) { setAvatarError('Image must be under 2 MB.'); return; }
+    setUploadingAvatar(true);
+    setAvatarError('');
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `avatars/${user.id}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from('user-avatars').upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: { publicUrl } } = supabase.storage.from('user-avatars').getPublicUrl(path);
+      await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
+      await supabase.auth.refreshSession();
+      setAvatarUrl(publicUrl);
+    } catch (err: any) {
+      setAvatarError(err.message?.includes('Bucket not found') || err.message?.includes('does not exist')
+        ? 'Storage bucket "user-avatars" not set up yet. Create it in your Supabase dashboard.'
+        : 'Upload failed: ' + (err.message ?? 'Unknown error'));
+    } finally {
+      setUploadingAvatar(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  // -- Email Change ------------------------------------------------------
+  const handleChangeEmail = async () => {
+    if (!user || !newEmail.trim()) return;
+    setSavingEmail(true);
+    setEmailError('');
+    setEmailSuccess(false);
+    try {
+      const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+      if (error) throw error;
+      setEmailSuccess(true);
+    } catch (err: any) {
+      setEmailError(err.message ?? 'Failed to update email.');
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
+  // -- Password Change ---------------------------------------------------
+  const handleChangePassword = async () => {
+    setPasswordError('');
+    if (newPassword.length < 6) { setPasswordError('Password must be at least 6 characters.'); return; }
+    if (newPassword !== confirmPassword) { setPasswordError('Passwords do not match.'); return; }
+    setSavingPassword(true);
+    setPasswordSuccess(false);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setPasswordSuccess(true);
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => { setPasswordSuccess(false); setShowPasswordDialog(false); }, 2000);
+    } catch (err: any) {
+      setPasswordError(err.message ?? 'Failed to update password.');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || user?.email?.[0]?.toUpperCase() || '?';
 
   if (!isOpen) return null;
 
@@ -180,7 +268,7 @@ export function SettingsDialog({
           </button>
         </div>
 
-        {/* ── Section 0: Account ─────────────────────────── */}
+        {/* -- Section 0: Account --------------------------- */}
         <div className="mb-5">
           <p className="text-2xs font-semibold uppercase tracking-widest text-muted mb-3">Account</p>
           <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4">
@@ -237,11 +325,196 @@ export function SettingsDialog({
               )}
             </div>
           </div>
+
+          {/* -- Avatar row -- */}
+          <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4 mt-3">
+            <label className="text-xs font-medium text-secondary">Profile Picture</label>
+            <div className="flex items-center gap-4">
+              <div className="relative shrink-0">
+                <Avatar className="h-14 w-14">
+                  {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
+                  <AvatarFallback className="bg-accent/20 text-accent font-bold text-lg">{initials}</AvatarFallback>
+                </Avatar>
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-token bg-surface text-secondary hover:text-primary transition-colors"
+                  title="Upload picture"
+                >
+                  {uploadingAvatar ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                </button>
+                <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="text-xs font-medium text-accent hover:text-accent/80 transition-colors text-left"
+                >
+                  {uploadingAvatar ? 'Uploading...' : 'Upload new picture'}
+                </button>
+                <p className="text-2xs text-muted">JPEG, PNG, WebP - Max 2 MB</p>
+              </div>
+            </div>
+            {avatarError && <p className="text-xs text-danger flex items-center gap-1"><X size={12} />{avatarError}</p>}
+          </div>
+
+          {/* -- Email & Password rows -- */}
+          <div className="flex flex-col gap-2 mt-3">
+            {/* Change Email */}
+            <button
+              onClick={() => { setShowEmailDialog(true); setNewEmail(''); setEmailError(''); setEmailSuccess(false); }}
+              className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
+                  <Mail size={14} className="text-accent" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-primary">Change Email</span>
+                  <span className="text-2xs text-muted">{user?.email ?? ''}</span>
+                </div>
+              </div>
+              <SquarePen size={15} className="text-muted shrink-0" />
+            </button>
+
+            {/* Change Password */}
+            <button
+              onClick={() => { setShowPasswordDialog(true); setNewPassword(''); setConfirmPassword(''); setPasswordError(''); setPasswordSuccess(false); }}
+              className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
+                  <Lock size={14} className="text-accent" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-primary">Change Password</span>
+                  <span className="text-2xs text-muted">Update your account password</span>
+                </div>
+              </div>
+              <SquarePen size={15} className="text-muted shrink-0" />
+            </button>
+          </div>
         </div>
+
+        {/* -- Change Email overlay dialog -- */}
+        {showEmailDialog && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-sm rounded-2xl border border-token bg-surface p-6 shadow-2xl shadow-black/60">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-base font-semibold text-primary">Change Email</span>
+                <button onClick={() => setShowEmailDialog(false)} className="rounded-lg p-1.5 text-muted hover:bg-white/[0.06] hover:text-primary transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+              {emailSuccess ? (
+                <div className="rounded-xl bg-success-muted border border-success/20 p-4 flex items-center gap-3">
+                  <Check size={16} className="text-success shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-success">Confirmation email sent</p>
+                    <p className="text-xs text-muted mt-0.5">Check <span className="font-medium text-primary">{newEmail}</span> to confirm the change.</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-muted mb-4">Enter your new email address. Supabase will send a confirmation link before the change takes effect.</p>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={e => { setNewEmail(e.target.value); setEmailError(''); }}
+                      placeholder="new@email.com"
+                      className="rounded-xl border border-token bg-app px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
+                    />
+                    {emailError && <p className="text-xs text-danger flex items-center gap-1"><X size={12} />{emailError}</p>}
+                    <div className="flex gap-2 mt-1">
+                      <button onClick={() => setShowEmailDialog(false)} className="flex-1 rounded-xl border border-token px-3 py-2 text-sm text-muted hover:text-primary transition-colors">Cancel</button>
+                      <button
+                        onClick={handleChangeEmail}
+                        disabled={savingEmail || !newEmail.trim()}
+                        className="flex-1 rounded-xl bg-accent hover:bg-accent/90 px-3 py-2 text-sm font-semibold text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {savingEmail ? <Loader2 size={14} className="animate-spin" /> : null}
+                        {savingEmail ? 'Sending...' : 'Send confirmation'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* -- Change Password overlay dialog -- */}
+        {showPasswordDialog && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-sm rounded-2xl border border-token bg-surface p-6 shadow-2xl shadow-black/60">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-base font-semibold text-primary">Change Password</span>
+                <button onClick={() => setShowPasswordDialog(false)} className="rounded-lg p-1.5 text-muted hover:bg-white/[0.06] hover:text-primary transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+              {passwordSuccess ? (
+                <div className="rounded-xl bg-success-muted border border-success/20 p-4 flex items-center gap-3">
+                  <Check size={16} className="text-success shrink-0" />
+                  <p className="text-sm font-medium text-success">Password updated successfully!</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-secondary">New Password</label>
+                      <div className="relative">
+                        <input
+                          type={showNewPwd ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={e => { setNewPassword(e.target.value); setPasswordError(''); }}
+                          placeholder="At least 6 characters"
+                          className="w-full rounded-xl border border-token bg-app px-3 py-2 pr-9 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
+                        />
+                        <button type="button" onClick={() => setShowNewPwd(p => !p)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors">
+                          {showNewPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-secondary">Confirm New Password</label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPwd ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={e => { setConfirmPassword(e.target.value); setPasswordError(''); }}
+                          placeholder="Repeat password"
+                          className="w-full rounded-xl border border-token bg-app px-3 py-2 pr-9 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
+                        />
+                        <button type="button" onClick={() => setShowConfirmPwd(p => !p)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors">
+                          {showConfirmPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                    </div>
+                    {passwordError && <p className="text-xs text-danger flex items-center gap-1"><X size={12} />{passwordError}</p>}
+                    <div className="flex gap-2">
+                      <button onClick={() => setShowPasswordDialog(false)} className="flex-1 rounded-xl border border-token px-3 py-2 text-sm text-muted hover:text-primary transition-colors">Cancel</button>
+                      <button
+                        onClick={handleChangePassword}
+                        disabled={savingPassword || !newPassword || !confirmPassword}
+                        className="flex-1 rounded-xl bg-accent hover:bg-accent/90 px-3 py-2 text-sm font-semibold text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {savingPassword ? <Loader2 size={14} className="animate-spin" /> : null}
+                        {savingPassword ? 'Saving...' : 'Update password'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="border-t border-token mb-5" />
 
-        {/* ── Section 1: General ─────────────────────────── */}
+        {/* -- Section 1: General --------------------------- */}
         <div className="mb-5">
           <p className="text-2xs font-semibold uppercase tracking-widest text-muted mb-3">General</p>
           <div className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 mb-3">
@@ -311,7 +584,7 @@ export function SettingsDialog({
           )}
         </div>
 
-        {/* ── Section 2: AI / Gemini key ───────────────────── */}
+        {/* -- Section 2: AI / Gemini key --------------------- */}
         <div className="border-t border-token mb-5" />
         <div className="flex flex-col gap-3">
           <p className="text-2xs font-semibold uppercase tracking-widest text-muted">AI</p>
@@ -325,7 +598,7 @@ export function SettingsDialog({
             <span className="rounded-full bg-accent/20 px-2 py-0.5 text-2xs font-semibold text-accent border border-accent/30">
               recommended
             </span>
-            {/* "?" — click to open step guide */}
+            {/* "?" - click to open step guide */}
             <div className="relative ml-auto" ref={guideRef}>
               <button
                 onClick={() => setShowGuide(v => !v)}
@@ -366,7 +639,7 @@ export function SettingsDialog({
           </p>
 
           {savedKey ? (
-            /* ── Key is saved ── */
+            /* -- Key is saved -- */
             <div className="rounded-xl bg-success-muted border border-success/20 p-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Check size={15} className="text-success shrink-0" />
@@ -384,7 +657,7 @@ export function SettingsDialog({
               </button>
             </div>
           ) : (
-            /* ── No key saved ── */
+            /* -- No key saved -- */
             <>
               <a
                 href="https://aistudio.google.com/apikey"
@@ -419,13 +692,13 @@ export function SettingsDialog({
               {keyStatus === 'success' && (
                 <div className="flex items-center gap-2 text-xs text-success">
                   <Check size={13} />
-                  Key added — you're all set!
+                  Key added - you're all set!
                 </div>
               )}
               {keyStatus === 'error' && (
                 <div className="flex items-start gap-2 text-xs text-red-400">
                   <X size={13} className="mt-0.5 shrink-0" />
-                  <span>{keyError || "That doesn't look right — please check you copied the full key."}</span>
+                  <span>{keyError || "That doesn't look right - please check you copied the full key."}</span>
                 </div>
               )}
             </>
