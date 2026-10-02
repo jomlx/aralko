@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2 } from 'lucide-react';
+import { Settings, Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2 } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -272,22 +272,8 @@ export function SettingsDialog({
           <div className="flex-1 overflow-y-auto p-6 md:p-8 relative" style={{ scrollbarGutter: 'stable' }}>
             <TabsContent value="account" className="mt-0 outline-none h-full space-y-6">
               <h2 className="text-lg font-semibold text-primary mb-4">Account</h2>
-              {!isAuthenticated ? (
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-raised p-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-medium text-primary">Sign in</span>
-                    <span className="text-2xs text-muted truncate">Log in to save your settings</span>
-                  </div>
-                  <button
-                    onClick={onLogin}
-                    className="shrink-0 rounded-xl bg-accent px-4 py-1.5 text-sm font-semibold text-primary hover:bg-accent/90 transition-colors"
-                  >
-                    Log in
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {/* Display Name */}
+              <>
+                {/* Display Name */}
                   <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4">
                     <label className="text-xs font-medium text-secondary">Display Name</label>
                     <div className="flex items-center gap-2">
@@ -412,14 +398,13 @@ export function SettingsDialog({
 
                   <div className="pt-4 flex justify-end">
                     <button
-                      onClick={onLogout}
+                      onClick={async () => { await supabase.auth.signOut(); onLogout(); }}
                       className="flex items-center gap-2 rounded-xl border border-token px-4 py-2 text-sm font-medium text-secondary hover:bg-white/[0.04] hover:text-danger transition-colors"
                     >
                       <LogOut size={16} /> Sign out
                     </button>
                   </div>
-                </>
-              )}
+              </>
             </TabsContent>
 
             <TabsContent value="general" className="mt-0 outline-none h-full space-y-6">
@@ -452,6 +437,45 @@ export function SettingsDialog({
                     }
                   </span>
                 </button>
+              </div>
+
+              <div className="pt-2">
+                <h3 className="text-sm font-semibold text-primary mb-3">Integrations</h3>
+                {!isAuthenticated ? (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-raised p-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
+                        <Music2 size={14} className="text-[#1db954]" />
+                      </div>
+                      <span className="text-xs text-secondary truncate">Link your Spotify Premium account</span>
+                    </div>
+                    <button
+                      onClick={onLogin}
+                      className="bg-[#1db954] hover:bg-[#1ed760] text-black font-bold text-xs py-1.5 px-4 rounded-xl border-0 transition-colors"
+                    >
+                      Connect
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-raised p-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
+                        <Music2 size={14} className="text-[#1db954]" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-primary truncate">Spotify Connected</span>
+                        <span className="text-2xs text-success">Premium active</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onLogout}
+                      className="flex items-center gap-1.5 shrink-0 text-xs px-3 py-1.5 rounded-lg text-danger hover:bg-danger/10 border border-danger/20 transition-colors"
+                    >
+                      <LogOut size={12} />
+                      Disconnect
+                    </button>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
