@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, FileUp, Trash2, RotateCcw, PanelRight } from 'lucide-react';
+import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, FileUp, Trash2, RefreshCw, PanelRight } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
@@ -164,19 +164,6 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
               <div className="flex items-center gap-2">
                 {hasContent && !isGenerating && (
                   <>
-                    {/* Re-upload */}
-                    <Tooltip>
-                      <TooltipTrigger
-                          onClick={() => fileInputRef.current?.click()}
-                          className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
-                          aria-label="Re-upload file"
-                        >
-                          <RotateCcw size={18} />
-                        </TooltipTrigger>
-                      <TooltipContent side="bottom">Re-upload file</TooltipContent>
-                    </Tooltip>
-                    <input ref={fileInputRef} type="file" accept=".txt,.md,.json,.csv" className="hidden" onChange={onFileInput} />
-
                     {!isEditing && (
                       <Tooltip>
                         <TooltipTrigger
@@ -189,6 +176,18 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         <TooltipContent side="bottom">Edit</TooltipContent>
                       </Tooltip>
                     )}
+
+                    {/* Regenerate */}
+                    <Tooltip>
+                      <TooltipTrigger
+                          onClick={() => generateFromText(activeActivity.notes)}
+                          className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                          aria-label="Regenerate"
+                        >
+                          <RefreshCw size={18} />
+                        </TooltipTrigger>
+                      <TooltipContent side="bottom">Regenerate</TooltipContent>
+                    </Tooltip>
 
                     {/* Clear (Delete) */}
                     <Tooltip>
