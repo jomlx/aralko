@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2 } from 'lucide-react';
+import { Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, MessageSquare, Bot } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -237,58 +237,87 @@ export function SettingsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-[750px] h-[75vh] min-h-[500px] p-0 flex flex-col md:flex-row bg-app border-token text-primary overflow-hidden shadow-2xl">
+      <DialogContent className="w-[95vw] sm:max-w-3xl md:max-w-4xl h-[85vh] min-h-[500px] p-0 flex flex-col md:flex-row bg-app border-token text-primary overflow-hidden shadow-2xl">
         <DialogHeader className="sr-only">
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="account" orientation="vertical" className="flex flex-col md:flex-row w-full h-full">
           {/* Sidebar Nav */}
-          <div className="w-full md:w-[220px] shrink-0 border-b md:border-b-0 md:border-r border-token bg-raised p-4 flex flex-col gap-4">
-            <div className="flex items-center gap-2 mb-2 px-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent/20">
-                <Settings size={16} className="text-accent" />
+          <div className="w-full md:w-[240px] shrink-0 border-b md:border-b-0 md:border-r border-token bg-surface py-6 flex flex-col">
+            <div className="flex items-center gap-3 mb-6 px-6">
+              <Avatar className="h-10 w-10 shrink-0 border border-token">
+                <AvatarImage src={avatarUrl || ''} />
+                <AvatarFallback className="bg-accent text-white font-bold text-sm">
+                  {(displayName || user?.email || '?').charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-bold text-primary truncate">{displayName || user?.email?.split('@')[0] || 'User'}</span>
+                <span className="text-xs text-muted truncate">{user?.email}</span>
               </div>
-              <span className="text-base font-semibold text-primary">Settings</span>
             </div>
             
-            <TabsList className="flex flex-col h-auto bg-transparent p-0 items-stretch space-y-1">
-              <TabsTrigger value="account" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+            <TabsList className="flex flex-col h-auto bg-transparent p-0 items-stretch space-y-0.5 w-full">
+              <TabsTrigger value="account" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
+                <User size={18} />
                 Account
               </TabsTrigger>
-              <TabsTrigger value="general" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+              <TabsTrigger value="general" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
+                <Settings2 size={18} />
                 General
               </TabsTrigger>
-              <TabsTrigger value="ai" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+              <TabsTrigger value="ai" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
+                <Bot size={18} />
                 AI
               </TabsTrigger>
-              <TabsTrigger value="feedback" className="justify-start data-[state=active]:bg-white/10 data-[state=active]:text-primary text-secondary hover:text-primary rounded-lg px-3 py-2 transition-colors">
+              <TabsTrigger value="feedback" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
+                <MessageSquare size={18} />
                 Feedback
               </TabsTrigger>
             </TabsList>
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-8 relative" style={{ scrollbarGutter: 'stable' }}>
+          <div className="flex-1 overflow-y-auto px-6 pb-6 md:px-8 md:pb-8 pt-[23.5px] relative" style={{ scrollbarGutter: 'stable' }}>
             <TabsContent value="account" className="mt-0 outline-none h-full space-y-6">
               <h2 className="text-lg font-semibold text-primary mb-4">Account</h2>
-              {!isAuthenticated ? (
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-raised p-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-medium text-primary">Sign in</span>
-                    <span className="text-2xs text-muted truncate">Log in to save your settings</span>
+              <>
+                  {/* Profile Picture */}
+                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4 mt-3">
+                    <label className="text-xs font-medium text-secondary">Profile Picture</label>
+                    <div className="flex items-center gap-4">
+                      <div className="relative shrink-0">
+                        <Avatar className="h-14 w-14">
+                          {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
+                          <AvatarFallback className="bg-accent/20 text-accent font-bold text-lg">{initials}</AvatarFallback>
+                        </Avatar>
+                        <button
+                          onClick={() => avatarInputRef.current?.click()}
+                          disabled={uploadingAvatar}
+                          className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-token bg-surface text-secondary hover:text-primary transition-colors"
+                          title="Upload picture"
+                        >
+                          {uploadingAvatar ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                        </button>
+                        <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => avatarInputRef.current?.click()}
+                          disabled={uploadingAvatar}
+                          className="text-xs font-medium text-accent hover:text-accent/80 transition-colors text-left"
+                        >
+                          {uploadingAvatar ? 'Uploading...' : 'Upload new picture'}
+                        </button>
+                        <p className="text-2xs text-muted">JPEG, PNG, WebP - Max 2 MB</p>
+                      </div>
+                    </div>
+                    {avatarError && <p className="text-xs text-danger flex items-center gap-1"><X size={12} />{avatarError}</p>}
                   </div>
-                  <button
-                    onClick={onLogin}
-                    className="shrink-0 rounded-xl bg-accent px-4 py-1.5 text-sm font-semibold text-primary hover:bg-accent/90 transition-colors"
-                  >
-                    Log in
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {/* Display Name */}
-                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4">
+
+                {/* Display Name */}
+                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4">
                     <label className="text-xs font-medium text-secondary">Display Name</label>
                     <div className="flex items-center gap-2">
                       <input
@@ -341,44 +370,11 @@ export function SettingsDialog({
                     )}
                   </div>
 
-                  {/* Profile Picture */}
-                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-raised p-4 mt-3">
-                    <label className="text-xs font-medium text-secondary">Profile Picture</label>
-                    <div className="flex items-center gap-4">
-                      <div className="relative shrink-0">
-                        <Avatar className="h-14 w-14">
-                          {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-                          <AvatarFallback className="bg-accent/20 text-accent font-bold text-lg">{initials}</AvatarFallback>
-                        </Avatar>
-                        <button
-                          onClick={() => avatarInputRef.current?.click()}
-                          disabled={uploadingAvatar}
-                          className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-token bg-surface text-secondary hover:text-primary transition-colors"
-                          title="Upload picture"
-                        >
-                          {uploadingAvatar ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
-                        </button>
-                        <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <button
-                          onClick={() => avatarInputRef.current?.click()}
-                          disabled={uploadingAvatar}
-                          className="text-xs font-medium text-accent hover:text-accent/80 transition-colors text-left"
-                        >
-                          {uploadingAvatar ? 'Uploading...' : 'Upload new picture'}
-                        </button>
-                        <p className="text-2xs text-muted">JPEG, PNG, WebP - Max 2 MB</p>
-                      </div>
-                    </div>
-                    {avatarError && <p className="text-xs text-danger flex items-center gap-1"><X size={12} />{avatarError}</p>}
-                  </div>
-
                   {/* Change Email */}
                   <div className="flex flex-col gap-2 mt-3">
                     <button
                       onClick={() => { setShowEmailDialog(true); setNewEmail(''); setEmailError(''); setEmailSuccess(false); }}
-                      className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
+                      className="flex items-center justify-between rounded-xl border border-token bg-surface p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
@@ -395,7 +391,7 @@ export function SettingsDialog({
                     {/* Change Password */}
                     <button
                       onClick={() => { setShowPasswordDialog(true); setNewPassword(''); setConfirmPassword(''); setPasswordError(''); setPasswordSuccess(false); }}
-                      className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
+                      className="flex items-center justify-between rounded-xl border border-token bg-surface p-3 hover:bg-white/[0.04] transition-colors w-full text-left"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
@@ -412,19 +408,18 @@ export function SettingsDialog({
 
                   <div className="pt-4 flex justify-end">
                     <button
-                      onClick={onLogout}
+                      onClick={async () => { await supabase.auth.signOut(); onLogout(); }}
                       className="flex items-center gap-2 rounded-xl border border-token px-4 py-2 text-sm font-medium text-secondary hover:bg-white/[0.04] hover:text-danger transition-colors"
                     >
                       <LogOut size={16} /> Sign out
                     </button>
                   </div>
-                </>
-              )}
+              </>
             </TabsContent>
 
             <TabsContent value="general" className="mt-0 outline-none h-full space-y-6">
               <h2 className="text-lg font-semibold text-primary mb-4">General</h2>
-              <div className="flex items-center justify-between rounded-xl border border-token bg-raised p-3 mb-3">
+              <div className="flex items-center justify-between rounded-xl border border-token bg-surface p-3 mb-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
                     {theme === 'dark'
@@ -452,6 +447,45 @@ export function SettingsDialog({
                     }
                   </span>
                 </button>
+              </div>
+
+              <div className="pt-2">
+                <h3 className="text-sm font-semibold text-primary mb-3">Integrations</h3>
+                {!isAuthenticated ? (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-surface p-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
+                        <Music2 size={14} className="text-[#1db954]" />
+                      </div>
+                      <span className="text-xs text-secondary truncate">Link your Spotify Premium account</span>
+                    </div>
+                    <button
+                      onClick={onLogin}
+                      className="bg-[#1db954] hover:bg-[#1ed760] text-black font-bold text-xs py-1.5 px-4 rounded-xl border-0 transition-colors"
+                    >
+                      Connect
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-surface p-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
+                        <Music2 size={14} className="text-[#1db954]" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-primary truncate">Spotify Connected</span>
+                        <span className="text-2xs text-success">Premium active</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onLogout}
+                      className="flex items-center gap-1.5 shrink-0 text-xs px-3 py-1.5 rounded-lg text-danger hover:bg-danger/10 border border-danger/20 transition-colors"
+                    >
+                      <LogOut size={12} />
+                      Disconnect
+                    </button>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -516,7 +550,7 @@ export function SettingsDialog({
                 </div>
 
                 {savedKey ? (
-                  <div className="flex items-center justify-between rounded-xl border border-token bg-raised px-4 py-3">
+                  <div className="flex items-center justify-between rounded-xl border border-token bg-surface px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
                         <Check size={16} className="text-success" />
