@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, Sparkles, MessageSquare } from 'lucide-react';
+import { Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, MessageSquare, Bot } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -268,7 +268,7 @@ export function SettingsDialog({
                 General
               </TabsTrigger>
               <TabsTrigger value="ai" className="w-full justify-start gap-3 data-[state=active]:bg-accent data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
-                <Sparkles size={15} />
+                <Bot size={15} />
                 AI
               </TabsTrigger>
               <TabsTrigger value="feedback" className="w-full justify-start gap-3 data-[state=active]:bg-accent data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:shadow-sm text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
@@ -279,10 +279,43 @@ export function SettingsDialog({
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto px-6 pb-6 md:px-8 md:pb-8 pt-[88px] relative" style={{ scrollbarGutter: 'stable' }}>
+          <div className="flex-1 overflow-y-auto p-6 md:p-8 relative" style={{ scrollbarGutter: 'stable' }}>
             <TabsContent value="account" className="mt-0 outline-none h-full space-y-6">
               <h2 className="text-lg font-semibold text-primary mb-4">Account</h2>
               <>
+                  {/* Profile Picture */}
+                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4 mt-3">
+                    <label className="text-xs font-medium text-secondary">Profile Picture</label>
+                    <div className="flex items-center gap-4">
+                      <div className="relative shrink-0">
+                        <Avatar className="h-14 w-14">
+                          {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
+                          <AvatarFallback className="bg-accent/20 text-accent font-bold text-lg">{initials}</AvatarFallback>
+                        </Avatar>
+                        <button
+                          onClick={() => avatarInputRef.current?.click()}
+                          disabled={uploadingAvatar}
+                          className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-token bg-surface text-secondary hover:text-primary transition-colors"
+                          title="Upload picture"
+                        >
+                          {uploadingAvatar ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                        </button>
+                        <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => avatarInputRef.current?.click()}
+                          disabled={uploadingAvatar}
+                          className="text-xs font-medium text-accent hover:text-accent/80 transition-colors text-left"
+                        >
+                          {uploadingAvatar ? 'Uploading...' : 'Upload new picture'}
+                        </button>
+                        <p className="text-2xs text-muted">JPEG, PNG, WebP - Max 2 MB</p>
+                      </div>
+                    </div>
+                    {avatarError && <p className="text-xs text-danger flex items-center gap-1"><X size={12} />{avatarError}</p>}
+                  </div>
+
                 {/* Display Name */}
                   <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4">
                     <label className="text-xs font-medium text-secondary">Display Name</label>
@@ -335,39 +368,6 @@ export function SettingsDialog({
                         <X size={12} /> {nameError}
                       </p>
                     )}
-                  </div>
-
-                  {/* Profile Picture */}
-                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4 mt-3">
-                    <label className="text-xs font-medium text-secondary">Profile Picture</label>
-                    <div className="flex items-center gap-4">
-                      <div className="relative shrink-0">
-                        <Avatar className="h-14 w-14">
-                          {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-                          <AvatarFallback className="bg-accent/20 text-accent font-bold text-lg">{initials}</AvatarFallback>
-                        </Avatar>
-                        <button
-                          onClick={() => avatarInputRef.current?.click()}
-                          disabled={uploadingAvatar}
-                          className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-token bg-surface text-secondary hover:text-primary transition-colors"
-                          title="Upload picture"
-                        >
-                          {uploadingAvatar ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
-                        </button>
-                        <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <button
-                          onClick={() => avatarInputRef.current?.click()}
-                          disabled={uploadingAvatar}
-                          className="text-xs font-medium text-accent hover:text-accent/80 transition-colors text-left"
-                        >
-                          {uploadingAvatar ? 'Uploading...' : 'Upload new picture'}
-                        </button>
-                        <p className="text-2xs text-muted">JPEG, PNG, WebP - Max 2 MB</p>
-                      </div>
-                    </div>
-                    {avatarError && <p className="text-xs text-danger flex items-center gap-1"><X size={12} />{avatarError}</p>}
                   </div>
 
                   {/* Change Email */}
