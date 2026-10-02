@@ -76,6 +76,11 @@ export function SettingsDialog({
       });
       if (error) throw error;
 
+      // Refresh the session so the updated user_metadata is reflected in the
+      // in-memory JWT immediately — without this, the old name shows after reload
+      // because getSession() returns the stale cached token.
+      await supabase.auth.refreshSession();
+
       // Sync to user_settings so other checks catch it immediately
       await supabase.from('user_settings').upsert({ user_id: user.id, display_name: trimmed }, { onConflict: 'user_id' });
 
