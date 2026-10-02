@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, FileUp, Trash2, RefreshCw, PanelRight } from 'lucide-react';
+import { Upload, FileText, Loader2, Sparkles, BookText, Edit3, FileUp, Trash2, RefreshCw, PanelRight } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
 import { generateWithBackend } from '../../lib/apiClient';
@@ -27,7 +26,6 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
   const [editValue, setEditValue] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -151,9 +149,9 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
         <div className="flex-1 min-w-0 flex flex-col min-h-0">
           
           {/* --- STATIC HEADER & COMMANDS (Does not scroll) --- */}
-          <div className="flex-shrink-0 flex flex-col pb-4 mb-4 border-b border-white/[0.05]">
+          <div className="flex-shrink-0 flex flex-col mb-4">
             {/* Header */}
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between pb-3 border-b border-token">
               <div>
                 <h2 className="text-xl font-semibold text-primary">Reviewer</h2>
                 <p className="mt-1 text-sm text-muted">
@@ -194,7 +192,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     {/* Clear (Delete) */}
                     <Tooltip>
                       <TooltipTrigger
-                          onClick={() => setIsDeleteDialogOpen(true)}
+                          onClick={clearReviewer}
                           className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
                           aria-label="Clear"
                         >
@@ -202,23 +200,6 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         </TooltipTrigger>
                       <TooltipContent side="bottom">Clear</TooltipContent>
                     </Tooltip>
-
-                    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                      <AlertDialogContent className="bg-app border-token">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-primary">Delete cheat sheet?</AlertDialogTitle>
-                          <AlertDialogDescription className="text-secondary">
-                            This will permanently remove the generated cheat sheet. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary">Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => { clearReviewer(); setIsDeleteDialogOpen(false); }} className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300">
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
 
                     {/* Export */}
                     <div ref={exportRef} className="relative">
@@ -271,9 +252,9 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
 
             {/* Toolbar (Commands) */}
             {hasContent && !isGenerating && (
-              <div className="flex items-center mt-6">
+              <div className="flex items-center pt-3 pb-3 border-b border-token">
                 <div className="flex items-center gap-2">
-                  <BookOpen size={15} className="text-amber-400" />
+                  <BookText size={15} className="text-secondary" />
                   <span className="text-sm font-medium text-primary">Cheat Sheet</span>
                   {uploadedFileName && (
                     <span className="text-xs text-muted">— {uploadedFileName}</span>
