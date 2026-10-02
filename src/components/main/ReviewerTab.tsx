@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, FileText, Loader2, Sparkles, BookText, Edit3, FileUp, Trash2, RefreshCw, PanelRight } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
 import { generateWithBackend } from '../../lib/apiClient';
@@ -26,6 +27,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
   const [editValue, setEditValue] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -192,7 +194,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     {/* Clear (Delete) */}
                     <Tooltip>
                       <TooltipTrigger
-                          onClick={clearReviewer}
+                          onClick={() => setIsDeleteDialogOpen(true)}
                           className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
                           aria-label="Clear"
                         >
@@ -200,6 +202,23 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                         </TooltipTrigger>
                       <TooltipContent side="bottom">Clear</TooltipContent>
                     </Tooltip>
+
+                    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                      <AlertDialogContent className="bg-app border-token">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-primary">Delete cheat sheet?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-secondary">
+                            This will permanently remove the generated cheat sheet. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary">Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => { clearReviewer(); setIsDeleteDialogOpen(false); }} className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300">
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
 
                     {/* Export */}
                     <div ref={exportRef} className="relative">
