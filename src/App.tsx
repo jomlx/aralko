@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Smartphone } from 'lucide-react';
+import { Smartphone, Snowflake } from 'lucide-react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { StudyTracker } from './components/sidebar/StudyTracker';
@@ -14,7 +14,7 @@ import { AddActivityModal } from './components/main/AddActivityModal';
 import { ProfilePopover } from './components/sidebar/ProfilePopover';
 import { ToastProvider } from './components/ui/Toast';
 import { SettingsDialog } from './components/SettingsDialog';
-
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
 import { useActivities } from './hooks/useActivities';
 import { useSessions } from './hooks/useSessions';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -71,8 +71,6 @@ function useMobileDetect() {
 function AppContent() {
   const isMobile = useMobileDetect();
   const [activeTab, setActiveTab] = useState<MainTab>('main');
-  const [sidebarWidth, setSidebarWidth] = useState(340);
-  const [isDragging, setIsDragging] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
@@ -96,42 +94,6 @@ function AppContent() {
     }
   }, []);
 
-  // ── Supabase connection diagnostic ──────────────────────────────────────
-  useEffect(() => {
-    import('./lib/supabase').then(async ({ supabase }) => {
-      console.group('[Supabase Diagnostic]');
-      console.log('URL:', import.meta.env.VITE_SUPABASE_URL);
-
-      // 1. Auth session — app uses anon key, so we expect NO session
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Auth session:', sessionData?.session ? 'LOGGED IN' : 'anon (no session — expected)');
-
-      // 2. Test read
-      const { data, error } = await supabase.from('user_settings').select('*').limit(1);
-      if (error) {
-        console.error('❌ user_settings SELECT failed:', error.code, '-', error.message);
-        if (error.code === '42501') console.error('  → CAUSE: RLS is blocking the anon role. Run the fix SQL below.');
-        if (error.code === 'PGRST301') console.error('  → CAUSE: JWT expired or invalid.');
-      } else {
-        console.log('✅ SELECT succeeded. Rows:', data);
-      }
-
-      // 3. Test write
-      const { error: we } = await supabase
-        .from('user_settings')
-        .upsert({ user_id: 'diagnostic-test' }, { onConflict: 'user_id' });
-      if (we) {
-        console.error('❌ user_settings UPSERT failed:', we.code, '-', we.message);
-      } else {
-        console.log('✅ UPSERT succeeded.');
-        // Clean up the test row
-        await supabase.from('user_settings').delete().eq('user_id', 'diagnostic-test');
-      }
-
-      console.groupEnd();
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Apply theme class to <html>
   useEffect(() => {
@@ -166,9 +128,13 @@ function AppContent() {
     }
   }, [loading, activities, selectedActivityId, setSelectedActivityId]);
 
+  const { user } = useAuth();
+  
   const streakLogic = useStreakLogic({
+    userId: user?.id,
     sessions,
     sessionsLoaded,
+    settingsLoaded: userSettings.settingsLoaded,
     streakFreezes: userSettings.streakFreezes,
     savedStreak: userSettings.savedStreak,
     updateStreakData: userSettings.updateStreakData
@@ -189,21 +155,21 @@ function AppContent() {
     addSession(newSession);
     streakLogic.incrementStreak();
   }, [addSession, streakLogic]);
+
+  const awardFreeze = useCallback(() => {
+    if (userSettings.streakFreezes < 2) {
+      userSettings.updateStreakData(userSettings.streakFreezes + 1, streakLogic.displayedStreak);
+      return true;
+    }
+    return false;
+  }, [userSettings, streakLogic.displayedStreak]);
   const pomodoro = usePomodoro({
     onSessionComplete: handleSessionComplete,
     preset:    userSettings.preset,
     autoStart: userSettings.autoStart,
   });
 
-  const handleResizeMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const newWidth = Math.max(280, Math.min(360, e.clientX));
-    setSidebarWidth(newWidth);
-  }, [isDragging]);
 
-  const handleResizeEnd = useCallback(() => {
-    setIsDragging(false);
-  }, []);
 
   const handleActivityAdded = (newActivity: Activity) => {
     // addActivity syncs DB in background and returns the real ID
@@ -234,166 +200,167 @@ function AppContent() {
   return (
     <div 
       data-theme={theme}
-      className={`h-screen overflow-hidden bg-app text-slate-100 flex flex-col ${isDragging ? 'no-select' : ''}`}
-      onMouseMove={handleResizeMove}
-      onMouseUp={handleResizeEnd}
-      onMouseLeave={handleResizeEnd}
+      className="h-screen overflow-hidden bg-app text-slate-100 flex flex-col"
     >
       {/* Header */}
       <div className="flex-shrink-0 h-[60px]">
         <Header activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} disabled={isTestMode} />
       </div>
       
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0">
         {/* Sidebar */}
-        <div
-          className={`flex-shrink-0 overflow-hidden transition-all duration-300 ${isTestMode ? 'border-r-0' : 'border-r border-token'}`}
-          style={{ width: isTestMode ? 0 : sidebarWidth }}
-        >
-          <Sidebar width={sidebarWidth} onResizeStart={() => setIsDragging(true)}>
-            <StudyTracker 
-              secondsLeft={pomodoro.secondsLeft}
-              phase={pomodoro.phase}
-              isRunning={pomodoro.isRunning}
-              sessionsCompleted={pomodoro.sessionsCompleted}
-              streak={userSettings.savedStreak}
-              streakFreezes={userSettings.streakFreezes}
-              onStart={pomodoro.start}
-              onPause={pomodoro.pause}
-              onReset={pomodoro.reset}
-              preset={userSettings.preset}
-              setPreset={userSettings.setPreset}
-              autoStart={userSettings.autoStart}
-              setAutoStart={userSettings.setAutoStart}
-              WORK_TIME={pomodoro.WORK_TIME}
-            />
+        {!isTestMode && (
+          <>
+            <ResizablePanel defaultSize="25%" minSize="22%" maxSize="32%">
+              <Sidebar>
+                <StudyTracker 
+                  secondsLeft={pomodoro.secondsLeft}
+                  phase={pomodoro.phase}
+                  isRunning={pomodoro.isRunning}
+                  sessionsCompleted={pomodoro.sessionsCompleted}
+                  onStart={pomodoro.start}
+                  onPause={pomodoro.pause}
+                  onReset={pomodoro.reset}
+                  preset={userSettings.preset}
+                  setPreset={userSettings.setPreset}
+                  autoStart={userSettings.autoStart}
+                  setAutoStart={userSettings.setAutoStart}
+                  WORK_TIME={pomodoro.WORK_TIME}
+                />
+                <div className="flex-1 min-h-0 flex flex-col">
+                  <MusicPlayerCompact />
+                </div>
+                
+                <ProfilePopover 
+                  onLogout={logout}
+                  streak={streakLogic.displayedStreak}
+                  xp={userSettings.xp}
+                  totalMinutes={sessions.reduce((a, s) => a + s.minutes, 0)}
+                  sessionsCount={sessions.length}
+                  freezes={userSettings.streakFreezes}
+                />
+              </Sidebar>
+            </ResizablePanel>
+            <ResizableHandle />
+          </>
+        )}
+
+        <ResizablePanel>
+          {/* Settings Dialog (rendered at app root to float above everything) */}
+          <SettingsDialog
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            isAuthenticated={isAuthenticated}
+            onLogin={login}
+            onLogout={logout}
+          />
+
+          <main className="flex-1 flex flex-col min-h-0 h-full bg-app">
+
+            {/* Content area */}
             <div className="flex-1 min-h-0 flex flex-col">
-              <MusicPlayerCompact />
+              {loading ? (
+                <div className="flex flex-1 items-center justify-center text-muted">Loading your workspace...</div>
+              ) : (
+                <>
+                  {/* Main tab — Activity list */}
+                  <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'main' ? 'flex' : 'hidden'}`}>
+                    {activities.length > 0 ? (
+                      <ActivityList
+                        activities={activities}
+                        selectedActivity={selectedActivityId}
+                        onSelectActivity={setSelectedActivityId}
+                        onAddActivity={() => setIsModalOpen(true)}
+                        onRemoveActivity={removeActivity}
+                        onNavigateToLearn={() => setActiveTab('learn')}
+                      />
+                    ) : (
+                      <div className="flex flex-1 flex-col items-center justify-center text-secondary">
+                        <p className="mb-4">No activities found. Get started by adding one!</p>
+                        <button
+                          onClick={() => setIsModalOpen(true)}
+                          className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent"
+                        >
+                          + Add your first activity
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Learn tab — always mounted so AIChatPanel never unmounts */}
+                  <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'learn' ? 'flex' : 'hidden'}`}>
+                    {activities.length > 0 ? (
+                      <LearnTab
+                        activities={activities}
+                        selectedActivity={selectedActivityId}
+                        onUpdateActivity={updateActivity}
+                        isTestMode={isTestMode}
+                        onEnterTestMode={() => setIsTestMode(true)}
+                        onExitTestMode={() => setIsTestMode(false)}
+                        addXP={userSettings.addXP}
+                        awardFreeze={awardFreeze}
+                      />
+                    ) : (
+                      <div className="flex flex-1 flex-col items-center justify-center text-secondary">
+                        <p className="mb-4">No activities yet. Add one from the Main tab.</p>
+                        <button onClick={() => setActiveTab('main')} className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent">
+                          Go to Main
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Reviewer tab — always mounted */}
+                  <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'reviewer' ? 'flex' : 'hidden'}`}>
+                    {activities.length > 0 ? (
+                      <ReviewerTab
+                        activities={activities}
+                        selectedActivity={selectedActivityId}
+                        onUpdateActivity={updateActivity}
+                        addXP={userSettings.addXP}
+                      />
+                    ) : (
+                      <div className="flex flex-1 flex-col items-center justify-center text-secondary">
+                        <p className="mb-4">No activities yet. Add one from the Main tab.</p>
+                        <button onClick={() => setActiveTab('main')} className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent">
+                          Go to Main
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Techniques tab — always mounted */}
+                  <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'techniques' ? 'block' : 'hidden'}`}>
+                    <TechniquesGrid />
+                  </div>
+
+                  {/* Stats tab — always mounted */}
+                  <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'stats' ? 'block' : 'hidden'}`}>
+                    <StatsView sessions={sessions} streak={streakLogic.displayedStreak} />
+                  </div>
+
+                  {/* Community tab — always mounted */}
+                  <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'community' ? 'flex' : 'hidden'}`}>
+                    <CommunityTab 
+                      onOpenActivity={(id) => {
+                        setSelectedActivityId(id);
+                        setActiveTab('learn');
+                      }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
-            
-            <ProfilePopover 
-              onLogout={logout}
-              streak={userSettings.savedStreak}
-              xp={userSettings.xp}
-              totalMinutes={sessions.reduce((a, s) => a + s.minutes, 0)}
-              sessionsCount={sessions.length}
-            />
-          </Sidebar>
-        </div>
-
-        {/* Settings Dialog (rendered at app root to float above everything) */}
-        <SettingsDialog
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          isAuthenticated={isAuthenticated}
-          onLogin={login}
-          onLogout={logout}
-        />
-
-        <main className="flex-1 flex flex-col min-h-0 bg-app">
-
-          {/* Content area */}
-          <div className="flex-1 min-h-0 flex flex-col">
-            {loading ? (
-              <div className="flex flex-1 items-center justify-center text-muted">Loading your workspace...</div>
-            ) : (
-              <>
-                {/* Main tab — Activity list */}
-                <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'main' ? 'flex' : 'hidden'}`}>
-                  {activities.length > 0 ? (
-                    <ActivityList
-                      activities={activities}
-                      selectedActivity={selectedActivityId}
-                      onSelectActivity={setSelectedActivityId}
-                      onAddActivity={() => setIsModalOpen(true)}
-                      onRemoveActivity={removeActivity}
-                      onNavigateToLearn={() => setActiveTab('learn')}
-                    />
-                  ) : (
-                    <div className="flex flex-1 flex-col items-center justify-center text-secondary">
-                      <p className="mb-4">No activities found. Get started by adding one!</p>
-                      <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent"
-                      >
-                        + Add your first activity
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Learn tab — always mounted so AIChatPanel never unmounts */}
-                <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'learn' ? 'flex' : 'hidden'}`}>
-                  {activities.length > 0 ? (
-                    <LearnTab
-                      activities={activities}
-                      selectedActivity={selectedActivityId}
-                      onUpdateActivity={updateActivity}
-                      isTestMode={isTestMode}
-                      onEnterTestMode={() => setIsTestMode(true)}
-                      onExitTestMode={() => setIsTestMode(false)}
-                      addXP={userSettings.addXP}
-                    />
-                  ) : (
-                    <div className="flex flex-1 flex-col items-center justify-center text-secondary">
-                      <p className="mb-4">No activities yet. Add one from the Main tab.</p>
-                      <button onClick={() => setActiveTab('main')} className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent">
-                        Go to Main
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Reviewer tab — always mounted */}
-                <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'reviewer' ? 'flex' : 'hidden'}`}>
-                  {activities.length > 0 ? (
-                    <ReviewerTab
-                      activities={activities}
-                      selectedActivity={selectedActivityId}
-                      onUpdateActivity={updateActivity}
-                      addXP={userSettings.addXP}
-                    />
-                  ) : (
-                    <div className="flex flex-1 flex-col items-center justify-center text-secondary">
-                      <p className="mb-4">No activities yet. Add one from the Main tab.</p>
-                      <button onClick={() => setActiveTab('main')} className="rounded-xl bg-accent px-6 py-3 font-medium text-primary hover:bg-accent">
-                        Go to Main
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Techniques tab — always mounted */}
-                <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'techniques' ? 'block' : 'hidden'}`}>
-                  <TechniquesGrid />
-                </div>
-
-                {/* Stats tab — always mounted */}
-                <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'stats' ? 'block' : 'hidden'}`}>
-                  <StatsView sessions={sessions} streak={userSettings.savedStreak} />
-                </div>
-
-                {/* Community tab — always mounted */}
-                <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'community' ? 'flex' : 'hidden'}`}>
-                  <CommunityTab 
-                    onOpenActivity={(id) => {
-                      setSelectedActivityId(id);
-                      setActiveTab('learn');
-                    }}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        </main>
-      </div>
+          </main>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       {streakLogic.toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <div className="bg-sky-500/10 border border-sky-500/20 text-sky-400 px-6 py-3 rounded-2xl shadow-xl shadow-black/40 font-medium backdrop-blur-md flex items-center gap-3">
-            <span className="text-xl">❄️</span>
+            <span className="text-xl"><Snowflake size={20} /></span>
             {streakLogic.toastMessage}
           </div>
         </div>
@@ -459,3 +426,5 @@ export default function App() {
     </ToastProvider>
   );
 }
+
+

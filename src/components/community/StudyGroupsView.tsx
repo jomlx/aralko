@@ -5,6 +5,7 @@ import { Users, Plus, LogIn, Loader2, Copy, LogOut, BookOpen, PenTool, ChevronRi
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../ui/Toast';
 import { useAuth } from '../../hooks/useAuth';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 
 interface StudyGroupsViewProps {
   onOpenActivity?: (id: number) => void;
@@ -103,14 +104,14 @@ export function StudyGroupsView({ onOpenActivity }: StudyGroupsViewProps) {
             onClick={() => { setIsJoining(true); setIsCreating(false); setErrorMsg(''); }}
             className="px-4 py-2 text-sm font-medium rounded-lg transition-colors border border-token text-secondary hover:bg-white/[0.05] flex items-center gap-2"
           >
-            <LogIn size={14} />
+            <LogIn size={18} />
             Join Group
           </button>
           <button
             onClick={() => { setIsCreating(true); setIsJoining(false); setErrorMsg(''); }}
             className="px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-success hover:bg-success text-primary shadow-sm flex items-center gap-2"
           >
-            <Plus size={14} />
+            <Plus size={18} />
             Create Group
           </button>
         </div>
@@ -153,11 +154,11 @@ export function StudyGroupsView({ onOpenActivity }: StudyGroupsViewProps) {
       {/* Group List */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 size={32} className="animate-spin text-success" />
+          <Loader2 size={18} className="animate-spin text-success" />
         </div>
       ) : groups.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-surface rounded-2xl border border-token">
-          <Users size={48} className="text-slate-700 mb-4" />
+          <Users size={18} className="text-slate-700 mb-4" />
           <p className="text-secondary font-medium text-lg">You aren't in any groups yet</p>
           <p className="text-sm text-muted mt-2 max-w-sm">
             Create your own study group to invite friends, or join an existing one using an invite code.
@@ -182,7 +183,7 @@ export function StudyGroupsView({ onOpenActivity }: StudyGroupsViewProps) {
                   onClick={(e) => { e.stopPropagation(); copyInvite(group.invite_code); }}
                   title="Copy Invite Code"
                 >
-                  <Copy size={12} />
+                  <Copy size={18} />
                   {group.invite_code}
                 </div>
                 
@@ -274,7 +275,7 @@ function GroupDetailView({
           onClick={onLeave}
           className="px-3 py-2 text-xs font-medium rounded-lg transition-colors border border-red-500/20 text-red-400 hover:bg-red-500/10 flex items-center gap-2"
         >
-          <LogOut size={14} />
+          <LogOut size={18} />
           Leave Group
         </button>
       </div>
@@ -285,7 +286,7 @@ function GroupDetailView({
           
           {loading ? (
              <div className="bg-surface rounded-2xl border border-token p-4 min-h-[160px] text-sm text-muted text-center py-8 flex flex-col items-center justify-center gap-2">
-               <Loader2 size={16} className="animate-spin" />
+               <Loader2 size={18} className="animate-spin" />
                Loading activities...
              </div>
           ) : sharedActivities.length === 0 ? (
@@ -311,7 +312,7 @@ function GroupDetailView({
                     >
                       {/* Technique icon */}
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-secondary">
-                        {isFlashcard ? <PenTool size={15} /> : <BookOpen size={15} />}
+                        {isFlashcard ? <PenTool size={18} /> : <BookOpen size={18} />}
                       </div>
 
                       {/* Name + subject */}
@@ -334,25 +335,28 @@ function GroupDetailView({
                       </div>
                       
                       {currentUserId === sa.shared_by && (
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            try {
-                              await onUnshareActivity(sa.id);
-                              setSharedActivities(prev => prev.filter(x => x.id !== sa.id));
-                              showToast('Shared activity removed.', 'success');
-                            } catch (err: any) {
-                              showToast(err.message || 'Failed to remove shared activity', 'error');
-                            }
-                          }}
-                          className="shrink-0 p-2 ml-2 transition-colors text-muted hover:text-red-400 rounded-lg hover:bg-white/[0.05]"
-                          title="Remove shared activity"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await onUnshareActivity(sa.id);
+                                  setSharedActivities(prev => prev.filter(x => x.id !== sa.id));
+                                  showToast('Shared activity removed.', 'success');
+                                } catch (err: any) {
+                                  showToast(err.message || 'Failed to remove shared activity', 'error');
+                                }
+                              }}
+                              className="shrink-0 p-2 ml-2 transition-colors text-muted hover:text-red-400 rounded-lg hover:bg-white/[0.05]"
+                              aria-label="Remove shared activity"
+                            >
+                              <Trash2 size={18} />
+                            </TooltipTrigger>
+                          <TooltipContent side="top">Remove shared activity</TooltipContent>
+                        </Tooltip>
                       )}
 
-                      <ChevronRight size={16} className="shrink-0 ml-2 transition-colors text-muted group-hover:text-accent" />
+                      <ChevronRight size={18} className="shrink-0 ml-2 transition-colors text-muted group-hover:text-accent" />
                     </div>
                   );
                 })}
@@ -365,7 +369,7 @@ function GroupDetailView({
           <div className="bg-surface rounded-2xl border border-token p-4 flex flex-col gap-2">
              {loading ? (
                <div className="text-sm text-muted text-center py-4 flex flex-col items-center gap-2">
-                 <Loader2 size={16} className="animate-spin" />
+                 <Loader2 size={18} className="animate-spin" />
                  Loading members...
                </div>
              ) : members.length === 0 ? (

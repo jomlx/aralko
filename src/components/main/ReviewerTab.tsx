@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Upload, FileText, Loader2, Sparkles, BookOpen, Edit3, Download, ChevronDown, Trash2, RotateCcw, MessageSquare, MessageSquareOff } from 'lucide-react';
+import { Upload, FileText, Loader2, Sparkles, BookText, Edit3, FileUp, Trash2, RefreshCw, PanelRight } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
 import { generateWithBackend } from '../../lib/apiClient';
@@ -25,11 +27,12 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
   const [editValue, setEditValue] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // â”€â”€ On-demand reviewer generation â”€â”€
+  // ── On-demand reviewer generation ──
   // Automatically generate if the tab is opened for an activity that has notes
   // but hasn't had a reviewer generated yet (reviewerContent is empty).
   useEffect(() => {
@@ -141,100 +144,140 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-      {/* Outer padding wrapper â€” does NOT scroll */}
-      <div className="flex-1 min-h-0 flex gap-5 px-8 py-4 overflow-hidden">
+      {/* Outer padding wrapper — does NOT scroll */}
+      <div className="flex-1 min-h-0 flex gap-[var(--gutter)] px-[var(--gutter)] py-4 overflow-hidden">
 
         {/* Center: Reviewer Content */}
         <div className="flex-1 min-w-0 flex flex-col min-h-0">
           
           {/* --- STATIC HEADER & COMMANDS (Does not scroll) --- */}
-          <div className="flex-shrink-0 flex flex-col pb-4 mb-4 border-b border-white/[0.05]">
+          <div className="flex-shrink-0 flex flex-col mb-4">
             {/* Header */}
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between pb-3 border-b border-token">
               <div>
                 <h2 className="text-xl font-semibold text-primary">Reviewer</h2>
                 <p className="mt-1 text-sm text-muted">
-                  {activeActivity.name}{activeActivity.subject ? `: ${activeActivity.subject}` : ''} â€” Upload a file or use activity notes to auto-generate a cheat sheet.
+                  {activeActivity.name}{activeActivity.subject ? `: ${activeActivity.subject}` : ''}
                 </p>
               </div>
 
-              {/* Right controls: AI Chat Toggle */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setIsChatOpen(prev => !prev)}
-                  className="flex items-center justify-center rounded-xl border border-token bg-white/[0.04] h-8 w-8 text-secondary transition-colors hover:bg-white/[0.08] hover:text-primary"
-                  title={isChatOpen ? "Hide Assistant" : "Show Assistant"}
-                >
-                  {isChatOpen ? <MessageSquareOff size={14} /> : <MessageSquare size={14} />}
-                </button>
+              {/* Right controls */}
+              {/* Right controls */}
+              <div className="flex items-center gap-2">
+                {hasContent && !isGenerating && (
+                  <>
+                    {!isEditing && (
+                      <Tooltip>
+                        <TooltipTrigger
+                            onClick={startEditing}
+                            className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                            aria-label="Edit"
+                          >
+                            <Edit3 size={18} />
+                          </TooltipTrigger>
+                        <TooltipContent side="bottom">Edit</TooltipContent>
+                      </Tooltip>
+                    )}
+
+                    {/* Regenerate */}
+                    <Tooltip>
+                      <TooltipTrigger
+                          onClick={() => generateFromText(activeActivity.notes)}
+                          className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                          aria-label="Regenerate"
+                        >
+                          <RefreshCw size={18} />
+                        </TooltipTrigger>
+                      <TooltipContent side="bottom">Regenerate</TooltipContent>
+                    </Tooltip>
+
+                    {/* Clear (Delete) */}
+                    <Tooltip>
+                      <TooltipTrigger
+                          onClick={() => setIsDeleteDialogOpen(true)}
+                          className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                          aria-label="Clear"
+                        >
+                          <Trash2 size={18} />
+                        </TooltipTrigger>
+                      <TooltipContent side="bottom">Clear</TooltipContent>
+                    </Tooltip>
+
+                    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                      <AlertDialogContent className="bg-app border-token">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-primary">Delete cheat sheet?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-secondary">
+                            This will permanently remove the generated cheat sheet. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary">Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => { clearReviewer(); setIsDeleteDialogOpen(false); }} className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300">
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    {/* Export */}
+                    <div ref={exportRef} className="relative">
+                      <Tooltip>
+                        <TooltipTrigger
+                            onClick={() => setExportOpen(p => !p)}
+                            className="flex items-center justify-center h-8 w-8 rounded-lg text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
+                            aria-label="Export"
+                          >
+                            <FileUp size={18} />
+                          </TooltipTrigger>
+                        <TooltipContent side="bottom">Export</TooltipContent>
+                      </Tooltip>
+                      {exportOpen && (
+                        <div className="absolute right-0 top-full mt-1 z-20 min-w-[130px] rounded-xl border border-token bg-surface p-1 shadow-xl">
+                          <button
+                            onClick={() => { exportReviewerAsPDF(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
+                          >
+                            <FileText size={11} /> As PDF
+                          </button>
+                          <button
+                            onClick={() => { exportReviewerAsDocx(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
+                          >
+                            <FileText size={11} /> As Word
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-5 w-px bg-[var(--border)] mx-0.5" />
+                  </>
+                )}
+
+                {/* AI Chat Toggle */}
+                <Tooltip>
+                  <TooltipTrigger
+                      onClick={() => setIsChatOpen(prev => !prev)}
+                      className="flex items-center justify-center rounded-xl border border-token bg-white/[0.04] h-8 w-8 text-secondary transition-colors hover:bg-white/[0.08] hover:text-primary"
+                      aria-label={isChatOpen ? "Hide Assistant" : "Show Assistant"}
+                    >
+                      {isChatOpen ? <PanelRight size={18} /> : <PanelRight size={18} />}
+                    </TooltipTrigger>
+                  <TooltipContent side="bottom">{isChatOpen ? "Hide Assistant" : "Show Assistant"}</TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
             {/* Toolbar (Commands) */}
             {hasContent && !isGenerating && (
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex items-center pt-3 pb-3 border-b border-token">
                 <div className="flex items-center gap-2">
-                  <BookOpen size={15} className="text-amber-400" />
+                  <BookText size={15} className="text-secondary" />
                   <span className="text-sm font-medium text-primary">Cheat Sheet</span>
                   {uploadedFileName && (
-                    <span className="text-xs text-muted">â€” {uploadedFileName}</span>
+                    <span className="text-xs text-muted">— {uploadedFileName}</span>
                   )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {!isEditing && (
-                    <button
-                      onClick={startEditing}
-                      className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
-                      title="Edit"
-                    >
-                      <Edit3 size={14} />
-                    </button>
-                  )}
-
-                  {/* Re-upload */}
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="rounded-lg p-1.5 text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"
-                    title="Re-upload file"
-                  >
-                    <RotateCcw size={14} />
-                  </button>
-                  <input ref={fileInputRef} type="file" accept=".txt,.md,.json,.csv" className="hidden" onChange={onFileInput} />
-
-                  {/* Export */}
-                  <div ref={exportRef} className="relative">
-                    <button
-                      onClick={() => setExportOpen(p => !p)}
-                      className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors border border-token"
-                    >
-                      <Download size={12} /> Export <ChevronDown size={10} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {exportOpen && (
-                      <div className="absolute right-0 top-full mt-1 z-20 min-w-[130px] rounded-xl border border-token bg-surface p-1 shadow-xl">
-                        <button
-                          onClick={() => { exportReviewerAsPDF(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
-                        >
-                          <FileText size={11} /> As PDF
-                        </button>
-                        <button
-                          onClick={() => { exportReviewerAsDocx(activeActivity.reviewerContent, activeActivity.name); setExportOpen(false); }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-secondary hover:bg-white/[0.07] hover:text-primary transition-colors"
-                        >
-                          <FileText size={11} /> As Word
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Clear */}
-                  <button
-                    onClick={clearReviewer}
-                    className="rounded-lg p-1.5 text-secondary hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                    title="Clear"
-                  >
-                    <Trash2 size={14} />
-                  </button>
                 </div>
               </div>
             )}
@@ -247,7 +290,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
             {inlineError && (
               <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                 <span className="text-sm text-red-300">{inlineError}</span>
-                <button onClick={() => setInlineError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">Ã—</button>
+                <button onClick={() => setInlineError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">{"\u00d7"}</button>
               </div>
             )}
 

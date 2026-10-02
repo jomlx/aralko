@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useToast } from '../ui/Toast';
 import {
   Clock,
   LogOut,
@@ -10,8 +11,25 @@ import {
   Trophy,
   Loader2,
   RefreshCw,
+  Timer,
+  Check,
+  SkipForward,
+  Sparkles,
+  ThumbsUp,
+  BookOpen,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '../ui/alert-dialog';
 import type { TestQuestion } from '../../types';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 
 // ─────────────────────────────────────────────
 // Types
@@ -25,6 +43,8 @@ interface TestModeViewerProps {
   onGenerateQuestions: (timeLimitSeconds: number) => void;
   onExit: () => void;
   onTestStateChange?: (isActive: boolean) => void;
+  addXP?: (amount: number, eventKey?: string) => void;
+  awardFreeze?: () => boolean;
 }
 
 type Phase = 'setup' | 'test' | 'results';
@@ -53,40 +73,6 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a;
 }
 
-// ─────────────────────────────────────────────
-// ExitConfirmDialog
-// ─────────────────────────────────────────────
-function ExitConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-token bg-surface p-6 shadow-2xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-10 w-10 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
-            <AlertTriangle size={20} className="text-warning" />
-          </div>
-          <div>
-            <p className="font-semibold text-primary">Exit Test?</p>
-            <p className="text-xs text-secondary mt-0.5">Your progress will be lost.</p>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 rounded-xl border border-token py-2.5 text-sm font-medium text-secondary hover:bg-white/[0.05] transition-colors"
-          >
-            Keep going
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 rounded-xl bg-danger/10 hover:bg-danger/20 border border-danger/30 py-2.5 text-sm font-semibold text-danger transition-colors"
-          >
-            Exit
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────
 // Setup Screen
@@ -337,12 +323,22 @@ function TestScreen({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {showExitConfirm && (
-        <ExitConfirmDialog
-          onConfirm={onExit}
-          onCancel={() => setShowExitConfirm(false)}
-        />
-      )}
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent className="bg-app border-token">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-primary">Exit Test?</AlertDialogTitle>
+            <AlertDialogDescription className="text-secondary">
+              Your progress will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary">Keep going</AlertDialogCancel>
+            <AlertDialogAction onClick={onExit} className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300">
+              Exit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Unified top bar: activity name + badge left; counter, timer, exit, dropdown right */}
       <div className="flex-shrink-0 flex items-center gap-4 px-8 py-3 border-b border-token bg-surface/50">
@@ -395,7 +391,7 @@ function TestScreen({
             )}
             <span className="text-2xs font-semibold uppercase tracking-widest text-muted mb-2 block">
               Question {currentIndex + 1}
-              {isMulti ? '' : ' · Single answer'}
+              {isMulti ? '' : ' \u00b7 Single answer'}
             </span>
             <p className="text-base font-medium text-primary leading-relaxed">{question.question}</p>
           </div>
@@ -422,8 +418,8 @@ function TestScreen({
                     }`}
                   >
                     {isMulti
-                      ? isSelected ? '✓' : ''
-                      : isSelected ? '●' : String.fromCharCode(65 + idx)}
+                      ? isSelected ? <Check size={14} strokeWidth={3} /> : ''
+                      : isSelected ? <CheckCircle2 size={14} /> : String.fromCharCode(65 + idx)}
                   </span>
                   <span className="flex-1">{option}</span>
                 </button>
@@ -483,13 +479,24 @@ function ResultsScreen({
 
   const correctCount = scored.filter((s) => s.isCorrect).length;
   const pct = Math.round((correctCount / questions.length) * 100);
+  const passed = pct >= 60;
   const grade =
-    pct >= 90 ? '🏆 Excellent!'
-    : pct >= 75 ? '🎉 Great job!'
-    : pct >= 60 ? '👍 Good effort!'
-    : '📚 Keep studying!';
+    pct >= 90 ? <span className="flex items-center justify-center gap-2"><Trophy className="text-yellow-400" /> Excellent!</span>
+    : pct >= 75 ? <span className="flex items-center justify-center gap-2"><Sparkles className="text-emerald-400" /> Great job!</span>
+    : pct >= 60 ? <span className="flex items-center justify-center gap-2"><ThumbsUp className="text-amber-400" /> Good effort!</span>
+    : <span className="flex items-center justify-center gap-2"><BookOpen className="text-red-400" /> Keep studying!</span>;
 
   const timeUsedDisplay = formatTime(Math.min(timeUsed, timeLimit));
+
+  // Play pass/fail sound once on mount
+  useEffect(() => {
+    try {
+      const audio = new Audio(passed ? '/sounds/passed.wav' : '/sounds/failed.wav');
+      audio.volume = 0.6;
+      audio.play().catch(() => {});
+    } catch (_) {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -517,61 +524,72 @@ function ResultsScreen({
             />
           </div>
           <div className="flex gap-6 text-sm text-secondary mt-2">
-            <span>⏱ Time used: <strong className="text-primary">{timeUsedDisplay}</strong></span>
-            <span>📝 Skipped: <strong className="text-primary">{scored.filter((s) => s.skipped).length}</strong></span>
+            <span className="flex items-center gap-1"><Timer size={14} /> Time used: <strong className="text-primary">{timeUsedDisplay}</strong></span>
+            <span className="flex items-center gap-1"><SkipForward size={14} /> Skipped: <strong className="text-primary">{scored.filter((s) => s.skipped).length}</strong></span>
           </div>
         </div>
 
-        {/* Per-question review */}
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">
-            Question Review
-          </p>
-          {scored.map(({ q, correct, isCorrect, missed, wrong, skipped }, i) => (
-            <div
-              key={i}
-              className={`rounded-xl border px-4 py-3.5 text-sm ${
-                isCorrect
-                  ? 'bg-success-muted border-success/20'
-                  : 'bg-red-500/10 border-red-500/20'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <span className="shrink-0 mt-0.5">
-                  {isCorrect ? (
-                    <CheckCircle2 size={16} className="text-success" />
-                  ) : (
-                    <XCircle size={16} className="text-red-400" />
-                  )}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-secondary leading-snug line-clamp-3">{q.question}</p>
-                  <span className="inline-block mt-1 text-2xs font-semibold text-muted uppercase tracking-wide">
-                    {q.answer_type === 'multiple' ? 'Multi-select' : 'Single answer'}
-                  </span>
-                  {!isCorrect && !skipped && (
-                    <div className="mt-2 flex flex-col gap-1">
-                      {missed.length > 0 && (
-                        <p className="text-2xs text-success">Missed: {missed.join(', ')}</p>
+        {/* Per-question Accordion review */}
+        <div className="flex flex-col gap-2 w-full">
+          <Accordion className="w-full rounded-xl border border-token overflow-hidden bg-surface">
+            <AccordionItem value="review" className="border-none">
+              <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-white/[0.02]">
+                <span className="font-semibold text-secondary uppercase tracking-wider text-xs">Question Review</span>
+              </AccordionTrigger>
+              <AccordionContent className="p-0 border-t border-token flex flex-col">
+                {scored.map(({ q, correct, isCorrect, missed, wrong, skipped }, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-start gap-3 px-5 py-4 text-sm border-b border-token last:border-b-0 ${
+                      isCorrect
+                        ? 'bg-success-muted'
+                        : 'bg-red-500/10'
+                    }`}
+                  >
+                    <span className="shrink-0 mt-0.5">
+                      {isCorrect ? (
+                        <CheckCircle2 size={16} className="text-success" />
+                      ) : (
+                        <XCircle size={16} className="text-red-400" />
                       )}
-                      {wrong.length > 0 && (
-                        <p className="text-2xs text-red-400">Wrongly selected: {wrong.join(', ')}</p>
-                      )}
+                    </span>
+                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="text-secondary leading-snug">{q.question}</span>
+                        <span className="text-2xs text-muted shrink-0 mt-1">
+                          {q.answer_type === 'multiple' ? 'Multi' : 'Single'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1 mt-1">
+                        {!isCorrect && !skipped && (
+                          <>
+                            {missed.length > 0 && (
+                              <p className="text-2xs text-success">✓ Missed: {missed.join(', ')}</p>
+                            )}
+                            {wrong.length > 0 && (
+                              <p className="text-2xs text-red-400">✗ Wrong: {wrong.join(', ')}</p>
+                            )}
+                          </>
+                        )}
+                        {skipped && (
+                          <p className="text-2xs text-muted">Not answered</p>
+                        )}
+                        {!isCorrect && (
+                          <p className="text-2xs text-success">✓ Correct: {correct.join(', ')}</p>
+                        )}
+                        {isCorrect && (
+                          <p className="text-2xs text-success">✓ {correct.join(', ')}</p>
+                        )}
+                        {q.explanation && (
+                          <p className="mt-1 text-2xs text-muted italic">{q.explanation}</p>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  {skipped && (
-                    <p className="mt-1 text-2xs text-muted">Not answered</p>
-                  )}
-                  {!isCorrect && (
-                    <p className="mt-1 text-2xs text-success">Correct: {correct.join(', ')}</p>
-                  )}
-                  {q.explanation && (
-                    <p className="mt-1.5 text-2xs text-muted italic">{q.explanation}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+                  </div>
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
 
         {/* Actions */}
@@ -606,7 +624,9 @@ export function TestModeViewer({
   onGenerateQuestions,
   onExit,
   onTestStateChange,
+  awardFreeze
 }: TestModeViewerProps) {
+  const { showToast } = useToast();
   const [phase, setPhase] = useState<Phase>('setup');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(600);
   const [testAnswers, setTestAnswers] = useState<Record<number, string[]>>({});
@@ -628,7 +648,26 @@ export function TestModeViewer({
     setTimeUsed(used);
     setPhase('results');
     onTestStateChange?.(false);
-  }, [onTestStateChange]);
+
+    const correctCount = activeQuestions.filter((q, i) => {
+      const given = answers[i] ?? [];
+      const correct = q.correct_options;
+      return given.length === correct.length && correct.every((c) => given.includes(c));
+    }).length;
+    
+    const pct = Math.round((correctCount / activeQuestions.length) * 100);
+    if (pct === 100 && activeQuestions.length >= 3 && awardFreeze) {
+      const today = new Date().toISOString().slice(0, 10);
+      const key = `aralko-freeze-award:${activityName}:${today}`;
+      if (!localStorage.getItem(key)) {
+        const awarded = awardFreeze();
+        if (awarded) {
+          localStorage.setItem(key, '1');
+          showToast('Perfect score! You earned a Streak Freeze! ❄️ (Max 2)', 'success');
+        }
+      }
+    }
+  }, [onTestStateChange, activeQuestions, awardFreeze, showToast, activityName]);
 
   const handleRetake = useCallback(() => {
     setActiveQuestions(shuffleArray(questions));
@@ -683,3 +722,4 @@ export function TestModeViewer({
     />
   );
 }
+

@@ -1,8 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { UserCog, Trash2, Loader2, Plus, ArrowUp } from 'lucide-react';
 import type { ChatMessage, Activity } from '../../types';
 import { useGemini } from '../../hooks/useGemini';
 import { useChat } from '../../hooks/useChat';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../ui/alert-dialog';
 import {
   MessageScrollerProvider,
   MessageScroller,
@@ -27,7 +38,6 @@ interface AIChatPanelProps {
 export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const [systemPrompt, setSystemPrompt] = useState(() =>
@@ -42,11 +52,6 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
       `Simulated response to: ${msgs[msgs.length - 1]?.content || 'Hello'}`,
     generateReviewer: async () => ''
   };
-
-  // Reset confirm-clear state when switching activity
-  useEffect(() => {
-    setConfirmClear(false);
-  }, [activeActivity?.id]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -78,11 +83,11 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
       console.error('Chat error:', err);
       let errorMsg: string;
       if (err.message === 'Gemini API key not configured') {
-        errorMsg = '💡 Please add your Gemini API key in Settings to use the AI assistant.';
+        errorMsg = '[Tip] Please add your Gemini API key in Settings to use the AI assistant.';
       } else if (err.message?.includes('Invalid API Key')) {
-        errorMsg = '❌ Your API key appears to be invalid. Please check your settings.';
+        errorMsg = '[Error] Your API key appears to be invalid. Please check your settings.';
       } else {
-        errorMsg = '⚠️ ' + (err.message || 'Unknown error connecting to the AI.');
+        errorMsg = '[Warning] ' + (err.message || 'Unknown error connecting to the AI.');
       }
 
       await addMessage({
@@ -96,16 +101,6 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
     }
   };
 
-  const handleClearRequest = () => {
-    if (confirmClear) {
-      clearMessages();
-      setConfirmClear(false);
-    } else {
-      setConfirmClear(true);
-      setTimeout(() => setConfirmClear(false), 4000);
-    }
-  };
-
   const saveSettings = () => {
     localStorage.setItem('aralko-system-prompt', systemPrompt);
     setIsSettingsOpen(false);
@@ -114,42 +109,57 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
   return (
     <div className="rounded-2xl border border-token bg-surface flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Header — single row: title+subtitle on left, Trash + Persona icons on right */}
-      <div className="flex-shrink-0 flex items-start justify-between px-4 pt-3 pb-3">
+      <div className="flex-shrink-0 flex items-start justify-between px-4 pt-3 pb-3 border-b border-token">
         {/* Left: title + subtitle */}
         <div>
           <h3 className="text-primary font-semibold text-sm leading-tight">Aralko Assistant</h3>
           <p className="text-muted text-xs mt-0.5">
-            {activeActivity?.name ?? 'New Chat'}
+            AI study companion
           </p>
         </div>
 
         {/* Right: Trash icon + Persona icon */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5">
           {/* Clear chat — always rendered but only active when messages exist */}
-          <button
-            onClick={handleClearRequest}
-            disabled={messages.length === 0}
-            title={confirmClear ? 'Click again to confirm' : 'Clear chat history'}
-            className={`h-[42px] w-[42px] rounded-full border border-token flex items-center justify-center transition-all ${
-              messages.length === 0
-                ? 'opacity-40 cursor-not-allowed text-muted bg-transparent'
-                : confirmClear
-                  ? 'text-red-400 bg-red-400/10 hover:bg-red-400/20'
-                  : 'text-secondary bg-white/[0.05] hover:bg-white/[0.1] hover:scale-105 hover:text-red-400'
-            }`}
-          >
-            <Trash2 size={18} />
-          </button>
+          <AlertDialog>
+            <AlertDialogTrigger className="p-0 m-0 border-none bg-transparent hover:bg-transparent">
+              <button
+                disabled={messages.length === 0}
+                title="Clear chat history"
+                className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
+                  messages.length === 0
+                    ? 'opacity-30 cursor-not-allowed text-muted'
+                    : 'text-secondary hover:text-red-400 hover:bg-white/[0.05]'
+                }`}
+              >
+                <Trash2 size={16} />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-app border-token">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-primary">Delete chat history?</AlertDialogTitle>
+                <AlertDialogDescription className="text-secondary">
+                  This will permanently remove all messages from this session. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={clearMessages} className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Persona icon with Dialog for settings */}
           <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DialogTrigger
               title="AI Persona settings"
-              className={`h-[42px] w-[42px] rounded-full border border-token flex items-center justify-center transition-all text-secondary bg-white/[0.05] hover:bg-white/[0.1] hover:scale-105 hover:text-primary ${
-                isSettingsOpen ? 'bg-white/[0.1] text-primary scale-105' : ''
+              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all text-secondary hover:text-primary hover:bg-white/[0.05] ${
+                isSettingsOpen ? 'bg-white/[0.08] text-primary' : ''
               }`}
             >
-              <UserCog size={18} />
+              <UserCog size={16} />
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] bg-app border-token text-primary">
               <DialogHeader>
@@ -185,7 +195,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
           <MessageScrollerProvider>
             <MessageScroller className="flex-1 min-h-0 relative">
               <MessageScrollerViewport className="[scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/[0.12] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:mr-0">
-                <MessageScrollerContent className="space-y-6 py-4">
+                <MessageScrollerContent className="space-y-2 py-4">
                   {historyLoading ? (
                     <div className="flex items-center justify-center mt-10 gap-2 text-muted text-xs">
                       <Loader2 size={14} className="animate-spin" />
@@ -203,10 +213,10 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
                         scrollAnchor={msg.role === "user"}
                       >
                         <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                          <div className={`text-[13px] leading-relaxed max-w-[85%] break-words whitespace-pre-wrap ${
+                          <div className={`text-[13px] leading-relaxed break-words whitespace-pre-wrap ${
                             msg.role === 'user'
-                              ? 'bg-accent/20 text-primary rounded-2xl rounded-br-sm px-4 py-3 border border-accent/10 shadow-sm'
-                              : 'bg-app border border-token text-secondary rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm'
+                              ? 'max-w-[85%] bg-accent text-white rounded-2xl rounded-br-sm px-3 py-2 shadow-sm'
+                              : 'w-full text-secondary px-2 py-1'
                           }`}>
                             {msg.content}
                           </div>
@@ -218,7 +228,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
                   {isLoading && (
                     <MessageScrollerItem messageId="loading-indicator">
                       <div className="flex items-start">
-                        <div className="bg-app border border-token rounded-2xl rounded-bl-sm px-4 py-4 shadow-sm flex gap-1.5 items-center">
+                        <div className="px-2 py-2 flex gap-1.5 items-center">
                           <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                           <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                           <div className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -258,3 +268,14 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

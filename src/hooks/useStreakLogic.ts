@@ -2,17 +2,29 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import type { StudySession } from '../types';
 
 interface StreakLogicProps {
+  userId?: string;
   sessions: StudySession[];
-  sessionsLoaded: boolean;   // NEW: must be true before we evaluate
+  sessionsLoaded: boolean;
+  settingsLoaded?: boolean;
   streakFreezes: number;
   savedStreak: number;
   updateStreakData: (freezes: number, streak: number) => void;
 }
 
-/** Parse any date string to a local YYYY-MM-DD string (timezone-safe) */
+export type StreakAction = 'none' | 'freeze' | 'reset';
+
+export function parseLocalDate(dateStr: string): Date {
+  // If it's just YYYY-MM-DD, parse as local to avoid UTC offset shifting
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split('-');
+    return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+  }
+  return new Date(dateStr);
+}
+
 function toLocalDateStr(dateStr: string): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-  const d = new Date(dateStr);
+  const d = parseLocalDate(dateStr);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -20,74 +32,94 @@ function getTodayStr() {
   return toLocalDateStr(new Date().toISOString());
 }
 
-function getYesterdayStr() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return toLocalDateStr(d.toISOString());
+export function evaluateStreak({
+  lastStudyDate,
+  today,
+  freezes,
+  savedStreak
+}: {
+  lastStudyDate: string | null;
+  today: string;
+  freezes: number;
+  savedStreak: number;
+}): { displayedStreak: number; action: StreakAction } {
+  if (savedStreak === 0 && !lastStudyDate) {
+    return { displayedStreak: 0, action: 'none' };
+  }
+
+  const todayDate = parseLocalDate(today);
+  todayDate.setHours(0, 0, 0, 0);
+
+  let gap = Infinity;
+  if (lastStudyDate) {
+    const last = parseLocalDate(lastStudyDate);
+    last.setHours(0, 0, 0, 0);
+    gap = Math.round((todayDate.getTime() - last.getTime()) / 86_400_000);
+  }
+
+  const isAlive = gap <= 1;
+  const freezeEligible = gap === 2 && freezes > 0;
+  const displayedStreak = isAlive ? savedStreak : (freezeEligible ? savedStreak : 0);
+
+  let action: StreakAction = 'none';
+  if (savedStreak > 0 && !isAlive) {
+    if (freezeEligible) {
+      action = 'freeze';
+    } else {
+      action = 'reset';
+    }
+  }
+
+  return { displayedStreak, action };
 }
 
-export function useStreakLogic({ sessions, sessionsLoaded, streakFreezes, savedStreak, updateStreakData }: StreakLogicProps) {
+export function useStreakLogic({ userId, sessions, sessionsLoaded, settingsLoaded = true, streakFreezes, savedStreak, updateStreakData }: StreakLogicProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const evaluatedRef = useRef(false);
 
-  // Evaluate freeze/reset logic — ONLY once sessions are fully loaded from DB
-  useEffect(() => {
-    // Don't run until sessions have been fetched from Supabase/localStorage
-    if (!sessionsLoaded) return;
+  const dates = [...new Set(sessions.map(s => toLocalDateStr(s.date)))].sort().reverse();
+  const rawLastStudy = dates.length > 0 ? dates[0] : null;
+  const freezeCoverKey = userId ? `aralko-freeze-covered-${userId}` : null;
+  const freezeCovered = freezeCoverKey ? localStorage.getItem(freezeCoverKey) : null;
+  
+  // Use whichever is later: the last actual session, or the last freeze-covered date
+  const lastStudyDate = !rawLastStudy ? freezeCovered : (!freezeCovered ? rawLastStudy : (rawLastStudy > freezeCovered ? rawLastStudy : freezeCovered));
+  const todayStr = getTodayStr();
 
-    // Only evaluate once per app session
+  const { displayedStreak, action } = evaluateStreak({
+    lastStudyDate,
+    today: todayStr,
+    freezes: streakFreezes,
+    savedStreak
+  });
+
+  useEffect(() => {
+    if (!userId || !sessionsLoaded || !settingsLoaded) return;
     if (evaluatedRef.current) return;
 
-    // Nothing stored — nothing to evaluate
-    if (savedStreak === 0) {
-      evaluatedRef.current = true;
-      return;
-    }
-
-    // Find unique local date strings, sorted newest first
-    const dates = [...new Set(sessions.map(s => toLocalDateStr(s.date)))].sort().reverse();
-
-    const todayStr = getTodayStr();
-    const yesterdayStr = getYesterdayStr();
-
-    const hasStudiedToday = dates.includes(todayStr);
-    const hasStudiedYesterday = dates.includes(yesterdayStr);
-
-    // Streak is alive if they studied today or yesterday
-    if (hasStudiedToday || hasStudiedYesterday) {
-      evaluatedRef.current = true;
-      return; // Streak is safe, nothing to do
-    }
-
-    // Neither today nor yesterday — streak should be lost (or frozen)
-    if (streakFreezes > 0) {
-      // Use 1 freeze to keep the streak alive
+    if (action === 'freeze' && freezeCoverKey) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      localStorage.setItem(freezeCoverKey, toLocalDateStr(yesterday.toISOString()));
+      
       updateStreakData(streakFreezes - 1, savedStreak);
       setToastMessage('Your streak was protected! ❄️ 1 freeze used.');
       setTimeout(() => setToastMessage(null), 5000);
-    } else {
-      // No freezes left — streak is lost
-      updateStreakData(0, 0);
-      setToastMessage('Your streak was lost. Keep trying! 💪');
+    } else if (action === 'reset') {
+      updateStreakData(streakFreezes, 0);
+      setToastMessage('Your streak was lost. Keep trying! 🔥');
       setTimeout(() => setToastMessage(null), 5000);
     }
 
     evaluatedRef.current = true;
-  }, [sessionsLoaded, sessions, streakFreezes, savedStreak, updateStreakData]);
+  }, [userId, sessionsLoaded, settingsLoaded, action, streakFreezes, savedStreak, updateStreakData, freezeCoverKey]);
 
-  // Call this immediately when a Pomodoro session completes
   const incrementStreak = useCallback(() => {
-    const todayStr = getTodayStr();
-    const dates = [...new Set(sessions.map(s => toLocalDateStr(s.date)))];
-
-    // Already studied today — streak doesn't change (already incremented earlier today)
     if (dates.includes(todayStr)) return;
 
-    // First session of the day!
-    const newStreak = savedStreak + 1;
+    const newStreak = displayedStreak + 1;
     let newFreezes = streakFreezes;
 
-    // Earn 1 freeze every 7 days (max 2)
     if (newStreak % 7 === 0 && streakFreezes < 2) {
       newFreezes += 1;
       setToastMessage('You earned a Streak Freeze! ❄️ (Max 2)');
@@ -95,7 +127,7 @@ export function useStreakLogic({ sessions, sessionsLoaded, streakFreezes, savedS
     }
 
     updateStreakData(newFreezes, newStreak);
-  }, [sessions, savedStreak, streakFreezes, updateStreakData]);
+  }, [dates, displayedStreak, streakFreezes, updateStreakData, todayStr]);
 
-  return { toastMessage, incrementStreak };
+  return { toastMessage, incrementStreak, displayedStreak };
 }

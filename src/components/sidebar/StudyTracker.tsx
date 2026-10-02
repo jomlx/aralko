@@ -1,4 +1,5 @@
 import { CalendarDays, Play, Pause, TimerReset, Settings2 } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { useState, useRef, useEffect } from 'react';
 import type { PomodoroPhase } from '../../types';
 import type { PomodoroPreset } from '../../hooks/usePomodoro';
@@ -10,8 +11,6 @@ type StudyTrackerProps = {
   phase: PomodoroPhase;
   isRunning: boolean;
   sessionsCompleted: number;
-  streak: number;
-  streakFreezes: number;
   onStart: () => void;
   onPause: () => void;
   onReset: () => void;
@@ -27,8 +26,6 @@ export function StudyTracker({
   phase,
   isRunning,
   sessionsCompleted,
-  streak,
-  streakFreezes,
   onStart,
   onPause,
   onReset,
@@ -75,24 +72,18 @@ export function StudyTracker({
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-primary font-medium text-xs">Study Tracker</h2>
         <div className="flex items-center gap-1.5">
-          <div className="px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 text-2xs font-medium flex items-center gap-1">
-            🔥 {streak} {streak === 1 ? 'day' : 'days'}
-          </div>
-          {streakFreezes > 0 && (
-            <div className="px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 text-2xs font-medium flex items-center gap-1" title="Streak Freezes active">
-              ❄️ {streakFreezes}
-            </div>
-          )}
-
           {/* Settings gear — dot indicates auto-start is on without changing card height */}
           <div className="relative" ref={settingsRef}>
-            <button
-              onClick={() => setShowSettings(s => !s)}
-              className={`relative p-1 rounded-lg transition-colors ${showSettings ? 'bg-white/10 text-primary' : 'text-muted hover:text-secondary hover:bg-white/[0.05]'}`}
-              title="Timer settings"
-            >
-              <Settings2 size={13} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger
+                  onClick={() => setShowSettings(s => !s)}
+                  className={`relative p-1 rounded-lg transition-colors ${showSettings ? 'bg-white/10 text-primary' : 'text-muted hover:text-secondary hover:bg-white/[0.05]'}`}
+                  aria-label="Timer settings"
+                >
+                  <Settings2 size={18} />
+                </TooltipTrigger>
+              <TooltipContent side="top">Timer settings</TooltipContent>
+            </Tooltip>
 
             {/* Settings popover — uses bg-surface which is mapped to #DCE3EE in light mode */}
             {showSettings && (
@@ -190,9 +181,12 @@ export function StudyTracker({
             <Play size={14} /> Start
           </button>
         )}
-        <button onClick={onReset} className="btn btn-secondary px-2" title="Reset Timer">
-          <TimerReset size={14} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger onClick={onReset} className="btn btn-secondary px-2" aria-label="Reset Timer">
+              <TimerReset size={18} />
+            </TooltipTrigger>
+          <TooltipContent side="top">Reset Timer</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );

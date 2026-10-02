@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Activity } from '../../types';
-import { Loader2, X, ChevronDown, Share2 } from 'lucide-react';
+import { Loader2, X, Share2 } from 'lucide-react';
 import { FlashcardsViewer } from './FlashcardsViewer';
 import { QuizViewer } from './QuizViewer';
 import { TestModeViewer } from './TestModeViewer';
 import { ErrorBoundary } from './ErrorBoundary';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { NativeSelect, NativeSelectOption } from '../ui/native-select';
 import { useStudyGroups } from '../../hooks/useStudyGroups';
 import { generateWithBackend } from '../../lib/apiClient';
 import { getPersonalGeminiKey } from '../../lib/aiCall';
@@ -59,6 +60,7 @@ interface LearnTabProps {
   onEnterTestMode: () => void;
   onExitTestMode: () => void;
   addXP?: (amount: number, eventKey?: string) => void;
+  awardFreeze?: () => boolean;
 }
 
 export function LearnTab({
@@ -69,6 +71,7 @@ export function LearnTab({
   onEnterTestMode,
   onExitTestMode,
   addXP,
+  awardFreeze,
 }: LearnTabProps) {
   const [renderOverlay, setRenderOverlay] = useState(false);
   const [overlayVisible, setOverlayVisible] = useState(false);
@@ -180,29 +183,27 @@ export function LearnTab({
   const isQuizTechnique = activeActivity.technique?.toLowerCase() === 'quiz';
   const isTestModeTechnique = activeActivity.technique?.toLowerCase() === 'test mode';
 
+  const validTechniques = ['Study Notes', 'Flashcards', 'Quiz', 'Test Mode'];
+  const currentTechnique = activeActivity.technique && validTechniques.includes(activeActivity.technique) 
+    ? activeActivity.technique 
+    : 'Study Notes';
+
   const headerControls = (
     <div className="flex items-center gap-3">
       <ShareActivityButton activityId={activeActivity.id} />
-      <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 bg-surface border border-token text-secondary text-sm font-medium px-4 py-2 rounded-xl outline-none cursor-pointer hover:bg-white/[0.04] hover:text-primary transition-colors shadow-sm">
-          {activeActivity.technique || 'Study Notes'}
-          <ChevronDown size={16} className="opacity-70" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
-          {['Study Notes', 'Flashcards', 'Quiz', 'Test Mode', 'Feynman Technique', 'Active Recall', 'Spaced Repetition', 'Interleaving'].map((tech) => (
-            <DropdownMenuItem 
-              key={tech} 
-              onClick={() => onUpdateActivity(activeActivity.id, { technique: tech === 'Study Notes' ? undefined : tech })}
-            >
-              {tech === 'Test Mode' ? '?? ' : ''}{tech}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <NativeSelect
+        value={currentTechnique}
+        onChange={(e) => onUpdateActivity(activeActivity.id, { technique: e.target.value === 'Study Notes' ? undefined : e.target.value })}
+      >
+        <NativeSelectOption value="Study Notes">Study Notes</NativeSelectOption>
+        <NativeSelectOption value="Flashcards">Flashcards</NativeSelectOption>
+        <NativeSelectOption value="Quiz">Knowledge Check</NativeSelectOption>
+        <NativeSelectOption value="Test Mode">Assessment</NativeSelectOption>
+      </NativeSelect>
     </div>
   );
 
-  // â”€â”€ On-demand quiz generation â”€â”€
+  // ── On-demand quiz generation ──
   // When the user switches to Quiz tab for the first time, auto-generate if there's no quiz yet.
   useEffect(() => {
     if (!isQuizTechnique) return;
@@ -217,7 +218,7 @@ export function LearnTab({
     <>
       {/* Main scrollable content */}
       <div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <div className="px-8 pt-4 pb-8">
+        <div className="px-[var(--gutter)] pt-4 pb-8">
 
           {/* Flex layout for sliding sidebar */}
           <div className="flex gap-5 relative overflow-hidden">
@@ -237,7 +238,7 @@ export function LearnTab({
                 {headerControls}
               </div>
 
-              {/* Content area â€” always render all three, show/hide via CSS to preserve state */}
+              {/* Content area — always render all three, show/hide via CSS to preserve state */}
 
               {/* FLASHCARDS */}
               <div className={isFlashcardTechnique ? "flex-1 relative flex flex-col min-h-0" : "hidden"}>
@@ -273,7 +274,7 @@ export function LearnTab({
                 {quizError && !isGeneratingQuiz && (
                   <div className="mb-3 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                     <span className="text-sm text-red-300">{quizError}</span>
-                    <button onClick={() => setQuizError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">Ã—</button>
+                    <button onClick={() => setQuizError(null)} className="ml-auto text-red-400 hover:text-red-200 text-lg leading-none">{"\u00d7"}</button>
                   </div>
                 )}
                 {activeActivity.quizData && activeActivity.quizData.length > 0 ? (
@@ -314,6 +315,7 @@ export function LearnTab({
                     if (isActive) onEnterTestMode();
                     else onExitTestMode();
                   }}
+                  awardFreeze={awardFreeze}
                 />
                 </ErrorBoundary>
               </div>
@@ -333,7 +335,7 @@ export function LearnTab({
         </div>
       </div>
 
-      {/* â”€â”€ Focus Test Mode Overlay â”€â”€ */}
+      {/* ── Focus Test Mode Overlay ── */}
       {renderOverlay && isFlashcardTechnique && (
         <div
           className={`fixed inset-0 z-50 bg-app flex flex-col transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
@@ -341,7 +343,7 @@ export function LearnTab({
           }`}
         >
           {/* Top bar */}
-          <div className="flex-shrink-0 flex items-center justify-between px-8 py-4 border-b border-token">
+          <div className="flex-shrink-0 flex items-center justify-between px-[var(--gutter)] py-4 border-b border-token">
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-primary">{activeActivity.name}</span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent-muted px-2.5 py-1 text-2xs font-semibold tracking-wide text-accent uppercase">
@@ -381,4 +383,5 @@ export function LearnTab({
     </>
   );
 }
+
 

@@ -1,24 +1,20 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
+
 import type { PomodoroPreset } from './usePomodoro';
 
-// ── Progressive level formula ────────────────────────────────────────────────
-// XP needed to go from level N to N+1 = N × 40
-// Total XP to reach level L = 20 × L × (L − 1)
-// Level from XP = floor((1 + sqrt(1 + XP / 5)) / 2)
-
-export function xpToLevel(xp: number): number {
-  if (xp <= 0) return 1;
-  return Math.floor((1 + Math.sqrt(1 + xp / 5)) / 2);
-}
-
-/** Total XP needed to REACH a given level (0-based start) */
 export function xpForLevel(level: number): number {
+  if (level <= 1) return 0;
   return 20 * level * (level - 1);
 }
 
-/** XP progress within the current level (0–1) */
+export function xpToLevel(xp: number): number {
+  let level = 1;
+  while (xpForLevel(level + 1) <= xp) level++;
+  return level;
+}
+
 export function levelProgress(xp: number): number {
   const lvl = xpToLevel(xp);
   const curr = xpForLevel(lvl);
@@ -26,18 +22,14 @@ export function levelProgress(xp: number): number {
   return next > curr ? (xp - curr) / (next - curr) : 1;
 }
 
-// ── Weekly XP reset helpers ──────────────────────────────────────────────────
-
 function getCurrentWeekStart(): string {
   const now = new Date();
-  const day = now.getDay(); // 0 = Sun
-  const diff = day === 0 ? -6 : 1 - day; // days back to Monday
+  const day = now.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   const monday = new Date(now);
   monday.setDate(now.getDate() + diff);
   return monday.toISOString().slice(0, 10);
 }
-
-// ── XP deduplication (one-time-per-activity events) ─────────────────────────
 
 const XP_EVENTS_KEY = 'aralko-xp-events';
 
@@ -59,8 +51,6 @@ function markXPAwarded(userId: string, event: string): void {
   } catch {}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function useUserSettings() {
   const { user } = useAuth();
   const userId = user?.id;
@@ -69,20 +59,17 @@ export function useUserSettings() {
   const [autoStart, setAutoStart] = useState(false);
   const [geminiKey, setGeminiKey] = useState<string | null>(null);
 
-  // XP / Level
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
   const [xpThisWeek, setXpThisWeek] = useState(0);
 
-  // Streak Freezes
   const [streakFreezes, setStreakFreezes] = useState(0);
   const [savedStreak, setSavedStreak] = useState(0);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-  // Refs so addXP always reads latest values without needing them as deps
   const xpRef = useRef(0);
   const xpThisWeekRef = useRef(0);
 
-  // Load settings from DB on login
   useEffect(() => {
     if (!userId) {
       setPreset('classic');
@@ -93,6 +80,7 @@ export function useUserSettings() {
       setXpThisWeek(0);
       setStreakFreezes(0);
       setSavedStreak(0);
+      setSettingsLoaded(false);
       xpRef.current = 0;
       xpThisWeekRef.current = 0;
       return;
@@ -114,7 +102,6 @@ export function useUserSettings() {
           const currentWeekStart = getCurrentWeekStart();
           let weekXp = data.xp_this_week ?? 0;
 
-          // Reset weekly XP if we've moved into a new week
           if (data.week_start !== currentWeekStart) {
             weekXp = 0;
             supabase.from('user_settings').upsert(
@@ -135,7 +122,6 @@ export function useUserSettings() {
           console.warn('Failed to load user settings:', error.message);
         }
 
-        // Null-safe sync of display_name / avatar_url from Google metadata
         const newName  = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
         const newAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
 
@@ -146,14 +132,14 @@ export function useUserSettings() {
         if (Object.keys(syncPayload).length > 1) {
           supabase.from('user_settings').upsert(syncPayload, { onConflict: 'user_id' }).then(() => {});
         }
+        
+        setSettingsLoaded(true);
       });
-  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, user]);
 
-  // Keep refs current
   useEffect(() => { xpRef.current = xp; }, [xp]);
   useEffect(() => { xpThisWeekRef.current = xpThisWeek; }, [xpThisWeek]);
 
-  // Sync Pomodoro preset to DB
   useEffect(() => {
     if (!userId) return;
     supabase.from('user_settings')
@@ -161,7 +147,6 @@ export function useUserSettings() {
       .then(({ error }) => { if (error) console.warn('Failed to sync preset:', error.message); });
   }, [preset, userId]);
 
-  // Sync autoStart to DB
   useEffect(() => {
     if (!userId) return;
     supabase.from('user_settings')
@@ -169,16 +154,9 @@ export function useUserSettings() {
       .then(({ error }) => { if (error) console.warn('Failed to sync autoStart:', error.message); });
   }, [autoStart, userId]);
 
-  /**
-   * Award XP to the current user.
-   * @param amount  XP points to add.
-   * @param eventKey  Optional deduplication key (e.g. "quiz-42"). If provided,
-   *                  the XP is only awarded ONCE per user per key — prevents farming.
-   */
   const addXP = useCallback((amount: number, eventKey?: string) => {
     if (!userId) return;
 
-    // One-time event guard
     if (eventKey) {
       if (hasAwardedXP(userId, eventKey)) return;
       markXPAwarded(userId, eventKey);
@@ -215,6 +193,6 @@ export function useUserSettings() {
   return { 
     preset, setPreset, autoStart, setAutoStart, geminiKey, 
     xp, level, xpThisWeek, addXP,
-    streakFreezes, savedStreak, updateStreakData
+    streakFreezes, savedStreak, updateStreakData, settingsLoaded
   };
 }

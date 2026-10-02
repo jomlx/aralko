@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw, Flag, CheckCircle2, XCircle, RefreshCw, Check, BookOpen, PenTool, Meh, Smile, Zap, Shield } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import type { Flashcard } from '../../types';
 
 interface FlashcardsViewerProps {
@@ -371,30 +372,36 @@ export function FlashcardsViewer({
               
               {/* Left Component */}
               {studyMode === 'fast' ? (
-                <button
-                  onClick={handlePrev}
-                  disabled={currentIndex === 0}
-                  title="Previous Card"
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] text-primary transition-colors disabled:opacity-30 disabled:hover:bg-white/[0.05] shrink-0"
-                >
-                  <ChevronLeft size={20} />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger
+                      onClick={handlePrev}
+                      disabled={currentIndex === 0}
+                      aria-label="Previous Card"
+                      className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] text-primary transition-colors disabled:opacity-30 disabled:hover:bg-white/[0.05] shrink-0"
+                    >
+                      <ChevronLeft size={20} />
+                    </TooltipTrigger>
+                  <TooltipContent side="top">Previous Card</TooltipContent>
+                </Tooltip>
               ) : (
-                <button
-                  onClick={() => {
-                    const front = card.front;
-                    setTestResults((prev) => ({ ...prev, [front]: false }));
-                    handleNext();
-                  }}
-                  title="Needs review"
-                  className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all shrink-0 ${
-                    testResults[card.front] === false
-                      ? 'bg-slate-500 text-primary shadow-[0_0_15px_rgba(100,116,139,0.5)] scale-110'
-                      : 'bg-slate-500/20 text-muted hover:bg-slate-500/30'
-                  }`}
-                >
-                  <Meh size={20} />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger
+                      onClick={() => {
+                        const front = card.front;
+                        setTestResults((prev) => ({ ...prev, [front]: false }));
+                        handleNext();
+                      }}
+                      aria-label="Needs review"
+                      className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all shrink-0 ${
+                        testResults[card.front] === false
+                          ? 'bg-slate-500 text-primary shadow-[0_0_15px_rgba(100,116,139,0.5)] scale-110'
+                          : 'bg-slate-500/20 text-muted hover:bg-slate-500/30'
+                      }`}
+                    >
+                      <Meh size={20} />
+                    </TooltipTrigger>
+                  <TooltipContent side="top">Needs review</TooltipContent>
+                </Tooltip>
               )}
 
               {/* Centre: Segmented Mode Toggle */}
@@ -425,29 +432,35 @@ export function FlashcardsViewer({
 
               {/* Right Component */}
               {studyMode === 'fast' ? (
-                <button
-                  onClick={handleNext}
-                  title="Next Card"
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] text-primary transition-colors shrink-0"
-                >
-                  <ChevronRight size={20} />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger
+                      onClick={handleNext}
+                      aria-label="Next Card"
+                      className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] text-primary transition-colors shrink-0"
+                    >
+                      <ChevronRight size={20} />
+                    </TooltipTrigger>
+                  <TooltipContent side="top">Next Card</TooltipContent>
+                </Tooltip>
               ) : (
-                <button
-                  onClick={() => {
-                    const front = card.front;
-                    setTestResults((prev) => ({ ...prev, [front]: true }));
-                    handleNext();
-                  }}
-                  title="Got it!"
-                  className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all shrink-0 ${
-                    testResults[card.front] === true
-                      ? 'bg-success text-primary shadow-[0_0_15px_rgba(16,185,129,0.5)] scale-110'
-                      : 'bg-success/20 text-success hover:bg-success/30'
-                  }`}
-                >
-                  <Smile size={20} />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger
+                      onClick={() => {
+                        const front = card.front;
+                        setTestResults((prev) => ({ ...prev, [front]: true }));
+                        handleNext();
+                      }}
+                      aria-label="Got it!"
+                      className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all shrink-0 ${
+                        testResults[card.front] === true
+                          ? 'bg-success text-primary shadow-[0_0_15px_rgba(16,185,129,0.5)] scale-110'
+                          : 'bg-success/20 text-success hover:bg-success/30'
+                      }`}
+                    >
+                      <Smile size={20} />
+                    </TooltipTrigger>
+                  <TooltipContent side="top">Got it!</TooltipContent>
+                </Tooltip>
               )}
             </div>
 
