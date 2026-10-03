@@ -1,11 +1,7 @@
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area"
 import { cn } from "../../lib/utils"
 
-function ScrollArea({
-  className,
-  children,
-  ...props
-}: ScrollAreaPrimitive.Root.Props) {
+function ScrollArea({ className, children, ...props }: ScrollAreaPrimitive.Root.Props) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -14,7 +10,7 @@ function ScrollArea({
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="h-full w-full"
+        className="size-full rounded-[inherit] outline-none"
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
@@ -24,28 +20,22 @@ function ScrollArea({
   )
 }
 
-function ScrollBar({
-  className,
-  orientation = "vertical",
-  ...props
-}: ScrollAreaPrimitive.Scrollbar.Props) {
+function ScrollBar({ className, orientation = "vertical", ...props }: ScrollAreaPrimitive.Scrollbar.Props) {
   return (
     <ScrollAreaPrimitive.Scrollbar
       data-slot="scroll-area-scrollbar"
-      data-orientation={orientation}
       orientation={orientation}
       className={cn(
-        "flex touch-none select-none",
-        orientation === "vertical"
-          ? "absolute right-0 top-0 h-full w-2.5 flex-col py-1 px-[3px]"
-          : "absolute bottom-0 left-0 h-2.5 w-full flex-row px-1 py-[3px]",
+        "absolute z-20 flex touch-none select-none p-0.5",
+        "data-[orientation=vertical]:right-0 data-[orientation=vertical]:top-0 data-[orientation=vertical]:h-full data-[orientation=vertical]:w-2.5",
+        "data-[orientation=horizontal]:bottom-0 data-[orientation=horizontal]:left-0 data-[orientation=horizontal]:h-2.5 data-[orientation=horizontal]:w-full data-[orientation=horizontal]:flex-col",
         className
       )}
       {...props}
     >
       <ScrollAreaPrimitive.Thumb
         data-slot="scroll-area-thumb"
-        className="relative flex-1 rounded-full bg-white/25 hover:bg-white/40 transition-colors"
+        className="relative flex-1 rounded-full bg-accent hover:bg-accent/80"
       />
     </ScrollAreaPrimitive.Scrollbar>
   )

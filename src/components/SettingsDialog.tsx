@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, MessageSquare, Bot, ShieldCheck, Download, AlertTriangle, Info } from 'lucide-react';
+import { Sun, Moon, Check, X, Loader2, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, Trash2, Music2, User, Settings2, MessageSquare, ShieldCheck, Download, AlertTriangle, Info } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -431,10 +431,6 @@ export function SettingsDialog({
                 <Settings2 className="size-[18px]" />
                 General
               </TabsTrigger>
-              <TabsTrigger value="ai" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
-                <Bot className="size-[18px]" />
-                AI
-              </TabsTrigger>
               <TabsTrigger value="feedback" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <MessageSquare className="size-[18px]" />
                 Feedback
@@ -659,126 +655,120 @@ export function SettingsDialog({
                   </div>
                 )}
               </div>
-                </div>
-              </ScrollArea>
-            </TabsContent>
-            
-            {/* AI Key Management */}
-            <TabsContent value="ai" className="mt-0 outline-none h-full flex flex-col">
-              <div className="shrink-0 relative z-10 bg-app px-6 md:px-8 pt-6 pb-4 border-b border-token">
-                <h2 className="text-lg font-semibold text-primary">AI</h2>
-              </div>
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="space-y-6 px-6 md:px-8 pr-2.5 pt-6 pb-8">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-primary">Connect your own AI key</span>
-                  <div className="" ref={guideRef}>
-                    <button
-                      onClick={() => setShowGuide(v => !v)}
-                      className="flex items-center justify-center rounded-full text-muted hover:text-accent transition-colors"
-                      title="How to get a free key"
-                    >
-                      <Info size={15} />
-                    </button>
-                    {showGuide && (
-                      <div className="absolute top-12 z-10 w-72 rounded-xl border border-token bg-surface p-4 shadow-xl shadow-black/20">
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="text-2xs font-semibold text-primary">How to get your free key</p>
-                          <button onClick={() => setShowGuide(false)} className="text-secondary hover:text-secondary transition-colors">
-                            <X size={13} />
-                          </button>
-                        </div>
-                        {[
-                          <><span className="font-semibold text-accent">"Get my free key"</span> below</>,
-                          <>Click the blue <span className="font-semibold text-primary">"Create API key"</span> button on Google's page</>,
-                          <>Copy the key that appears (starts with <span className="font-mono text-accent">"AIza..."</span>)</>,
-                          <>Paste it below and click <span className="font-semibold text-primary">Save</span></>,
-                        ].map((step, i) => (
-                          <div key={i} className="flex items-start gap-2 mb-2 last:mb-0">
-                            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent/30 text-2xs font-bold text-accent mt-0.5">
-                              {i + 1}
-                            </span>
-                            <p className="text-2xs text-secondary leading-relaxed">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-secondary leading-relaxed">
-                    Add your free Gemini API key for faster, more reliable responses.
-                  </p>
-                
-                  <button
-                    type="button"
-                    onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank', 'noopener,noreferrer')}
-                    className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors"
-                  >
-                    Get Key
-                  </button>
-                </div>
 
-                {savedKey ? (
-                  <div className="flex items-center justify-between rounded-xl border border-token bg-surface px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
-                        <Check size={16} className="text-success" />
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-medium text-primary">Key is active</span>
-                        <span className="text-xs text-secondary font-mono">
-                          {savedKey.slice(0, 4)}••••••••••{savedKey.slice(-4)}
-                        </span>
-                      </div>
+              <div className="pt-4">
+                <h3 className="text-sm font-semibold text-primary mb-3">AI</h3>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-primary">Connect your own AI key</span>
+                    <div className="relative" ref={guideRef}>
+                      <button
+                        onClick={() => setShowGuide(v => !v)}
+                        className="flex items-center justify-center rounded-full text-muted hover:text-accent transition-colors"
+                        title="How to get a free key"
+                      >
+                        <Info size={15} />
+                      </button>
+                      {showGuide && (
+                        <div className="absolute top-12 z-10 w-72 rounded-xl border border-token bg-surface p-4 shadow-xl shadow-black/20">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-2xs font-semibold text-primary">How to get your free key</p>
+                            <button onClick={() => setShowGuide(false)} className="text-secondary hover:text-secondary transition-colors">
+                              <X size={13} />
+                            </button>
+                          </div>
+                          {[
+                            <><span className="font-semibold text-accent">"Get my free key"</span> below</>,
+                            <>Click the blue <span className="font-semibold text-primary">"Create API key"</span> button on Google's page</>,
+                            <>Copy the key that appears (starts with <span className="font-mono text-accent">"AIza..."</span>)</>,
+                            <>Paste it below and click <span className="font-semibold text-primary">Save</span></>,
+                          ].map((step, i) => (
+                            <div key={i} className="flex items-start gap-2 mb-2 last:mb-0">
+                              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent/30 text-2xs font-bold text-accent mt-0.5">
+                                {i + 1}
+                              </span>
+                              <p className="text-2xs text-secondary leading-relaxed">{step}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-secondary leading-relaxed">
+                      Add your free Gemini API key for faster, more reliable responses.
+                    </p>
+                  
                     <button
-                      onClick={handleRemoveKey}
-                      className="rounded-lg p-2 text-muted hover:bg-white/[0.05] hover:text-danger transition-colors"
-                      title="Remove key"
+                      type="button"
+                      onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank', 'noopener,noreferrer')}
+                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors"
                     >
-                      <Trash2 size={16} />
+                      Get Key
                     </button>
                   </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mt-6">
-                      <input
-                        type="password"
-                        placeholder="AIzaSy..."
-                        value={keyInput}
-                        onChange={(e) => setKeyInput(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveKey(); }}
-                        className="flex-1 rounded-xl border border-token bg-app px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
-                      />
+
+                  {savedKey ? (
+                    <div className="flex items-center justify-between rounded-xl border border-token bg-surface px-4 py-3 mt-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
+                          <Check size={16} className="text-success" />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-medium text-primary">Key is active</span>
+                          <span className="text-xs text-secondary font-mono">
+                            {savedKey.slice(0, 4)}••••••••••{savedKey.slice(-4)}
+                          </span>
+                        </div>
+                      </div>
                       <button
-                        onClick={handleSaveKey}
-                        disabled={validating || !keyInput.trim()}
-                        className="flex w-[80px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-primary hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        onClick={handleRemoveKey}
+                        className="rounded-lg p-2 text-muted hover:bg-white/[0.05] hover:text-danger transition-colors"
+                        title="Remove key"
                       >
-                        {validating ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                        <Trash2 size={16} />
                       </button>
                     </div>
-                    {keyStatus === 'success' && (
-                      <div className="flex items-center gap-2 text-xs text-success">
-                        <Check size={13} />
-                        Key added - you're all set!
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 mt-6">
+                        <input
+                          type="password"
+                          placeholder="AIzaSy..."
+                          value={keyInput}
+                          onChange={(e) => setKeyInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveKey(); }}
+                          className="flex-1 rounded-xl border border-token bg-app px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
+                        />
+                        <button
+                          onClick={handleSaveKey}
+                          disabled={validating || !keyInput.trim()}
+                          className="flex w-[80px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-primary hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {validating ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                        </button>
                       </div>
-                    )}
-                    {keyStatus === 'error' && (
-                      <div className="flex items-start gap-2 text-xs text-red-400">
-                        <X size={13} className="mt-0.5 shrink-0" />
-                        <span>{keyError || "That doesn't look right - please check you copied the full key."}</span>
-                      </div>
-                    )}
-                  </>
-                )}
+                      {keyStatus === 'success' && (
+                        <div className="flex items-center gap-2 text-xs text-success">
+                          <Check size={13} />
+                          Key added - you're all set!
+                        </div>
+                      )}
+                      {keyStatus === 'error' && (
+                        <div className="flex items-start gap-2 text-xs text-red-400">
+                          <X size={13} className="mt-0.5 shrink-0" />
+                          <span>{keyError || "That doesn't look right - please check you copied the full key."}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
                 </div>
               </ScrollArea>
             </TabsContent>
+
 
             <TabsContent value="privacy" className="mt-0 outline-none h-full flex flex-col">
               <div className="shrink-0 relative z-10 bg-app px-6 md:px-8 pt-6 pb-4 border-b border-token">
