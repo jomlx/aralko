@@ -435,9 +435,9 @@ export function SettingsDialog({
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto px-6 pb-6 md:px-8 md:pb-8 pt-[23.5px] relative" style={{ scrollbarGutter: 'stable' }}>
+          <div className="flex-1 overflow-y-auto px-6 pb-6 md:px-8 md:pb-8 pt-0 relative" style={{ scrollbarGutter: 'stable' }}>
             <TabsContent value="account" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-6 pb-4 border-b border-token mb-6">
+              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
                 <h2 className="text-lg font-semibold text-primary">Account</h2>
               </div>
               <div className="space-y-6 pb-6">
@@ -578,7 +578,7 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="general" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-6 pb-4 border-b border-token mb-6">
+              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
                 <h2 className="text-lg font-semibold text-primary">General</h2>
               </div>
               <div className="space-y-6 pb-6">
@@ -654,7 +654,7 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="ai" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-6 pb-4 border-b border-token mb-6">
+              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
                 <h2 className="text-lg font-semibold text-primary">AI</h2>
               </div>
               <div className="space-y-6 pb-6">
@@ -775,7 +775,7 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="privacy" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-6 pb-4 border-b border-token mb-6">
+              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
                 <h2 className="text-lg font-semibold text-primary">Data & Privacy</h2>
               </div>
               <div className="space-y-6 pb-6">
@@ -874,7 +874,7 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="feedback" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-6 pb-4 border-b border-token mb-6">
+              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
                 <h2 className="text-lg font-semibold text-primary">Send Feedback</h2>
               </div>
               <div className="space-y-4 pb-6">
