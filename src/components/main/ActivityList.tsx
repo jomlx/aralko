@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, BookOpen, PenTool, ChevronRight, Share2, X, Check } from 'lucide-react';
 import type { Activity } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
+import { useUserSettings } from '../../hooks/useUserSettings';
 import { useStudyGroups } from '../../hooks/useStudyGroups';
 
 interface ActivityListProps {
@@ -108,11 +109,12 @@ export function ActivityList({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const { user } = useAuth();
+  const { displayName: dbDisplayName } = useUserSettings();
   const { groups, shareActivity } = useStudyGroups();
   
+  // Use DB as source of truth; fall back to email prefix only if hook hasn't loaded yet
   const displayName =
-    user?.user_metadata?.full_name?.split(' ')[0]
-    ?? user?.user_metadata?.name?.split(' ')[0]
+    dbDisplayName?.split(' ')[0]
     ?? user?.email?.split('@')[0]
     ?? 'Student';
     

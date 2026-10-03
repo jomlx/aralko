@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 
@@ -67,6 +67,9 @@ export function useUserSettings() {
   const [savedStreak, setSavedStreak] = useState(0);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
   const xpRef = useRef(0);
   const xpThisWeekRef = useRef(0);
 
@@ -118,19 +121,58 @@ export function useUserSettings() {
           
           if (data.streak_freezes !== undefined) setStreakFreezes(data.streak_freezes);
           if (data.saved_streak !== undefined) setSavedStreak(data.saved_streak);
+
+          // DB is the source of truth for display_name.
+          // If the DB has a saved name, always use it (even after OAuth re-login which would
+          // otherwise overwrite with the OAuth provider's original name).
+          // Only fall back to OAuth metadata for first-time users with no DB record yet.
+          if (data.display_name) {
+            setDisplayName(data.display_name);
+          } else {
+            // First-time user: seed from OAuth metadata once, then DB takes over.
+            const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
+            if (metaName) {
+              setDisplayName(metaName);
+              supabase.from('user_settings').upsert(
+                { user_id: userId, display_name: metaName },
+                { onConflict: 'user_id' }
+              ).then(() => {});
+            }
+          }
+
+          // Same logic for avatar_url
+          if (data.avatar_url) {
+            setAvatarUrl(data.avatar_url);
+          } else {
+            const metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+            if (metaAvatar) {
+              setAvatarUrl(metaAvatar);
+              supabase.from('user_settings').upsert(
+                { user_id: userId, avatar_url: metaAvatar },
+                { onConflict: 'user_id' }
+              ).then(() => {});
+            }
+          }
         } else if (error && error.code !== 'PGRST116') {
           console.warn('Failed to load user settings:', error.message);
-        }
 
-        const newName  = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
-        const newAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
-
-        const syncPayload: Record<string, unknown> = { user_id: userId };
-        if (newName)   syncPayload.display_name = newName;
-        if (newAvatar) syncPayload.avatar_url   = newAvatar;
-
-        if (Object.keys(syncPayload).length > 1) {
-          supabase.from('user_settings').upsert(syncPayload, { onConflict: 'user_id' }).then(() => {});
+          // No DB row yet — seed from OAuth metadata
+          const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
+          const metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+          if (metaName) setDisplayName(metaName);
+          if (metaAvatar) setAvatarUrl(metaAvatar);
+        } else if (!data) {
+          // Row doesn't exist (PGRST116) — seed from OAuth metadata
+          const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
+          const metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+          if (metaName) {
+            setDisplayName(metaName);
+            supabase.from('user_settings').upsert(
+              { user_id: userId, display_name: metaName, ...(metaAvatar ? { avatar_url: metaAvatar } : {}) },
+              { onConflict: 'user_id' }
+            ).then(() => {});
+          }
+          if (metaAvatar) setAvatarUrl(metaAvatar);
         }
         
         setSettingsLoaded(true);
@@ -193,6 +235,7 @@ export function useUserSettings() {
   return { 
     preset, setPreset, autoStart, setAutoStart, geminiKey, 
     xp, level, xpThisWeek, addXP,
-    streakFreezes, savedStreak, updateStreakData, settingsLoaded
+    streakFreezes, savedStreak, updateStreakData, settingsLoaded,
+    displayName, setDisplayName, avatarUrl, setAvatarUrl,
   };
 }

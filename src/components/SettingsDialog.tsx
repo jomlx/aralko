@@ -3,6 +3,7 @@ import { Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail,
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -27,6 +28,8 @@ export function SettingsDialog({
   onLogout,
 }: SettingsDialogProps) {
   const { user } = useAuth();
+  // DB is the source of truth — useUserSettings reads user_settings.display_name first
+  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
   
   // ── Account Name State ────────────────────────────────────────────────
   const [displayName, setDisplayName] = useState('');
@@ -59,14 +62,22 @@ export function SettingsDialog({
   const [showNewPwd, setShowNewPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
+  // Seed local state from DB-authoritative values (not user_metadata)
   useEffect(() => {
-    if (user) {
-      const name = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? '';
+    if (dbDisplayName) {
+      setDisplayName(dbDisplayName);
+      setOriginalName(dbDisplayName);
+    } else if (user && !dbDisplayName) {
+      // Fallback for before hook loads
+      const name = user.email?.split('@')[0] ?? '';
       setDisplayName(name);
       setOriginalName(name);
-      setAvatarUrl(user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null);
     }
-  }, [user]);
+  }, [dbDisplayName, user]);
+
+  useEffect(() => {
+    if (dbAvatarUrl) setAvatarUrl(dbAvatarUrl);
+  }, [dbAvatarUrl]);
 
   const handleSaveName = async () => {
     const trimmed = displayName.trim();
