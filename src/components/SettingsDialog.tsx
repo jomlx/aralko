@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, MessageSquare, Bot } from 'lucide-react';
+import { Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, MessageSquare, Bot, ShieldCheck, Download, AlertTriangle } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -68,6 +68,15 @@ export function SettingsDialog({
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
 
+  // ── Privacy Tab State ─────────────────────────────────────────────────
+  const [aiConsent, setAiConsent] = useState<boolean>(false);
+  const [aiConsentDate, setAiConsentDate] = useState<string | null>(null);
+  const [consentLoading, setConsentLoading] = useState(false);
+  const [exportingData, setExportingData] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
   // Seed local state from DB-authoritative values (not user_metadata)
   useEffect(() => {
     if (dbDisplayName) {
@@ -84,6 +93,87 @@ export function SettingsDialog({
   useEffect(() => {
     if (dbAvatarUrl) setAvatarUrl(dbAvatarUrl);
   }, [dbAvatarUrl]);
+
+  // Load AI consent state from DB
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('user_settings').select('ai_consent_acknowledged_at').eq('user_id', user.id).single()
+      .then(({ data }) => {
+        if (data?.ai_consent_acknowledged_at) {
+          setAiConsent(true);
+          setAiConsentDate(data.ai_consent_acknowledged_at);
+        }
+      });
+  }, [user]);
+
+  // ── Privacy handlers ──────────────────────────────────────────────────
+  const handleToggleConsent = async () => {
+    if (!user || aiConsent) return; // read-only once acknowledged
+    setConsentLoading(true);
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('user_settings').upsert(
+      { user_id: user.id, ai_consent_acknowledged_at: now },
+      { onConflict: 'user_id' }
+    );
+    if (!error) { setAiConsent(true); setAiConsentDate(now); }
+    setConsentLoading(false);
+  };
+
+  const handleExportData = async () => {
+    if (!user) return;
+    setExportingData(true);
+    try {
+      const uid = user.id;
+      const [settingsRes, activitiesRes, sessionsRes, chatRes] = await Promise.all([
+        supabase.from('user_settings').select('*').eq('user_id', uid).single(),
+        supabase.from('activities').select('*').eq('user_id', uid),
+        supabase.from('sessions').select('*').eq('user_id', uid),
+        supabase.from('chat_messages').select('*').eq('user_id', uid),
+      ]);
+      const exportObj = {
+        exported_at: new Date().toISOString(),
+        profile: { email: user.email, id: user.id },
+        settings: settingsRes.data,
+        activities: activitiesRes.data ?? [],
+        sessions: sessionsRes.data ?? [],
+        chat_messages: chatRes.data ?? [],
+      };
+      const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aralko-data-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportingData(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setDeletingAccount(true);
+    setDeleteError('');
+    try {
+      const uid = user.id;
+      // Delete all user data rows we own (client-side, no service role needed)
+      await Promise.all([
+        supabase.from('chat_messages').delete().eq('user_id', uid),
+        supabase.from('sessions').delete().eq('user_id', uid),
+        supabase.from('activities').delete().eq('user_id', uid),
+        supabase.from('user_settings').delete().eq('user_id', uid),
+      ]);
+      // Sign the user out — the auth.users record itself cannot be deleted
+      // from the client side without a service-role Edge Function.
+      // Full auth deletion requires a backend call (see notes in Settings).
+      await supabase.auth.signOut();
+      onLogout();
+      onClose();
+    } catch (err: any) {
+      setDeleteError(err.message || 'An error occurred. Please try again.');
+      setDeletingAccount(false);
+    }
+  };
 
   const handleFeedbackSubmit = async () => {
     if (!feedbackText.trim()) return;
@@ -316,6 +406,10 @@ export function SettingsDialog({
               <TabsTrigger value="account" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <User className="size-[18px]" />
                 Account
+              </TabsTrigger>
+              <TabsTrigger value="privacy" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
+                <ShieldCheck className="size-[18px]" />
+                Data & Privacy
               </TabsTrigger>
               <TabsTrigger value="general" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
                 <Settings2 className="size-[18px]" />
@@ -656,6 +750,98 @@ export function SettingsDialog({
                       </div>
                     )}
                   </>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="privacy" className="mt-0 outline-none h-full space-y-6">
+              <h2 className="text-lg font-semibold text-primary mb-1">Data & Privacy</h2>
+
+              {/* Section 1: What we collect */}
+              <div className="rounded-2xl border border-token bg-surface p-5 space-y-3">
+                <h3 className="text-sm font-semibold text-primary">What we store</h3>
+                <ul className="space-y-2 text-sm text-secondary">
+                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Account info</span> — email address, display name, avatar image (in Supabase Storage)</span></li>
+                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Study activity</span> — Pomodoro sessions, daily streak, XP / level, flashcard progress, quiz scores</span></li>
+                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Activities & generated content</span> — your study notes, AI-generated reviewer cheat sheets, flashcard sets, and test questions (stored per-activity)</span></li>
+                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">AI chat messages</span> — messages sent in the AI study assistant chat are saved to the database per activity so conversations persist across sessions</span></li>
+                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Spotify tokens</span> — OAuth access/refresh tokens are stored in the database for cross-device session persistence (not just browser localStorage)</span></li>
+                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Preferences</span> — Pomodoro preset, autostart, personal Gemini API key, and AI settings</span></li>
+                </ul>
+              </div>
+
+              {/* Section 2: AI consent toggle */}
+              <div className="rounded-2xl border border-token bg-surface p-5 space-y-3">
+                <h3 className="text-sm font-semibold text-primary">AI & Data Processing</h3>
+                <p className="text-sm text-secondary leading-relaxed">
+                  Content you upload or write (notes, uploaded files, chat messages) is sent to an AI provider (Google Gemini) to generate study materials and responses. By using these features, you consent to this processing.
+                </p>
+                <label className={`flex items-start gap-3 rounded-xl border p-4 transition-colors ${aiConsent ? 'border-accent/40 bg-accent/5 cursor-default' : 'border-token bg-app cursor-pointer hover:bg-white/[0.03]'}`}>
+                  <input
+                    type="checkbox"
+                    checked={aiConsent}
+                    disabled={aiConsent || consentLoading}
+                    onChange={handleToggleConsent}
+                    className="mt-0.5 h-4 w-4 accent-accent shrink-0"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-primary">I understand my study content is processed by AI to generate materials</span>
+                    {aiConsent && aiConsentDate && (
+                      <p className="text-xs text-muted mt-1">Acknowledged {new Date(aiConsentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    )}
+                    {!aiConsent && <p className="text-xs text-muted mt-1">Check to acknowledge. This does not block any feature.</p>}
+                  </div>
+                </label>
+              </div>
+
+              {/* Section 3: Export data */}
+              <div className="rounded-2xl border border-token bg-surface p-5 space-y-3">
+                <h3 className="text-sm font-semibold text-primary">Export your data</h3>
+                <p className="text-sm text-secondary">Download a JSON snapshot of all your data: profile, settings, activities, study sessions, and chat messages.</p>
+                <button
+                  onClick={handleExportData}
+                  disabled={exportingData || !user}
+                  className="flex items-center gap-2 rounded-xl border border-token bg-app hover:bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-primary transition-colors disabled:opacity-50"
+                >
+                  {exportingData ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  {exportingData ? 'Preparing...' : 'Export my data'}
+                </button>
+              </div>
+
+              {/* Section 4: Delete account */}
+              <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 space-y-3">
+                <h3 className="text-sm font-semibold text-red-400">Delete Account</h3>
+                <p className="text-sm text-secondary">
+                  Permanently deletes all your data (activities, sessions, chat history, settings). <span className="text-primary font-medium">This cannot be undone.</span>
+                </p>
+                <p className="text-xs text-muted flex items-start gap-1.5">
+                  <AlertTriangle size={13} className="shrink-0 mt-0.5 text-yellow-500" />
+                  Note: your login account (email/password) is deleted from our database, but the underlying auth record may persist for up to 30 days per Supabase's retention policy. To request immediate removal, contact support.
+                </p>
+                {!showDeleteConfirm ? (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-400 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                    Delete my account
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 space-y-3">
+                    <p className="text-sm font-semibold text-red-300">Are you sure? This permanently deletes your account and all associated data. This cannot be undone.</p>
+                    {deleteError && <p className="text-xs text-red-400">{deleteError}</p>}
+                    <div className="flex gap-2">
+                      <button onClick={() => { setShowDeleteConfirm(false); setDeleteError(''); }} className="flex-1 rounded-xl border border-token px-3 py-2 text-sm text-muted hover:text-primary transition-colors">Cancel</button>
+                      <button
+                        onClick={handleDeleteAccount}
+                        disabled={deletingAccount}
+                        className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 px-3 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {deletingAccount ? <Loader2 size={14} className="animate-spin" /> : null}
+                        {deletingAccount ? 'Deleting...' : 'Yes, delete everything'}
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </TabsContent>
