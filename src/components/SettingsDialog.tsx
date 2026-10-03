@@ -62,6 +62,12 @@ export function SettingsDialog({
   const [showNewPwd, setShowNewPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
+  // ── Feedback State ────────────────────────────────────────────────────
+  const [feedbackText, setFeedbackText] = useState('');
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
+
   // Seed local state from DB-authoritative values (not user_metadata)
   useEffect(() => {
     if (dbDisplayName) {
@@ -78,6 +84,32 @@ export function SettingsDialog({
   useEffect(() => {
     if (dbAvatarUrl) setAvatarUrl(dbAvatarUrl);
   }, [dbAvatarUrl]);
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackText.trim()) return;
+    setIsSubmittingFeedback(true);
+    setFeedbackError('');
+    setFeedbackSuccess(false);
+    try {
+      const res = await fetch('https://formspree.io/f/xbglnjll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          email: user?.email,
+          username: dbDisplayName,
+          message: feedbackText
+        })
+      });
+      if (!res.ok) throw new Error('Failed to send feedback.');
+      setFeedbackSuccess(true);
+      setFeedbackText('');
+      setTimeout(() => setFeedbackSuccess(false), 5000);
+    } catch (err: any) {
+      setFeedbackError(err.message || 'An error occurred.');
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
 
   const handleSaveName = async () => {
     const trimmed = displayName.trim();
@@ -138,9 +170,15 @@ export function SettingsDialog({
       const { error: uploadErr } = await supabase.storage.from('user-avatars').upload(path, file, { upsert: true });
       if (uploadErr) throw uploadErr;
       const { data: { publicUrl } } = supabase.storage.from('user-avatars').getPublicUrl(path);
-      await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
-      await supabase.auth.refreshSession();
-      setAvatarUrl(publicUrl);
+      // Cache-bust so browser loads the new image immediately
+      const urlWithBust = `${publicUrl}?t=${Date.now()}`;
+      // Save to user_settings (DB source of truth) — avoids auth.updateUser rate limits
+      const { error: dbErr } = await supabase.from('user_settings').upsert(
+        { user_id: user.id, avatar_url: urlWithBust },
+        { onConflict: 'user_id' }
+      );
+      if (dbErr) throw dbErr;
+      setAvatarUrl(urlWithBust);
     } catch (err: any) {
       setAvatarError(err.message?.includes('Bucket not found') || err.message?.includes('does not exist')
         ? 'Storage bucket "user-avatars" not set up yet. Create it in your Supabase dashboard.'
@@ -628,18 +666,29 @@ export function SettingsDialog({
                 Have a suggestion, feature request, or found a bug? We'd love to hear from you.
               </p>
               <textarea
-                placeholder="What's on your mind?"
-                className="w-full h-32 rounded-xl border border-token bg-app p-3 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors resize-none"
-              ></textarea>
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              disabled={isSubmittingFeedback}
+              placeholder="What's on your mind?"
+              className="w-full h-32 rounded-xl border border-token bg-app p-3 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors resize-none disabled:opacity-50"
+              />
+              {feedbackError && <p className="text-xs text-red-400 font-medium">{feedbackError}</p>}
+              {feedbackSuccess && (
+              <div className="rounded-xl bg-success-muted border border-success/20 p-3 flex items-center gap-2">
+              <Check size={16} className="text-success shrink-0" />
+              <p className="text-sm font-medium text-success">Feedback sent! Thank you.</p>
+              </div>
+              )}
+              {!feedbackSuccess && (
               <button
-                className="self-start rounded-xl bg-accent hover:bg-accent/90 px-4 py-2 text-sm font-semibold text-primary transition-colors"
-                onClick={() => alert("Feedback submission is not yet wired to a backend! (Will be sent to Supabase in the future)")}
+              disabled={isSubmittingFeedback || !feedbackText.trim()}
+              onClick={handleFeedbackSubmit}
+              className="self-start rounded-xl bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:hover:bg-accent px-4 py-2 text-sm font-semibold text-primary transition-colors flex items-center gap-2"
               >
-                Submit Feedback
+              {isSubmittingFeedback && <Loader2 size={16} className="animate-spin" />}
+              {isSubmittingFeedback ? "Sending..." : "Submit Feedback"}
               </button>
-              <p className="text-xs text-muted mt-2">
-                Note: Feedback submission is currently a UI placeholder and needs follow-up wiring to a Supabase table.
-              </p>
+              )}
             </TabsContent>
           </div>
         </Tabs>
