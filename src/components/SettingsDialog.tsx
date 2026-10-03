@@ -126,9 +126,9 @@ export function SettingsDialog({
     );
     if (error) {
       // Roll back optimistic update on failure
+      console.error('[consent save error]', error);
       setAiConsent(false);
       setAiConsentDate(null);
-    } else {
     }
     setConsentLoading(false);
   };
