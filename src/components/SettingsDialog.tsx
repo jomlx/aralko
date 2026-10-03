@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, MessageSquare, Bot, ShieldCheck, Download, AlertTriangle } from 'lucide-react';
+import { Sun, Moon, Key, Check, X, Loader2, HelpCircle, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, ExternalLink, Trash2, Music2, User, Settings2, MessageSquare, Bot, ShieldCheck, Download, AlertTriangle, Info } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -662,32 +662,27 @@ export function SettingsDialog({
                 </div>
               </ScrollArea>
             </TabsContent>
-
+            
+            {/* AI Key Management */}
             <TabsContent value="ai" className="mt-0 outline-none h-full flex flex-col">
               <div className="shrink-0 relative z-10 bg-app px-6 md:px-8 pt-6 pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">AI</h2>
               </div>
               <ScrollArea className="flex-1 min-h-0">
                 <div className="space-y-6 px-6 md:px-8 pr-2.5 pt-6 pb-8">
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
-                    <Key size={14} className="text-accent" />
-                  </div>
-                  <span className="text-sm font-semibold text-primary">Your own Gemini API key</span>
-                  <span className="rounded-full bg-accent/20 px-2 py-0.5 text-2xs font-semibold text-accent border border-accent/30">
-                    recommended
-                  </span>
-                  <div className="relative ml-auto" ref={guideRef}>
+                  <span className="text-sm font-semibold text-primary">Connect your own AI key</span>
+                  <div className="" ref={guideRef}>
                     <button
                       onClick={() => setShowGuide(v => !v)}
                       className="flex items-center justify-center rounded-full text-muted hover:text-accent transition-colors"
                       title="How to get a free key"
                     >
-                      <HelpCircle size={15} />
+                      <Info size={15} />
                     </button>
                     {showGuide && (
-                      <div className="absolute right-0 top-6 z-10 w-72 rounded-xl border border-token bg-surface p-4 shadow-xl shadow-black/20">
+                      <div className="absolute top-12 z-10 w-72 rounded-xl border border-token bg-surface p-4 shadow-xl shadow-black/20">
                         <div className="flex items-center justify-between mb-3">
                           <p className="text-2xs font-semibold text-primary">How to get your free key</p>
                           <button onClick={() => setShowGuide(false)} className="text-secondary hover:text-secondary transition-colors">
@@ -711,20 +706,19 @@ export function SettingsDialog({
                     )}
                   </div>
                 </div>
-
-                <p className="text-xs text-secondary leading-relaxed">
-                  By default, Aralko uses a shared API key that is strictly rate-limited (one request every 2 seconds across all users). To avoid "Too many requests" errors and get faster responses, provide your own free Gemini API key.
-                </p>
-
-                <div className="flex items-center gap-2 my-2">
-                  <a 
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
+                
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-secondary leading-relaxed">
+                    Add your free Gemini API key for faster, more reliable responses.
+                  </p>
+                
+                  <button
+                    type="button"
+                    onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank', 'noopener,noreferrer')}
+                    className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors"
                   >
-                    Get my free key <ExternalLink size={12} />
-                  </a>
+                    Get Key
+                  </button>
                 </div>
 
                 {savedKey ? (
@@ -750,7 +744,7 @@ export function SettingsDialog({
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-6">
                       <input
                         type="password"
                         placeholder="AIzaSy..."
@@ -794,7 +788,7 @@ export function SettingsDialog({
                 <div className="space-y-6 px-6 md:px-8 pr-2.5 pt-6 pb-8">
 
               {/* Section 1: What we collect */}
-              <div className="space-y-3 mt-3">
+              <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-primary">What we store</h3>
                 <ul className="space-y-2 text-sm text-secondary">
                   <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Account info</span> — email address, display name, avatar image (in Supabase Storage)</span></li>
