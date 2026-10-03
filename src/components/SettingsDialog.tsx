@@ -101,11 +101,13 @@ export function SettingsDialog({
   const userId = user?.id ?? null;
   useEffect(() => {
     if (!userId) return;
+    console.log('[consent effect] fetching for userId:', userId);
     supabase.from('user_settings').select('ai_consent_acknowledged_at').eq('user_id', userId).single()
       .then(({ data, error }) => {
-        if (error) console.error('[consent fetch]', error);
-        // Only update if not already acknowledged locally (avoid stomping optimistic state)
+        console.log('[consent effect] result:', { data, error });
+        if (error) console.error('[consent fetch error]', error);
         if (data?.ai_consent_acknowledged_at) {
+          console.log('[consent effect] setAiConsent(true) from DB');
           setAiConsent(true);
           setAiConsentDate(data.ai_consent_acknowledged_at);
         }
@@ -118,17 +120,22 @@ export function SettingsDialog({
     if (!user || aiConsent) return; // read-only once acknowledged
     const now = new Date().toISOString();
     // Optimistically update UI immediately so Switch responds to click
+    console.log('[consent] optimistic setAiConsent(true)');
     setAiConsent(true);
     setAiConsentDate(now);
     setConsentLoading(true);
-    const { error } = await supabase.from('user_settings').upsert(
+    const { data, error } = await supabase.from('user_settings').upsert(
       { user_id: user.id, ai_consent_acknowledged_at: now },
       { onConflict: 'user_id' }
     );
+    console.log('[consent] upsert result:', { data, error });
     if (error) {
       // Roll back optimistic update on failure
+      console.log('[consent] upsert FAILED — rolling back. Error:', error);
       setAiConsent(false);
       setAiConsentDate(null);
+    } else {
+      console.log('[consent] upsert OK — consent persisted');
     }
     setConsentLoading(false);
   };
@@ -448,7 +455,6 @@ export function SettingsDialog({
                 <h2 className="text-lg font-semibold text-primary">Account</h2>
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 space-y-6 px-6 md:px-8 pb-8">
-              <>
                   {/* Profile Picture */}
                   <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4 mt-3">
                     <label className="text-xs font-medium text-secondary">Profile Picture</label>
@@ -580,7 +586,6 @@ export function SettingsDialog({
                       <LogOut size={16} /> Sign out
                     </button>
                   </div>
-              </>
               </div>
             </TabsContent>
 
