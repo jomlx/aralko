@@ -103,7 +103,7 @@ export function SettingsDialog({
     if (!userId) return;
     supabase.from('user_settings').select('ai_consent_acknowledged_at').eq('user_id', userId).single()
       .then(({ data, error }) => {
-        if (error) console.error('[consent fetch]', error);
+        if (error) console.error('[consent fetch error]', error);
         if (data?.ai_consent_acknowledged_at) {
           setAiConsent(true);
           setAiConsentDate(data.ai_consent_acknowledged_at);
@@ -128,6 +128,7 @@ export function SettingsDialog({
       // Roll back optimistic update on failure
       setAiConsent(false);
       setAiConsentDate(null);
+    } else {
     }
     setConsentLoading(false);
   };
@@ -443,12 +444,12 @@ export function SettingsDialog({
           {/* Content Area */}
           <div className="flex-1 flex flex-col min-h-0" style={{ scrollbarGutter: 'stable' }}>
             <TabsContent value="account" className="mt-0 outline-none h-full flex flex-col">
-              <div className="shrink-0 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token">
+              <div className="shrink-0 relative z-10 bg-app px-6 md:px-8 pt-6 pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">Account</h2>
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 space-y-6 px-6 md:px-8 pb-8">
                   {/* Profile Picture */}
-                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4 mt-3">
+                  <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4">
                     <label className="text-xs font-medium text-secondary">Profile Picture</label>
                     <div className="flex items-center gap-4">
                       <div className="relative shrink-0">
@@ -582,7 +583,7 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="general" className="mt-0 outline-none h-full flex flex-col">
-              <div className="shrink-0 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token">
+              <div className="shrink-0 relative z-10 bg-app px-6 md:px-8 pt-6 pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">General</h2>
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 space-y-6 px-6 md:px-8 pb-8">
@@ -658,7 +659,7 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="ai" className="mt-0 outline-none h-full flex flex-col">
-              <div className="shrink-0 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token">
+              <div className="shrink-0 relative z-10 bg-app px-6 md:px-8 pt-6 pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">AI</h2>
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 space-y-6 px-6 md:px-8 pb-8">
@@ -779,7 +780,7 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="privacy" className="mt-0 outline-none h-full flex flex-col">
-              <div className="shrink-0 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token">
+              <div className="shrink-0 relative z-10 bg-app px-6 md:px-8 pt-6 pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">Data & Privacy</h2>
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 space-y-6 px-6 md:px-8 pb-8">
@@ -856,7 +857,7 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="feedback" className="mt-0 outline-none h-full flex flex-col">
-              <div className="shrink-0 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token">
+              <div className="shrink-0 relative z-10 bg-app px-6 md:px-8 pt-6 pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">Send Feedback</h2>
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 space-y-4 px-6 md:px-8 pb-8">
