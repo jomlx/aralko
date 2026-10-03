@@ -3,7 +3,7 @@ import { LogOut, Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays, Snow
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
-import { xpToLevel } from '../../hooks/useUserSettings';
+import { xpToLevel, useUserSettings } from '../../hooks/useUserSettings';
 import { useToast } from '../ui/Toast';
 
 interface ProfilePopoverProps {
@@ -21,13 +21,17 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
   const { showToast } = useToast();
 
   const { user } = useAuth();
+  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
+
   const displayEmail = user?.email ?? 'Not signed in';
+  // DB is source of truth for display_name — avoids showing stale OAuth metadata name
   const displayName =
-    user?.user_metadata?.full_name
+    dbDisplayName
+    ?? user?.user_metadata?.full_name
     ?? user?.user_metadata?.name
     ?? user?.email?.split('@')[0]
     ?? 'User';
-  const avatarUrl = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+  const avatarUrl = dbAvatarUrl ?? user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
   const initials = displayName
     .split(' ')
     .map((w: string) => w[0])
