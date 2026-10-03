@@ -231,8 +231,7 @@ function AppContent() {
                   <MusicPlayerCompact />
                 </div>
                 
-                <ProfilePopover 
-                  onLogout={logout}
+                <ProfilePopover
                   streak={streakLogic.displayedStreak}
                   xp={userSettings.xp}
                   totalMinutes={sessions.reduce((a, s) => a + s.minutes, 0)}

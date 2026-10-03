@@ -1,13 +1,12 @@
 import { useState, useCallback } from 'react';
-import { LogOut, Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays, Snowflake } from 'lucide-react';
+import { Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays, Snowflake } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
-import { supabase } from '../../lib/supabase';
+
 import { useAuth } from '../../hooks/useAuth';
 import { xpToLevel, useUserSettings } from '../../hooks/useUserSettings';
 import { useToast } from '../ui/Toast';
 
 interface ProfilePopoverProps {
-  onLogout: () => void;
   streak: number;
   xp: number;
   totalMinutes: number;
@@ -15,7 +14,7 @@ interface ProfilePopoverProps {
   freezes: number;
 }
 
-export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCount, freezes }: ProfilePopoverProps) {
+export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freezes }: ProfilePopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const { showToast } = useToast();
@@ -230,13 +229,6 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
     }
   }, [displayName, streak, xp, sessionsCount, totalMinutes, joinDate, showToast]);
 
-
-  const handleSignOut = async () => {
-    handleClose();
-    onLogout();
-    await supabase.auth.signOut();
-  };
-
   const handleClose = () => setIsOpen(false);
 
   const inviteLink = `${window.location.origin}/?ref=${encodeURIComponent(displayName)}`;
@@ -396,13 +388,7 @@ export function ProfilePopover({ onLogout, streak, xp, totalMinutes, sessionsCou
               </div>
             </div>
 
-            <button
-              onClick={handleSignOut}
-              className="w-full rounded-xl bg-surface hover:bg-white/[0.05] border border-token py-2.5 text-sm font-semibold text-danger transition-colors flex items-center justify-center gap-2"
-            >
-              <LogOut size={16} />
-              Sign out
-            </button>
+            
           </div>
         </div>
       )}
