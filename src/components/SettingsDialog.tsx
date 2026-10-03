@@ -314,19 +314,19 @@ export function SettingsDialog({
             
             <TabsList className="flex flex-col h-auto bg-transparent p-0 items-stretch space-y-0.5 w-full">
               <TabsTrigger value="account" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
-                <User size={18} />
+                <User className="size-[18px]" />
                 Account
               </TabsTrigger>
               <TabsTrigger value="general" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
-                <Settings2 size={18} />
+                <Settings2 className="size-[18px]" />
                 General
               </TabsTrigger>
               <TabsTrigger value="ai" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
-                <Bot size={18} />
+                <Bot className="size-[18px]" />
                 AI
               </TabsTrigger>
               <TabsTrigger value="feedback" className="w-full justify-start gap-3 data-active:!bg-[var(--accent)] data-active:!text-white data-active:!font-semibold data-active:!shadow-none text-secondary hover:text-primary hover:bg-white/[0.04] rounded-none px-6 py-3 transition-colors">
-                <MessageSquare size={18} />
+                <MessageSquare className="size-[18px]" />
                 Feedback
               </TabsTrigger>
             </TabsList>
