@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Switch } from './ui/switch';
 
@@ -77,6 +77,7 @@ export function SettingsDialog({
   const [exportingData, setExportingData] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Seed local state from DB-authoritative values (not user_metadata)
   useEffect(() => {
@@ -388,6 +389,7 @@ export function SettingsDialog({
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="w-[95vw] sm:max-w-3xl md:max-w-4xl h-[85vh] min-h-[500px] p-0 flex flex-col md:flex-row bg-app border-token text-primary overflow-hidden shadow-2xl">
         <DialogHeader className="sr-only">
@@ -435,12 +437,12 @@ export function SettingsDialog({
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto px-6 pb-6 md:px-8 md:pb-8 pt-0 relative" style={{ scrollbarGutter: 'stable' }}>
+          <div className="flex-1 overflow-y-auto pt-0 relative" style={{ scrollbarGutter: 'stable' }}>
             <TabsContent value="account" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
+              <div className="sticky top-0 z-10 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
                 <h2 className="text-lg font-semibold text-primary">Account</h2>
               </div>
-              <div className="space-y-6 pb-6">
+              <div className="space-y-6 px-6 md:px-8 pb-8">
               <>
                   {/* Profile Picture */}
                   <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4 mt-3">
@@ -578,10 +580,10 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="general" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
+              <div className="sticky top-0 z-10 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
                 <h2 className="text-lg font-semibold text-primary">General</h2>
               </div>
-              <div className="space-y-6 pb-6">
+              <div className="space-y-6 px-6 md:px-8 pb-8">
               <div className="flex items-center justify-between rounded-xl border border-token bg-surface p-3 mb-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
@@ -654,10 +656,10 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="ai" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
+              <div className="sticky top-0 z-10 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
                 <h2 className="text-lg font-semibold text-primary">AI</h2>
               </div>
-              <div className="space-y-6 pb-6">
+              <div className="space-y-6 px-6 md:px-8 pb-8">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
@@ -775,10 +777,10 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="privacy" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
+              <div className="sticky top-0 z-10 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
                 <h2 className="text-lg font-semibold text-primary">Data & Privacy</h2>
               </div>
-              <div className="space-y-6 pb-6">
+              <div className="space-y-6 px-6 md:px-8 pb-8">
 
               {/* Section 1: What we collect */}
               <div className="space-y-3 mt-3">
@@ -840,44 +842,22 @@ export function SettingsDialog({
                   Note: your login account (email/password) is deleted from our database, but the underlying auth record may persist for up to 30 days per Supabase's retention policy. To request immediate removal, contact support.
                 </p>
                 {deleteError && <p className="text-xs text-red-400">{deleteError}</p>}
-                <AlertDialog>
-                  <AlertDialogTrigger className="p-0 m-0 border-none bg-transparent hover:bg-transparent">
-                    <button
-                      className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-400 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                      Delete my account
-                    </button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="bg-app border-token">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="text-primary">Delete Account?</AlertDialogTitle>
-                      <AlertDialogDescription className="text-secondary">
-                        This permanently deletes your account and all associated data — activities, sessions, chat history, settings. This cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary">Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={(e) => { e.preventDefault(); handleDeleteAccount(); }}
-                        disabled={deletingAccount}
-                        className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 flex items-center gap-2"
-                      >
-                        {deletingAccount && <Loader2 size={14} className="animate-spin" />}
-                        {deletingAccount ? 'Deleting...' : 'Yes, delete everything'}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <button
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-400 transition-colors"
+                >
+                  <Trash2 size={16} />
+                  Delete my account
+                </button>
               </div>
               </div>
             </TabsContent>
 
             <TabsContent value="feedback" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app -mx-6 md:-mx-8 px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
+              <div className="sticky top-0 z-10 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
                 <h2 className="text-lg font-semibold text-primary">Send Feedback</h2>
               </div>
-              <div className="space-y-4 pb-6">
+              <div className="space-y-4 px-6 md:px-8 pb-8">
               <p className="text-sm text-secondary">
                 Have a suggestion, feature request, or found a bug? We'd love to hear from you.
               </p>
@@ -1027,5 +1007,28 @@ export function SettingsDialog({
 
       </DialogContent>
     </Dialog>
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent className="bg-app border-token">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-primary">Delete Account?</AlertDialogTitle>
+          <AlertDialogDescription className="text-secondary">
+            This permanently deletes your account and all associated data — activities, sessions, chat history, settings. This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        {deleteError && <p className="text-xs text-red-400 -mt-2">{deleteError}</p>}
+        <AlertDialogFooter>
+          <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary">Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => { e.preventDefault(); handleDeleteAccount(); }}
+            disabled={deletingAccount}
+            className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 flex items-center gap-2"
+          >
+            {deletingAccount && <Loader2 size={14} className="animate-spin" />}
+            {deletingAccount ? 'Deleting...' : 'Yes, delete everything'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
