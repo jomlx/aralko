@@ -96,17 +96,22 @@ export function SettingsDialog({
     if (dbAvatarUrl) setAvatarUrl(dbAvatarUrl);
   }, [dbAvatarUrl]);
 
-  // Load AI consent state from DB
+  // Load AI consent state from DB — only run when user.id changes,
+  // and never overwrite state once consent is already acknowledged locally.
+  const userId = user?.id ?? null;
   useEffect(() => {
-    if (!user) return;
-    supabase.from('user_settings').select('ai_consent_acknowledged_at').eq('user_id', user.id).single()
-      .then(({ data }) => {
+    if (!userId) return;
+    supabase.from('user_settings').select('ai_consent_acknowledged_at').eq('user_id', userId).single()
+      .then(({ data, error }) => {
+        if (error) console.error('[consent fetch]', error);
+        // Only update if not already acknowledged locally (avoid stomping optimistic state)
         if (data?.ai_consent_acknowledged_at) {
           setAiConsent(true);
           setAiConsentDate(data.ai_consent_acknowledged_at);
         }
+        // If data is null/missing acknowledged_at, leave existing state untouched
       });
-  }, [user]);
+  }, [userId]);
 
   // ── Privacy handlers ──────────────────────────────────────────────────
   const handleToggleConsent = async (_checked: boolean) => {
@@ -437,12 +442,12 @@ export function SettingsDialog({
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto pt-0 relative" style={{ scrollbarGutter: 'stable' }}>
-            <TabsContent value="account" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
+          <div className="flex-1 flex flex-col min-h-0" style={{ scrollbarGutter: 'stable' }}>
+            <TabsContent value="account" className="mt-0 outline-none h-full flex flex-col">
+              <div className="shrink-0 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">Account</h2>
               </div>
-              <div className="space-y-6 px-6 md:px-8 pb-8">
+              <div className="flex-1 overflow-y-auto min-h-0 space-y-6 px-6 md:px-8 pb-8">
               <>
                   {/* Profile Picture */}
                   <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4 mt-3">
@@ -579,11 +584,11 @@ export function SettingsDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="general" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
+            <TabsContent value="general" className="mt-0 outline-none h-full flex flex-col">
+              <div className="shrink-0 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">General</h2>
               </div>
-              <div className="space-y-6 px-6 md:px-8 pb-8">
+              <div className="flex-1 overflow-y-auto min-h-0 space-y-6 px-6 md:px-8 pb-8">
               <div className="flex items-center justify-between rounded-xl border border-token bg-surface p-3 mb-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
@@ -655,11 +660,11 @@ export function SettingsDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="ai" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
+            <TabsContent value="ai" className="mt-0 outline-none h-full flex flex-col">
+              <div className="shrink-0 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">AI</h2>
               </div>
-              <div className="space-y-6 px-6 md:px-8 pb-8">
+              <div className="flex-1 overflow-y-auto min-h-0 space-y-6 px-6 md:px-8 pb-8">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
@@ -776,11 +781,11 @@ export function SettingsDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="privacy" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
+            <TabsContent value="privacy" className="mt-0 outline-none h-full flex flex-col">
+              <div className="shrink-0 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">Data & Privacy</h2>
               </div>
-              <div className="space-y-6 px-6 md:px-8 pb-8">
+              <div className="flex-1 overflow-y-auto min-h-0 space-y-6 px-6 md:px-8 pb-8">
 
               {/* Section 1: What we collect */}
               <div className="space-y-3 mt-3">
@@ -853,11 +858,11 @@ export function SettingsDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="feedback" className="mt-0 outline-none h-full">
-              <div className="sticky top-0 z-10 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token mb-6">
+            <TabsContent value="feedback" className="mt-0 outline-none h-full flex flex-col">
+              <div className="shrink-0 bg-app px-6 md:px-8 pt-[23.5px] pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">Send Feedback</h2>
               </div>
-              <div className="space-y-4 px-6 md:px-8 pb-8">
+              <div className="flex-1 overflow-y-auto min-h-0 space-y-4 px-6 md:px-8 pb-8">
               <p className="text-sm text-secondary">
                 Have a suggestion, feature request, or found a bug? We'd love to hear from you.
               </p>
