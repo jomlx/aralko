@@ -443,13 +443,13 @@ export function SettingsDialog({
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 flex flex-col min-h-0" style={{ scrollbarGutter: 'stable' }}>
+          <div className="flex-1 flex flex-col min-h-0">
             <TabsContent value="account" className="mt-0 outline-none h-full flex flex-col">
               <div className="shrink-0 relative z-10 bg-app px-6 md:px-8 pt-6 pb-4 border-b border-token">
                 <h2 className="text-lg font-semibold text-primary">Account</h2>
               </div>
               <ScrollArea className="flex-1 min-h-0">
-                <div className="space-y-6 px-6 md:px-8 pt-6 pb-8">
+                <div className="space-y-6 px-6 md:px-8 pr-2.5 pt-6 pb-8">
                   {/* Profile Picture */}
                   <div className="flex flex-col gap-3 rounded-xl border border-token bg-surface p-4">
                     <label className="text-xs font-medium text-secondary">Profile Picture</label>
@@ -590,7 +590,7 @@ export function SettingsDialog({
                 <h2 className="text-lg font-semibold text-primary">General</h2>
               </div>
               <ScrollArea className="flex-1 min-h-0">
-                <div className="space-y-6 px-6 md:px-8 pt-6 pb-8">
+                <div className="space-y-6 px-6 md:px-8 pr-2.5 pt-6 pb-8">
               <div className="flex items-center justify-between rounded-xl border border-token bg-surface p-3 mb-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
@@ -668,7 +668,7 @@ export function SettingsDialog({
                 <h2 className="text-lg font-semibold text-primary">AI</h2>
               </div>
               <ScrollArea className="flex-1 min-h-0">
-                <div className="space-y-6 px-6 md:px-8 pt-6 pb-8">
+                <div className="space-y-6 px-6 md:px-8 pr-2.5 pt-6 pb-8">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
@@ -791,7 +791,7 @@ export function SettingsDialog({
                 <h2 className="text-lg font-semibold text-primary">Data & Privacy</h2>
               </div>
               <ScrollArea className="flex-1 min-h-0">
-                <div className="space-y-6 px-6 md:px-8 pt-6 pb-8">
+                <div className="space-y-6 px-6 md:px-8 pr-2.5 pt-6 pb-8">
 
               {/* Section 1: What we collect */}
               <div className="space-y-3 mt-3">
@@ -870,7 +870,7 @@ export function SettingsDialog({
                 <h2 className="text-lg font-semibold text-primary">Send Feedback</h2>
               </div>
               <ScrollArea className="flex-1 min-h-0">
-                <div className="space-y-4 px-6 md:px-8 pt-4 pb-8">
+                <div className="space-y-4 px-6 md:px-8 pr-2.5 pt-4 pb-8">
               <p className="text-sm text-secondary">
                 Have a suggestion, feature request, or found a bug? We'd love to hear from you.
               </p>

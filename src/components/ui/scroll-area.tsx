@@ -1,4 +1,3 @@
-
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area"
 import { cn } from "../../lib/utils"
 
@@ -10,12 +9,12 @@ function ScrollArea({
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      className={cn("relative", className)}
+      className={cn("relative overflow-hidden", className)}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+        className="h-full w-full"
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
@@ -36,14 +35,17 @@ function ScrollBar({
       data-orientation={orientation}
       orientation={orientation}
       className={cn(
-        "flex touch-none p-px transition-colors select-none data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent",
+        "flex touch-none select-none",
+        orientation === "vertical"
+          ? "absolute right-0 top-0 h-full w-2.5 flex-col py-1 px-[3px]"
+          : "absolute bottom-0 left-0 h-2.5 w-full flex-row px-1 py-[3px]",
         className
       )}
       {...props}
     >
       <ScrollAreaPrimitive.Thumb
         data-slot="scroll-area-thumb"
-        className="relative flex-1 rounded-full bg-border"
+        className="relative flex-1 rounded-full bg-white/25 hover:bg-white/40 transition-colors"
       />
     </ScrollAreaPrimitive.Scrollbar>
   )
