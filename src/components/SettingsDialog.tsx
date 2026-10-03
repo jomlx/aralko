@@ -7,6 +7,7 @@ import { useUserSettings } from '../hooks/useUserSettings';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Switch } from './ui/switch';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -755,10 +756,10 @@ export function SettingsDialog({
             </TabsContent>
 
             <TabsContent value="privacy" className="mt-0 outline-none h-full space-y-6">
-              <h2 className="text-lg font-semibold text-primary mb-1">Data & Privacy</h2>
+              <h2 className="text-lg font-semibold text-primary mb-4">Data & Privacy</h2>
 
               {/* Section 1: What we collect */}
-              <div className="rounded-2xl border border-token bg-surface p-5 space-y-3">
+              <div className="space-y-3 mt-3">
                 <h3 className="text-sm font-semibold text-primary">What we store</h3>
                 <ul className="space-y-2 text-sm text-secondary">
                   <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Account info</span> — email address, display name, avatar image (in Supabase Storage)</span></li>
@@ -770,32 +771,29 @@ export function SettingsDialog({
                 </ul>
               </div>
 
+              <div className="h-px bg-white/5 my-6" />
               {/* Section 2: AI consent toggle */}
-              <div className="rounded-2xl border border-token bg-surface p-5 space-y-3">
-                <h3 className="text-sm font-semibold text-primary">AI & Data Processing</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="text-sm font-semibold text-primary">AI & Data Processing</h3>
+                  <Switch
+                    checked={aiConsent}
+                    disabled={aiConsent || consentLoading}
+                    onCheckedChange={handleToggleConsent}
+                  />
+                </div>
                 <p className="text-sm text-secondary leading-relaxed">
                   Content you upload or write (notes, uploaded files, chat messages) is sent to an AI provider (Google Gemini) to generate study materials and responses. By using these features, you consent to this processing.
                 </p>
-                <label className={`flex items-start gap-3 rounded-xl border p-4 transition-colors ${aiConsent ? 'border-accent/40 bg-accent/5 cursor-default' : 'border-token bg-app cursor-pointer hover:bg-white/[0.03]'}`}>
-                  <input
-                    type="checkbox"
-                    checked={aiConsent}
-                    disabled={aiConsent || consentLoading}
-                    onChange={handleToggleConsent}
-                    className="mt-0.5 h-4 w-4 accent-accent shrink-0"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-primary">I understand my study content is processed by AI to generate materials</span>
-                    {aiConsent && aiConsentDate && (
-                      <p className="text-xs text-muted mt-1">Acknowledged {new Date(aiConsentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                    )}
-                    {!aiConsent && <p className="text-xs text-muted mt-1">Check to acknowledge. This does not block any feature.</p>}
-                  </div>
-                </label>
+                {aiConsent && aiConsentDate && (
+                  <p className="text-xs text-success mt-1 flex items-center gap-1.5"><Check size={12} /> Acknowledged {new Date(aiConsentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                )}
+                {!aiConsent && <p className="text-xs text-muted mt-1">Toggle to acknowledge. This does not block any feature.</p>}
               </div>
 
+              <div className="h-px bg-white/5 my-6" />
               {/* Section 3: Export data */}
-              <div className="rounded-2xl border border-token bg-surface p-5 space-y-3">
+              <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-primary">Export your data</h3>
                 <p className="text-sm text-secondary">Download a JSON snapshot of all your data: profile, settings, activities, study sessions, and chat messages.</p>
                 <button
@@ -808,8 +806,9 @@ export function SettingsDialog({
                 </button>
               </div>
 
+              <div className="h-px bg-white/5 my-6" />
               {/* Section 4: Delete account */}
-              <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 space-y-3">
+              <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-red-400">Delete Account</h3>
                 <p className="text-sm text-secondary">
                   Permanently deletes all your data (activities, sessions, chat history, settings). <span className="text-primary font-medium">This cannot be undone.</span>
