@@ -627,41 +627,36 @@ export function SettingsDialog({
 
               <div className="pt-2">
                 <h3 className="text-sm font-semibold text-primary mb-3">Integrations</h3>
-                {!isAuthenticated ? (
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-surface p-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
-                        <Music2 size={14} className="text-[#1db954]" />
-                      </div>
-                      <span className="text-xs text-secondary truncate">Link your Spotify Premium account</span>
-                    </div>
-                    <button
-                      onClick={onLogin}
-                      className="bg-[#1db954] hover:bg-[#1ed760] text-black font-bold text-xs py-1.5 px-4 rounded-xl border-0 transition-colors"
-                    >
-                      Connect
-                    </button>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-semibold text-primary">Connect Spotify</span>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-surface p-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
-                        <Music2 size={14} className="text-[#1db954]" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-primary truncate">Spotify Connected</span>
-                        <span className="text-2xs text-success">Premium active</span>
-                      </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs text-secondary leading-relaxed">
+                        Link your Spotify Premium account to play music directly.
+                      </p>
+                      {isAuthenticated && (
+                        <span className="text-2xs text-success flex items-center gap-1"><Music2 size={10} /> Premium active</span>
+                      )}
                     </div>
-                    <button
-                      onClick={onLogout}
-                      className="flex items-center gap-1.5 shrink-0 text-xs px-3 py-1.5 rounded-lg text-danger hover:bg-danger/10 border border-danger/20 transition-colors"
-                    >
-                      <LogOut size={12} />
-                      Disconnect
-                    </button>
+                    {!isAuthenticated ? (
+                      <button
+                        onClick={onLogin}
+                        className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors"
+                      >
+                        Connect
+                      </button>
+                    ) : (
+                      <button
+                        onClick={onLogout}
+                        className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors"
+                      >
+                        Disconnect
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
               <div className="pt-4">
