@@ -279,11 +279,8 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
       {/* Profile Card Trigger */}
       <div
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-3 rounded-[14px] cursor-pointer shrink-0 overflow-hidden"
-        style={streakBg
-          ? { background: streakBg, padding: '14px 18px' }
-          : { background: 'var(--color-surface)', border: '1px solid var(--color-token)', padding: '14px 18px' }
-        }
+        className={`flex items-center gap-3 rounded-2xl border border-token bg-surface p-3 cursor-pointer shrink-0 overflow-hidden${streakBg ? ' border-0' : ''}`}
+        style={streakBg ? { background: streakBg } : undefined}
       >
         <Avatar className="h-[46px] w-[46px] shrink-0" style={{ background: avatarBg, borderRadius: '50%' }}>
           {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
