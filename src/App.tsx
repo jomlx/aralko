@@ -286,6 +286,8 @@ function AppContent() {
             consentLoading={consentLoading}
             onConsentOn={setConsentOn}
             onConsentOff={setConsentOff}
+            streak={streakLogic.displayedStreak}
+            streakFreezes={userSettings.streakFreezes}
           />
 
           {/* AI Consent Gate Dialog */}

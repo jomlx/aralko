@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Check, X, Loader2, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, Trash2, User, Settings2, MessageSquare, ShieldCheck, Download, Info } from 'lucide-react';
+import { Sun, Moon, Check, X, Loader2, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, Trash2, User, Settings2, MessageSquare, ShieldCheck, Download, Info, Flame, Snowflake } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -25,6 +25,8 @@ interface SettingsDialogProps {
   consentLoading: boolean;
   onConsentOn: () => Promise<void>;
   onConsentOff: () => Promise<void>;
+  streak: number;
+  streakFreezes: number;
 }
 
 export function SettingsDialog({
@@ -40,8 +42,24 @@ export function SettingsDialog({
   consentLoading,
   onConsentOn,
   onConsentOff,
+  streak,
+  streakFreezes,
 }: SettingsDialogProps) {
   const { user } = useAuth();
+
+  // ── Streak card helpers ──────────────────────────────────────────────────
+  const STREAK_THRESHOLDS = [3, 10, 30, 100, 200];
+  const streakStage = STREAK_THRESHOLDS.reduce((s, t) => streak >= t ? s + 1 : s, 0);
+  const STREAK_GRADIENTS: (string | null)[] = [
+    null,
+    'linear-gradient(135deg, #FFE680, #FFB84D)',
+    'linear-gradient(135deg, #FFCF40, #FF9A33)',
+    'linear-gradient(135deg, #FFA24D, #FF6B45)',
+    'linear-gradient(135deg, #FF7A7A, #F5588C)',
+    'linear-gradient(135deg, #FF9BE8, #B38CFF)',
+  ];
+  const streakBg = STREAK_GRADIENTS[Math.min(streakStage, 5)];
+  const freezeLabel = streakFreezes === 0 ? 'No freezes' : streakFreezes === 1 ? '1 freeze' : `${streakFreezes} freezes`;
   // DB is the source of truth — useUserSettings reads user_settings.display_name first
   const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
   
@@ -409,16 +427,34 @@ export function SettingsDialog({
         <Tabs defaultValue="account" orientation="vertical" className="flex flex-col md:flex-row w-full h-full">
           {/* Sidebar Nav */}
           <div className="w-full md:w-[240px] shrink-0 border-b md:border-b-0 md:border-r border-token bg-surface py-6 flex flex-col">
-            <div className="flex items-center gap-3 mb-6 px-6">
-              <Avatar className="h-10 w-10 shrink-0 border border-token">
+            <div style={streakBg
+                ? { background: streakBg, padding: '14px 18px' }
+                : { background: 'var(--color-surface)', border: '1px solid var(--color-token)', padding: '14px 18px' }
+              } className="mx-4 mb-5 rounded-[14px] flex items-center gap-3 overflow-hidden">
+              {/* Avatar */}
+              <Avatar className="h-[46px] w-[46px] shrink-0 rounded-full" style={{ background: 'rgba(255,255,255,0.5)' }}>
                 <AvatarImage src={avatarUrl || ''} />
-                <AvatarFallback className="bg-accent text-white font-bold text-sm">
+                <AvatarFallback style={{ background: 'rgba(255,255,255,0.5)', color: '#111' }} className="font-bold text-base">
                   {(displayName || user?.email || '?').charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm font-bold text-primary truncate">{displayName || user?.email?.split('@')[0] || 'User'}</span>
-                <span className="text-xs text-muted truncate">{user?.email}</span>
+              {/* Middle */}
+              <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                <span className="text-[15px] font-medium leading-tight truncate" style={{ color: '#111' }}>
+                  {displayName || user?.email?.split('@')[0] || 'User'}
+                </span>
+                <span className="text-[13px] flex items-center gap-1" style={{ color: 'rgba(17,17,17,0.8)' }}>
+                  <Snowflake size={12} />
+                  {freezeLabel}
+                </span>
+              </div>
+              {/* Streak */}
+              <div className="flex flex-col items-end shrink-0 gap-0.5">
+                <div className="flex items-center gap-1 leading-none">
+                  <Flame size={26} style={{ color: '#111' }} />
+                  <span className="text-[32px] font-medium leading-none tabular-nums" style={{ color: '#111' }}>{streak}</span>
+                </div>
+                <span className="text-[12px] leading-none" style={{ color: 'rgba(17,17,17,0.8)' }}>day streak</span>
               </div>
             </div>
             
