@@ -3,6 +3,7 @@ import type { StudySession } from '../../types';
 import React from 'react';
 import { Snowflake } from 'lucide-react';
 import { STREAK_THRESHOLDS, STREAK_NAMES } from '../../lib/streakConstants';
+import { xpForLevel } from '../../hooks/useUserSettings';
 import { useUserSettingsContext } from '../../hooks/UserSettingsContext';
 import { StreakFlame } from '../ui/StreakFlame';
 
@@ -22,8 +23,30 @@ function StatCard({ label, value, change }: { label: string; value: string | num
   );
 }
 
+function LevelCard({ xp, level }: { xp: number; level: number }) {
+  const nextLvlXp = xpForLevel(level + 1);
+  const prevLvlXp = xpForLevel(level);
+  const progress = Math.max(0, Math.min(100, ((xp - prevLvlXp) / (nextLvlXp - prevLvlXp)) * 100));
+  const remaining = nextLvlXp - xp;
+
+  return (
+    <div className="rounded-2xl border border-token bg-surface p-5">
+      <div>
+        <p className="text-xs font-medium text-muted">Level {level}</p>
+        <div className="mt-3 text-2xl font-bold text-primary">{xp.toLocaleString()} XP</div>
+      </div>
+      <div className="mt-2">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-app">
+          <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="mt-2 text-[11px] font-medium text-muted">{remaining.toLocaleString()} XP to level {level + 1}</p>
+      </div>
+    </div>
+  );
+}
+
 export function StatsView({ sessions, streak }: StatsViewProps) {
-  const { streakFreezes } = useUserSettingsContext();
+  const { streakFreezes, xp, level } = useUserSettingsContext();
   const totalMinutes = sessions.reduce((sum, s) => sum + s.minutes, 0);
   const totalHours = (totalMinutes / 60).toFixed(1);
   const sessionsCompleted = sessions.length;
@@ -97,8 +120,8 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
               const reached = streak >= threshold;
               return (
                 <React.Fragment key={threshold}>
-                  <div className="flex flex-col items-center shrink min-w-[28px]">
-                    <div className="w-[28px] h-[35px] sm:w-[32px] sm:h-[40px] shrink-0">
+                  <div className="flex flex-col items-center shrink min-w-[36px]">
+                    <div className="w-[36px] h-[45px] sm:w-[44px] sm:h-[55px] shrink-0">
                       <StreakFlame 
                         stage={i + 1} 
                         locked={!reached} 
@@ -123,7 +146,8 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
         </div>
       </div>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-2">
+      <div className="mb-6 grid gap-4 md:grid-cols-3">
+        <LevelCard xp={xp} level={level} />
         <StatCard label="Total study hours" value={`${totalHours}h`} change="+12% from last week" />
         <StatCard label="Sessions completed" value={sessionsCompleted} />
       </div>
