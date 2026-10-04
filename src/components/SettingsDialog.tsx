@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Check, X, Loader2, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, Trash2, User, Settings2, MessageSquare, ShieldCheck, Download, AlertTriangle, Info } from 'lucide-react';
+import { Sun, Moon, Check, X, Loader2, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, Trash2, User, Settings2, MessageSquare, ShieldCheck, Download, Info } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -767,57 +767,53 @@ export function SettingsDialog({
 
               <div className="h-px bg-white/5 my-6" />
               {/* Section 2: AI consent toggle */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-4">
-                  <h3 className="text-sm font-semibold text-primary">AI & Data Processing</h3>
-                  <Switch
-                    checked={aiConsent}
-                    disabled={consentLoading}
-                    onCheckedChange={handleToggleConsent}
-                  />
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-token p-4">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-sm font-semibold text-primary">AI & Data Processing</span>
+                  <span className="text-xs text-secondary">Notes, files, and chat you send are processed by Google Gemini to generate study materials.</span>
+                  {aiConsent && aiConsentDate && (
+                    <p className="text-xs text-success mt-1 flex items-center gap-1.5"><Check size={12} /> Acknowledged {new Date(aiConsentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  )}
+                  {!aiConsent && <p className="text-xs text-muted mt-1">AI features are off. Turn this on to use them.</p>}
                 </div>
-                <p className="text-sm text-secondary leading-relaxed">
-                  Content you upload or write (notes, uploaded files, chat messages) is sent to an AI provider (Google Gemini) to generate study materials and responses. By using these features, you consent to this processing.
-                </p>
-                {aiConsent && aiConsentDate && (
-                  <p className="text-xs text-success mt-1 flex items-center gap-1.5"><Check size={12} /> Acknowledged {new Date(aiConsentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                )}
-                {!aiConsent && <p className="text-xs text-muted mt-1">AI features are off. Turn this on to use them.</p>}
+                <Switch
+                  checked={aiConsent}
+                  disabled={consentLoading}
+                  onCheckedChange={handleToggleConsent}
+                />
               </div>
 
               <div className="h-px bg-white/5 my-6" />
               {/* Section 3: Export data */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-primary">Export your data</h3>
-                <p className="text-sm text-secondary">Download a JSON snapshot of all your data: profile, settings, activities, study sessions, and chat messages.</p>
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-token p-4">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-sm font-semibold text-primary">Export your data</span>
+                  <span className="text-xs text-secondary">Download a JSON snapshot of your profile, settings, activities, sessions, and chat messages.</span>
+                </div>
                 <button
                   onClick={handleExportData}
                   disabled={exportingData || !user}
-                  className="flex items-center gap-2 rounded-xl border border-token bg-app hover:bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-primary transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors shrink-0 disabled:opacity-50"
                 >
                   {exportingData ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                  {exportingData ? 'Preparing...' : 'Export my data'}
+                  {exportingData ? 'Preparing...' : 'Export'}
                 </button>
               </div>
 
               <div className="h-px bg-white/5 my-6" />
               {/* Section 4: Delete account */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-red-400">Delete Account</h3>
-                <p className="text-sm text-secondary">
-                  Permanently deletes all your data (activities, sessions, chat history, settings). <span className="text-primary font-medium">This cannot be undone.</span>
-                </p>
-                <p className="text-xs text-muted flex items-start gap-1.5">
-                  <AlertTriangle size={13} className="shrink-0 mt-0.5 text-yellow-500" />
-                  Note: your login account (email/password) is deleted from our database, but the underlying auth record may persist for up to 30 days per Supabase's retention policy. To request immediate removal, contact support.
-                </p>
-                {deleteError && <p className="text-xs text-red-400">{deleteError}</p>}
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-red-500/30 p-4">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-sm font-semibold text-red-400">Delete Account</span>
+                  <span className="text-xs text-secondary">Permanently deletes all your data. <span className="text-primary font-medium">This cannot be undone.</span></span>
+                  {deleteError && <p className="text-xs text-red-400 mt-1">{deleteError}</p>}
+                </div>
                 <button
                   onClick={() => setDeleteDialogOpen(true)}
-                  className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-400 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-400 transition-colors shrink-0"
                 >
                   <Trash2 size={16} />
-                  Delete my account
+                  Delete
                 </button>
               </div>
                 </div>
