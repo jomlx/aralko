@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays, Snowflake } from 'lucide-react';
+import { Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -14,7 +14,7 @@ interface ProfilePopoverProps {
   freezes: number;
 }
 
-export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freezes }: ProfilePopoverProps) {
+export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freezes: _freezes }: ProfilePopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const { showToast } = useToast();
@@ -269,7 +269,6 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
     'linear-gradient(135deg, #FF9BE8, #B38CFF)',
   ];
   const streakBg = STREAK_GRADIENTS[Math.min(streakStage, 5)];
-  const freezeLabel = freezes === 0 ? 'No freezes' : freezes === 1 ? '1 freeze' : `${freezes} freezes`;
   const textColor = streakBg ? '#111' : undefined;
   const subColor  = streakBg ? 'rgba(17,17,17,0.8)' : undefined;
   const avatarBg  = streakBg ? 'rgba(255,255,255,0.5)' : undefined;
@@ -279,12 +278,12 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
       {/* Profile Card Trigger */}
       <div
         onClick={() => setIsOpen(true)}
-        className={`flex items-center gap-3 rounded-2xl border border-token bg-surface p-3 cursor-pointer shrink-0 overflow-hidden${streakBg ? ' border-0' : ''}`}
-        style={streakBg ? { background: streakBg } : undefined}
+        className={`flex items-center gap-3 rounded-2xl border border-token bg-surface cursor-pointer shrink-0 overflow-hidden${streakBg ? ' border-0' : ''}`}
+        style={streakBg ? { background: streakBg, padding: '14px' } : { padding: '14px' }}
       >
-        <Avatar className="h-[46px] w-[46px] shrink-0" style={{ background: avatarBg, borderRadius: '50%' }}>
+        <Avatar className="h-10 w-10 shrink-0" style={{ background: avatarBg, borderRadius: '50%' }}>
           {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-          <AvatarFallback style={{ background: avatarBg, color: textColor }} className="font-bold text-base">
+          <AvatarFallback style={{ background: avatarBg, color: textColor }} className="font-bold text-sm">
             {initials}
           </AvatarFallback>
         </Avatar>
@@ -292,17 +291,16 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
           <span className="text-[15px] font-medium leading-tight truncate" style={{ color: textColor }}>
             {displayName}
           </span>
-          <span className="text-[13px] flex items-center gap-1" style={{ color: subColor, opacity: subColor ? undefined : 0.7 }}>
-            <Snowflake size={12} />
-            {freezeLabel}
+          <span className="text-[11px] leading-none" style={{ color: subColor, opacity: subColor ? undefined : 0.6 }}>
+            {xp.toLocaleString()} XP
           </span>
         </div>
         <div className="flex flex-col items-end shrink-0 gap-0.5">
-          <div className="flex items-center gap-1 leading-none">
-            <Flame size={26} style={{ color: textColor }} />
-            <span className="text-[32px] font-medium leading-none tabular-nums" style={{ color: textColor }}>{streak}</span>
+          <div className="flex items-center gap-0.5 leading-none">
+            <Flame size={18} style={{ color: textColor }} />
+            <span className="text-[22px] font-medium leading-none tabular-nums" style={{ color: textColor }}>{streak}</span>
           </div>
-          <span className="text-[12px] leading-none" style={{ color: subColor, opacity: subColor ? undefined : 0.7 }}>day streak</span>
+          <span className="text-[11px] leading-none" style={{ color: subColor, opacity: subColor ? undefined : 0.6 }}>day streak</span>
         </div>
       </div>
 
