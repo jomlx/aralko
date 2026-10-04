@@ -176,14 +176,14 @@ export function ActivityList({
     <>
       <div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {/* Page heading */}
-        <div className="px-[var(--gutter)] pt-4 pb-4">
+        <div className="px-8 pt-4 pb-4">
           <h4 className="text-xs font-semibold tracking-[0.2em] text-accent">WELCOME BACK</h4>
           <h1 className="mt-2 text-3xl font-bold text-primary">{greeting}, {displayName}.</h1>
           <p className="mt-1 text-sm text-muted">Pick up where you left off and make progress today.</p>
         </div>
 
         {/* Activity list */}
-        <div className="px-[var(--gutter)] pb-8">
+        <div className="px-8 pb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-primary">My Activities</h2>
             <div className="flex items-center gap-2">

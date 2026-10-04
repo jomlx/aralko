@@ -1,3 +1,4 @@
+import { STREAK_THRESHOLDS } from '../../lib/streakConstants';
 import { useState, useCallback } from 'react';
 import { Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
@@ -259,7 +260,7 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
   }, [inviteLink]);
 
   // ── Streak card helpers ────────────────────────────────────────────────
-  const STREAK_THRESHOLDS = [3, 10, 30, 100, 200];
+  
   const streakStage = STREAK_THRESHOLDS.reduce((s, t) => streak >= t ? s + 1 : s, 0);
   const STREAK_GRADIENTS: (string | null)[] = [
     null,

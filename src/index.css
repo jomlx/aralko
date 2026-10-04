@@ -315,3 +315,37 @@ input[type="range"]::-moz-range-thumb {
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  { background: rgba(255, 255, 255, 0.08); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+
+/* Streak Animations */
+@keyframes flame-flicker-hero {
+  0%, 100% { transform: scale(1, 1) skewX(-2deg); }
+  25% { transform: scale(1.03, 0.97) skewX(2deg); }
+  50% { transform: scale(0.97, 1.04) skewX(-1.5deg); }
+  75% { transform: scale(1.02, 0.98) skewX(1.5deg); }
+}
+@keyframes flame-flicker-badge {
+  0%, 100% { transform: scale(1, 1) skewX(-1deg); }
+  50% { transform: scale(1.03, 0.98) skewX(1deg); }
+}
+@keyframes flame-pulse {
+  0%, 100% { fill-opacity: 0.55; }
+  50% { fill-opacity: 0.8; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-flame-flicker-hero {
+    animation-name: flame-flicker-hero;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+  .animate-flame-flicker-badge {
+    animation-name: flame-flicker-badge;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+  .animate-flame-pulse {
+    animation-name: flame-pulse;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+}
