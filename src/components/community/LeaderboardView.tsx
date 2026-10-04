@@ -29,8 +29,8 @@ export function LeaderboardView() {
     setSelectedUserExtra(null);
     
     try {
-      const { data: sessions } = await supabase.from('sessions').select('minutes').eq('user_id', u.user_id);
-      const { data: us } = await supabase.from('user_settings').select('saved_streak, updated_at').eq('user_id', u.user_id).single();
+      const { data: sessions } = await supabase.from('session_minutes_public').select('minutes').eq('user_id', u.user_id);
+      const { data: us } = await supabase.from('leaderboard_public').select('saved_streak, updated_at').eq('user_id', u.user_id).single();
       
       let totalMinutes = 0;
       let sessionsCount = 0;
@@ -64,10 +64,11 @@ export function LeaderboardView() {
       const orderBy = range === 'all_time' ? 'xp' : 'xp_this_week';
       
       const { data, error } = await supabase
-        .from('user_settings')
+        .from('leaderboard_public')
         .select('user_id, display_name, avatar_url, xp, xp_this_week, level')
         .order(orderBy, { ascending: false })
         .limit(50);
+
 
       if (isMounted) {
         if (error) {
