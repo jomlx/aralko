@@ -3,7 +3,8 @@ import { Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays } from 'lucid
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 
 import { useAuth } from '../../hooks/useAuth';
-import { xpToLevel, useUserSettings } from '../../hooks/useUserSettings';
+import { xpToLevel } from '../../hooks/useUserSettings';
+import { useUserSettingsContext as useUserSettings } from '../../hooks/UserSettingsContext';
 import { useToast } from '../ui/Toast';
 
 interface ProfilePopoverProps {

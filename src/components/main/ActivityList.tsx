@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, BookOpen, PenTool, ChevronRight, Share2, X, Check } from 'lucide-react';
 import type { Activity } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
-import { useUserSettings } from '../../hooks/useUserSettings';
+import { useUserSettingsContext as useUserSettings } from '../../hooks/UserSettingsContext';
 import { useStudyGroupsContext as useStudyGroups } from '../../hooks/StudyGroupsContext';
 
 interface ActivityListProps {

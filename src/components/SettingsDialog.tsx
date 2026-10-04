@@ -3,7 +3,7 @@ import { Sun, Moon, Check, X, Loader2, SquarePen, Camera, Mail, Lock, Eye, EyeOf
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { useUserSettings } from '../hooks/useUserSettings';
+import { useUserSettingsContext as useUserSettings } from '../hooks/UserSettingsContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
@@ -43,7 +43,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const { user } = useAuth();
   // DB is the source of truth — useUserSettings reads user_settings.display_name first
-  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
+  const { displayName: dbDisplayName, setDisplayName: setCtxDisplayName, avatarUrl: dbAvatarUrl, setAvatarUrl: setCtxAvatarUrl } = useUserSettings();
   
   // ── Account Name State ────────────────────────────────────────────────
   const [displayName, setDisplayName] = useState('');
@@ -244,6 +244,7 @@ export function SettingsDialog({
       }
 
       setOriginalName(trimmed);
+      setCtxDisplayName(trimmed);
       setNameSuccess(true);
       setIsEditingName(false);
       setTimeout(() => setNameSuccess(false), 3000);
@@ -279,6 +280,7 @@ export function SettingsDialog({
       );
       if (dbErr) throw dbErr;
       setAvatarUrl(urlWithBust);
+      setCtxAvatarUrl(urlWithBust);
     } catch (err: any) {
       setAvatarError(err.message?.includes('Bucket not found') || err.message?.includes('does not exist')
         ? 'Storage bucket "user-avatars" not set up yet. Create it in your Supabase dashboard.'

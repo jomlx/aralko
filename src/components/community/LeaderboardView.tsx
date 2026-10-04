@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
+import { useUserSettingsContext as useUserSettings } from '../../hooks/UserSettingsContext';
 import { Trophy, Target, CalendarDays, Loader2, Flame, Zap, Star, BookOpen, Clock, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
@@ -17,6 +18,7 @@ interface LeaderboardUser {
 
 export function LeaderboardView() {
   const { user } = useAuth();
+  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
   const [range, setRange] = useState<TimeRange>('all_time');
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -182,14 +184,14 @@ export function LeaderboardView() {
                     {/* Student Info */}
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10 border border-token">
-                        {u.avatar_url && <AvatarImage src={u.avatar_url} alt={u.display_name || ''} />}
+                        {(isMe ? dbAvatarUrl : u.avatar_url) && <AvatarImage src={(isMe ? dbAvatarUrl : u.avatar_url)!} alt={(isMe ? dbDisplayName : u.display_name) || ''} />}
                         <AvatarFallback className="bg-slate-800 text-secondary font-medium">
-                          {getInitials(u.display_name, u.user_id)}
+                          {getInitials(isMe ? dbDisplayName : u.display_name, u.user_id)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col">
                         <span className={`font-semibold ${isMe ? 'text-accent' : 'text-slate-200'}`}>
-                          {u.display_name || 'Anonymous Learner'} {isMe && '(You)'}
+                          {(isMe ? dbDisplayName : u.display_name) || 'Anonymous Learner'} {isMe && '(You)'}
                         </span>
                       </div>
                     </div>

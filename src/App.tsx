@@ -20,11 +20,12 @@ import { useSessions } from './hooks/useSessions';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { usePomodoro } from './hooks/usePomodoro';
 import { useSpotify } from './hooks/useSpotify';
-import { useUserSettings } from './hooks/useUserSettings';
+import { useUserSettingsContext as useUserSettings } from './hooks/UserSettingsContext';
 import { useStreakLogic } from './hooks/useStreakLogic';
 import { useAuth } from './hooks/useAuth';
 import { useAIConsent } from './hooks/useAIConsent';
 import { StudyGroupsProvider } from './hooks/StudyGroupsContext';
+import { UserSettingsProvider } from './hooks/UserSettingsContext';
 import { registerConsentChecker } from './lib/apiClient';
 import { AuthPage } from './pages/AuthPage';
 import {
@@ -506,11 +507,13 @@ function InnerApp() {
 
 export default function App() {
   return (
-    <StudyGroupsProvider>
-      <ToastProvider>
-        <InnerApp />
-      </ToastProvider>
-    </StudyGroupsProvider>
+    <UserSettingsProvider>
+      <StudyGroupsProvider>
+        <ToastProvider>
+          <InnerApp />
+        </ToastProvider>
+      </StudyGroupsProvider>
+    </UserSettingsProvider>
   );
 }
 
