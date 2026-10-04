@@ -743,21 +743,21 @@ export function SettingsDialog({
                   <h3 className="text-sm font-semibold text-primary">What we store</h3>
                   <span className="inline-flex items-center justify-center rounded-full bg-surface border border-token px-2 py-0.5 text-xs font-medium text-secondary leading-none">6</span>
                 </div>
-                <div className="rounded-xl border border-surface overflow-hidden">
+                <div className="rounded-xl border border-token overflow-hidden">
                   {([
-                    { title: 'Account info', desc: 'Email address, display name, avatar image (in Supabase Storage)' },
-                    { title: 'Study activity', desc: 'Pomodoro sessions, daily streak, XP / level, flashcard progress, quiz scores' },
-                    { title: 'Activities & generated content', desc: 'Your study notes, AI-generated reviewer cheat sheets, flashcard sets, and test questions (stored per-activity)' },
-                    { title: 'AI chat messages', desc: 'Messages sent in the AI study assistant chat are saved to the database per activity so conversations persist across sessions' },
-                    { title: 'Spotify tokens', desc: 'OAuth access/refresh tokens are stored in the database for cross-device session persistence (not just browser localStorage)' },
-                    { title: 'Preferences', desc: 'Pomodoro preset, autostart, personal Gemini API key, and AI settings' },
+                    { title: 'Account information', desc: 'Your email, display name, and profile picture.' },
+                    { title: 'Study progress', desc: 'Pomodoro sessions, streaks, XP, level, flashcard progress, and quiz scores.' },
+                    { title: 'Study content', desc: 'Your notes, reviewers, cheat sheets, flashcards, and test questions.' },
+                    { title: 'AI chat', desc: 'Your conversations with the AI study assistant, saved so you can continue them later.' },
+                    { title: 'Spotify connection', desc: 'Your Spotify access and refresh tokens, securely stored to keep you connected across devices.' },
+                    { title: 'Preferences', desc: 'Your Pomodoro settings, AI preferences, and personal Gemini API key.' },
                   ] as { title: string; desc: string }[]).map((item, i, arr) => (
                     <div
                       key={item.title}
-                      className={`px-[18px] py-[14px]${i < arr.length - 1 ? ' border-b border-surface' : ''}`}
+                      className={`px-5 py-4${i < arr.length - 1 ? ' border-b border-token' : ''}`}
                     >
                       <p className="text-[14px] font-semibold text-primary leading-snug">{item.title}</p>
-                      <p className="text-[13px] text-secondary mt-0.5 leading-snug">{item.desc}</p>
+                      <p className="text-[13px] text-secondary mt-1 leading-snug">{item.desc}</p>
                     </div>
                   ))}
                 </div>
