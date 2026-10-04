@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { MAX_FREEZES } from './lib/streakConstants';
 import { Smartphone, X } from 'lucide-react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/sidebar/Sidebar';
@@ -186,7 +187,7 @@ function AppContent() {
   }, [addSession, streakLogic]);
 
   const awardFreeze = useCallback(() => {
-    if (userSettings.streakFreezes < 2) {
+    if (userSettings.streakFreezes < MAX_FREEZES) {
       userSettings.updateStreakData(userSettings.streakFreezes + 1, streakLogic.displayedStreak);
       return true;
     }
@@ -426,7 +427,7 @@ function AppContent() {
         const VARIANTS: Record<string, { bg: [string, string]; border: string; title: string; desc: string }> = {
           'streak:lost':      { bg: ['#FDEDED', 'color-mix(in srgb, #E5484D 14%, #151922)'], border: '#E5484D', title: 'Streak lost',         desc: 'Keep trying! Start a new one today.' },
           'streak:protected': { bg: ['#EAF2FE', 'color-mix(in srgb, #3E8BF0 14%, #151922)'], border: '#3E8BF0', title: 'Streak protected',    desc: '1 freeze used.' },
-          'streak:earned':    { bg: ['#E8F7EE', 'color-mix(in srgb, #30A46C 14%, #151922)'], border: '#30A46C', title: 'Streak freeze earned', desc: 'You can hold up to 2.' },
+          'streak:earned':    { bg: ['#E8F7EE', 'color-mix(in srgb, #30A46C 14%, #151922)'], border: '#30A46C', title: 'Streak freeze earned', desc: `You can hold up to ${MAX_FREEZES}.` },
         };
         const v = VARIANTS[msg];
         if (!v) return null;

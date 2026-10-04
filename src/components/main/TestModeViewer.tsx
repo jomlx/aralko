@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { MAX_FREEZES } from '../../lib/streakConstants';
 import { useToast } from '../ui/Toast';
 import {
   Clock,
@@ -663,7 +664,7 @@ export function TestModeViewer({
         const awarded = awardFreeze();
         if (awarded) {
           localStorage.setItem(key, '1');
-          showToast('Perfect score! You earned a Streak Freeze! ❄️ (Max 2)', 'success');
+          showToast(`Perfect score! You earned a Streak Freeze! ❄️ (Max ${MAX_FREEZES})`, 'success');
         }
       }
     }

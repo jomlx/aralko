@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { MAX_FREEZES } from '../lib/streakConstants';
 import type { StudySession } from '../types';
 
 interface StreakLogicProps {
@@ -120,7 +121,7 @@ export function useStreakLogic({ userId, sessions, sessionsLoaded, settingsLoade
     const newStreak = displayedStreak + 1;
     let newFreezes = streakFreezes;
 
-    if (newStreak % 7 === 0 && streakFreezes < 2) {
+    if (newStreak % 7 === 0 && streakFreezes < MAX_FREEZES) {
       newFreezes += 1;
       setToastMessage('streak:earned');
       setTimeout(() => setToastMessage(null), 5000);

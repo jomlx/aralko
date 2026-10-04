@@ -1,8 +1,9 @@
 
 import type { StudySession } from '../../types';
-import React from 'react';
-import { Snowflake } from 'lucide-react';
-import { STREAK_THRESHOLDS, STREAK_NAMES } from '../../lib/streakConstants';
+import React, { useState } from 'react';
+import { Snowflake, Info } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { STREAK_THRESHOLDS, STREAK_NAMES, MAX_FREEZES } from '../../lib/streakConstants';
 import { xpForLevel } from '../../hooks/useUserSettings';
 import { useUserSettingsContext } from '../../hooks/UserSettingsContext';
 import { StreakFlame } from '../ui/StreakFlame';
@@ -46,6 +47,7 @@ function LevelCard({ xp, level }: { xp: number; level: number }) {
 }
 
 export function StatsView({ sessions, streak }: StatsViewProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { streakFreezes, xp, level } = useUserSettingsContext();
   const totalMinutes = sessions.reduce((sum, s) => sum + s.minutes, 0);
   const totalHours = (totalMinutes / 60).toFixed(1);
@@ -71,7 +73,44 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
   return (
     <div className="px-[var(--gutter)] pt-4 pb-8">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-primary">Study Statistics</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-primary">Study Statistics</h2>
+          <button onClick={() => setIsDialogOpen(true)} className="text-muted hover:text-primary transition-colors focus:outline-none" aria-label="How it works">
+            <Info size={18} />
+          </button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className="bg-app border-token max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-primary">How it works</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-5 text-sm text-secondary mt-2">
+                <div>
+                  <h4 className="font-medium text-primary mb-1.5">XP & Levels</h4>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Earn +5 XP for completing a study session or flashcard deck.</li>
+                    <li>Earn up to +60 XP for completing a quiz based on your score.</li>
+                    <li>Level up by reaching XP thresholds (Level N requires 20 * N * (N-1) total XP).</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-medium text-primary mb-1.5">Streak</h4>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Log at least one study session in a day to grow your streak.</li>
+                    <li>Unlock new flame badges and stages at {STREAK_THRESHOLDS.join(', ')} days.</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-medium text-primary mb-1.5">Freezes</h4>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Earn 1 freeze every 7 streak days, or by scoring 100% on a test (3+ questions).</li>
+                    <li>You can hold a maximum of {MAX_FREEZES} freezes at once.</li>
+                    <li>If you miss a day, one freeze is automatically consumed to protect your streak.</li>
+                  </ul>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         <p className="mt-1 text-sm text-muted">Understand your habits and track your learning journey.</p>
       </div>
 
@@ -102,13 +141,13 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
             
             <div className="mt-4 flex items-center gap-2">
               <div className="flex gap-1">
-                {Array.from({ length: 2 }).map((_, i) => (
+                {Array.from({ length: MAX_FREEZES }).map((_, i) => (
                   <div key={i} className={`flex items-center justify-center w-[26px] h-[26px] rounded-full ${i < streakFreezes ? 'bg-[#3E8BF0]/[0.18] border border-[#3E8BF0]' : 'border border-dashed border-token'}`}>
                     {i < streakFreezes && <Snowflake size={14} className="text-[#3E8BF0]" />}
                   </div>
                 ))}
               </div>
-              <span className="text-[13px] text-secondary">{streakFreezes} of 2 freezes</span>
+              <span className="text-[13px] text-secondary">{streakFreezes} of {MAX_FREEZES} freezes</span>
             </div>
           </div>
         </div>
