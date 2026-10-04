@@ -97,8 +97,8 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
               const reached = streak >= threshold;
               return (
                 <React.Fragment key={threshold}>
-                  <div className="flex flex-col items-center shrink min-w-[36px]">
-                    <div className="w-[36px] h-[45px] sm:w-[44px] sm:h-[55px] shrink-0">
+                  <div className="flex flex-col items-center shrink min-w-[28px]">
+                    <div className="w-[28px] h-[35px] sm:w-[32px] sm:h-[40px] shrink-0">
                       <StreakFlame 
                         stage={i + 1} 
                         locked={!reached} 
