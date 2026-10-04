@@ -123,6 +123,7 @@ export function LearnTab({
         setQuizError('Could not generate quiz questions. Please try again.');
       }
     } catch (e: any) {
+      if (e?.consentDenied) return;
       console.error('Quiz generation error via Queue:', e);
       setQuizError(e.message || 'Something went wrong while generating the quiz. Please try again.');
     } finally {
@@ -170,6 +171,7 @@ export function LearnTab({
         setTestError('AI returned no valid questions. Please try again.');
       }
     } catch (e: any) {
+      if (e?.consentDenied) return;
       console.error('Test generation error via Queue:', e);
       setTestError(e.message || 'Something went wrong generating the test. Please try again.');
     } finally {

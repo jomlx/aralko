@@ -90,6 +90,7 @@ export function AddActivityModal({ isOpen, onClose, onActivityAdded }: AddActivi
       onActivityAdded(newActivity);
       handleClose();
     } catch (err: any) {
+      if (err?.consentDenied) return;
       console.error('[AddActivity] Error:', err);
       setErrorMsg(err.message || 'Error processing file. Please try again.');
       setStep('error');

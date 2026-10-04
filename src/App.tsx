@@ -24,6 +24,7 @@ import { useUserSettings } from './hooks/useUserSettings';
 import { useStreakLogic } from './hooks/useStreakLogic';
 import { useAuth } from './hooks/useAuth';
 import { useAIConsent } from './hooks/useAIConsent';
+import { registerConsentChecker } from './lib/apiClient';
 import { AuthPage } from './pages/AuthPage';
 import {
   AlertDialog,
@@ -142,7 +143,19 @@ function AppContent() {
   const { user } = useAuth();
   const { aiConsent, aiConsentDate, consentLoading, setConsentOn, setConsentOff } = useAIConsent();
   const [consentGateOpen, setConsentGateOpen] = useState(false);
-  const [pendingConsentAction, setPendingConsentAction] = useState<(() => void) | null>(null);
+  // Single resolver for both hook-based and apiClient-based consent requests
+  const consentResolverRef = useRef<((allowed: boolean) => void) | null>(null);
+
+  // Register the consent checker once so apiClient.generateWithBackend can use it
+  useEffect(() => {
+    registerConsentChecker(() => {
+      if (aiConsent) return Promise.resolve(true);
+      return new Promise<boolean>((resolve) => {
+        consentResolverRef.current = resolve;
+        setConsentGateOpen(true);
+      });
+    });
+  }, [aiConsent]);
   
   const streakLogic = useStreakLogic({
     userId: user?.id,
@@ -285,13 +298,13 @@ function AppContent() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary" onClick={() => setPendingConsentAction(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary" onClick={() => { consentResolverRef.current?.(false); consentResolverRef.current = null; }}>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-accent hover:bg-accent/90 text-primary"
                   onClick={async () => {
                     await setConsentOn();
-                    pendingConsentAction?.();
-                    setPendingConsentAction(null);
+                    consentResolverRef.current?.(true);
+                    consentResolverRef.current = null;
                     setConsentGateOpen(false);
                   }}
                 >

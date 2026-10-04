@@ -72,6 +72,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
         addXP?.(5, `reviewer-${activeActivity.id}`);
       }
     } catch (e: any) {
+      if (e?.consentDenied) return;
       console.error('Generate Reviewer error via Queue:', e);
       setInlineError('Something went wrong while generating the reviewer. Please try again.');
     } finally {

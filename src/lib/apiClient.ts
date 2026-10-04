@@ -19,6 +19,16 @@ export interface GenerationResult {
 }
 
 /**
+ * Module-level consent checker registered by App.tsx at mount.
+ * Returns true if the user has (or grants) consent, false if they cancel.
+ * Defaults to `true` (no gate) until App registers one — safe for SSR/tests.
+ */
+let _consentChecker: (() => Promise<boolean>) | null = null;
+export function registerConsentChecker(fn: () => Promise<boolean>) {
+  _consentChecker = fn;
+}
+
+/**
  * Main entry point for all AI generation.
  * Personal key → synchronous result.
  * No key → queued job, resolves via Realtime when worker completes.
@@ -29,6 +39,15 @@ export async function generateWithBackend(
   personalApiKey?: string | null,
   timeoutMs = 120_000
 ): Promise<GenerationResult> {
+  // ── Consent gate ─────────────────────────────────────────────────────────
+  if (_consentChecker) {
+    const allowed = await _consentChecker();
+    if (!allowed) {
+      // User cancelled — return a sentinel result that callers must handle
+      throw Object.assign(new Error('AI consent required'), { consentDenied: true });
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
   const formData = new FormData();
   formData.append('text_content', textContent);
   formData.append('job_types', JSON.stringify(jobTypes));
