@@ -38,7 +38,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
   const maxHours = Math.max(3.5, ...mockWeeklyHours);
 
   return (
-    <div className="px-8 pt-4 pb-8">
+    <div className="px-[var(--gutter)] pt-4 pb-8">
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-primary">Study Statistics</h2>
         <p className="mt-1 text-sm text-muted">Understand your habits and track your learning journey.</p>

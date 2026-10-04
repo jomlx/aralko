@@ -15,7 +15,7 @@ export function CommunityTab({ onOpenActivity }: CommunityTabProps) {
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-app">
       {/* Sub-navigation */}
-      <div className="px-8 pt-6 pb-2 border-b border-token">
+      <div className="px-[var(--gutter)] pt-6 pb-2 border-b border-token">
         <div className="flex items-center gap-6">
           <button
             onClick={() => setSubTab('leaderboard')}
@@ -44,7 +44,7 @@ export function CommunityTab({ onOpenActivity }: CommunityTabProps) {
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="px-8 py-6 max-w-5xl mx-auto">
+        <div className="px-[var(--gutter)] py-6">
           {subTab === 'leaderboard' && <LeaderboardView />}
           {subTab === 'groups' && <StudyGroupsView onOpenActivity={onOpenActivity} />}
         </div>
