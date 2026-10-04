@@ -3,7 +3,7 @@ import React, { useId } from 'react';
 export interface StreakFlameProps {
   stage: number; // 0 to 5
   locked?: boolean;
-  animated?: 'hero' | 'badge' | 'none';
+  animated?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -34,7 +34,7 @@ const GRADIENTS = [
 
 const DURATIONS = ['1.8s', '1.6s', '1.4s', '1.2s', '1.0s', '1.0s'];
 
-export function StreakFlame({ stage, locked = false, animated = 'none', className, style, ...props }: StreakFlameProps & React.SVGProps<SVGSVGElement>) {
+export function StreakFlame({ stage, locked = false, animated = false, className, style, ...props }: StreakFlameProps & React.SVGProps<SVGSVGElement>) {
   const id = useId();
   const clampedStage = Math.max(0, Math.min(5, stage));
   
@@ -44,8 +44,8 @@ export function StreakFlame({ stage, locked = false, animated = 'none', classNam
   const grad = GRADIENTS[effectiveStage];
   const duration = DURATIONS[effectiveStage === 0 ? 0 : clampedStage];
 
-  const animateClass = animated === 'hero' && !locked ? 'animate-flame-flicker-hero' : animated === 'badge' && !locked ? 'animate-flame-flicker-badge' : '';
-  const coreOpacityClass = animated === 'hero' && !locked ? 'animate-flame-pulse' : '';
+  const animateClass = animated && !locked ? 'animate-flame-flicker-hero' : '';
+  const coreOpacityClass = animated && !locked ? 'animate-flame-pulse' : '';
 
   return (
     <svg viewBox="0 0 64 80" className={className} style={style} {...props}>

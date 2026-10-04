@@ -59,7 +59,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
             <StreakFlame 
               stage={stage} 
               locked={streak < 3} 
-              animated="hero" 
+              animated
               aria-label={`${streak} day streak, ${STREAK_NAMES[stage - 1] || 'Spark'} stage`}
               className="w-full h-full" 
             />
@@ -102,7 +102,6 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
                       <StreakFlame 
                         stage={i + 1} 
                         locked={!reached} 
-                        animated={reached ? 'badge' : 'none'} 
                         aria-hidden="true"
                         className="w-full h-full"
                       />
