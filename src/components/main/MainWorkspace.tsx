@@ -6,7 +6,7 @@ import { AIChatPanel } from '../sidebar/AIChatPanel';
 import { useGemini } from '../../hooks/useGemini';
 import { getFlashcardPrompt } from '../../prompts/flashcardsPrompt';
 import { parseAIJson } from '../../lib/parseAIJson';
-import { useStudyGroups } from '../../hooks/useStudyGroups';
+import { useStudyGroupsContext as useStudyGroups } from '../../hooks/StudyGroupsContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,7 @@ import {
 import { useToast } from '../ui/Toast';
 
 function ShareActivityButton({ activityId }: { activityId: number }) {
-  const { groups, shareActivity } = useStudyGroups();
+  const { groups, shareActivity, fetchGroups } = useStudyGroups();
   const [sharing, setSharing] = useState(false);
   const { showToast } = useToast();
 
@@ -37,7 +37,7 @@ function ShareActivityButton({ activityId }: { activityId: number }) {
   if (groups.length === 0) return null;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => { if (open) fetchGroups(); }}>
       <DropdownMenuTrigger asChild>
         <button
           className="flex items-center gap-1.5 rounded-lg border border-token bg-surface px-2.5 py-1.5 text-xs font-medium text-secondary hover:bg-white/[0.05] hover:text-primary transition-colors"

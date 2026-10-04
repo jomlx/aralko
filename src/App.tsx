@@ -24,6 +24,7 @@ import { useUserSettings } from './hooks/useUserSettings';
 import { useStreakLogic } from './hooks/useStreakLogic';
 import { useAuth } from './hooks/useAuth';
 import { useAIConsent } from './hooks/useAIConsent';
+import { StudyGroupsProvider } from './hooks/StudyGroupsContext';
 import { registerConsentChecker } from './lib/apiClient';
 import { AuthPage } from './pages/AuthPage';
 import {
@@ -505,9 +506,11 @@ function InnerApp() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <InnerApp />
-    </ToastProvider>
+    <StudyGroupsProvider>
+      <ToastProvider>
+        <InnerApp />
+      </ToastProvider>
+    </StudyGroupsProvider>
   );
 }
 

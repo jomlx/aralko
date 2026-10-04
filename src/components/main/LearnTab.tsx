@@ -7,12 +7,12 @@ import { TestModeViewer } from './TestModeViewer';
 import { ErrorBoundary } from './ErrorBoundary';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { NativeSelect, NativeSelectOption } from '../ui/native-select';
-import { useStudyGroups } from '../../hooks/useStudyGroups';
+import { useStudyGroupsContext as useStudyGroups } from '../../hooks/StudyGroupsContext';
 import { generateWithBackend } from '../../lib/apiClient';
 import { getPersonalGeminiKey } from '../../lib/aiCall';
 
 function ShareActivityButton({ activityId }: { activityId: number }) {
-  const { groups, shareActivity } = useStudyGroups();
+  const { groups, shareActivity, fetchGroups } = useStudyGroups();
   const [sharing, setSharing] = useState(false);
 
   const handleShare = async (groupId: string) => {
@@ -29,7 +29,7 @@ function ShareActivityButton({ activityId }: { activityId: number }) {
   if (groups.length === 0) return null;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => { if (open) fetchGroups(); }}>
       <DropdownMenuTrigger className="flex items-center gap-2 bg-surface border border-token text-secondary text-sm font-medium px-4 py-2 rounded-xl outline-none cursor-pointer hover:bg-white/[0.04] hover:text-primary transition-colors shadow-sm" disabled={sharing}>
         <Share2 size={16} className="opacity-70" />
         {sharing ? 'Sharing...' : 'Share to Group'}

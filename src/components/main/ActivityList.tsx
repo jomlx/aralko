@@ -3,7 +3,7 @@ import { Plus, Trash2, BookOpen, PenTool, ChevronRight, Share2, X, Check } from 
 import type { Activity } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserSettings } from '../../hooks/useUserSettings';
-import { useStudyGroups } from '../../hooks/useStudyGroups';
+import { useStudyGroupsContext as useStudyGroups } from '../../hooks/StudyGroupsContext';
 
 interface ActivityListProps {
   activities: Activity[];
@@ -25,6 +25,7 @@ function ShareDialog({
   onClose: () => void;
   selectedIds: Set<number>;
   groups: any[];
+  loading?: boolean;
   shareActivity: (gId: string, aId: number) => Promise<void>;
 }) {
   const [sharedGroups, setSharedGroups] = useState<Set<string>>(new Set());
@@ -55,10 +56,16 @@ function ShareDialog({
         
         <div className="p-4 flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
           {groups.length === 0 ? (
-            <div className="py-8 text-center text-muted">
-              <p className="mb-2">You haven't joined a study group yet.</p>
-              <p className="text-xs">Go to the Community tab to join one.</p>
-            </div>
+            loading ? (
+              <div className="py-8 text-center text-muted">
+                <p>Loading groups...</p>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-muted">
+                <p className="mb-2">You haven't joined a study group yet.</p>
+                <p className="text-xs">Go to the Community tab to join one.</p>
+              </div>
+            )
           ) : (
             groups.map(g => (
               <div key={g.id} className="flex items-center justify-between p-3 rounded-xl border border-token bg-raised">
@@ -110,9 +117,15 @@ export function ActivityList({
 
   const { user } = useAuth();
   const { displayName: dbDisplayName } = useUserSettings();
-  const { groups, shareActivity } = useStudyGroups();
+  const { groups, shareActivity, fetchGroups, loading } = useStudyGroups();
   
   // Use DB as source of truth; fall back to email prefix only if hook hasn't loaded yet
+  useEffect(() => {
+    if (isShareDialogOpen) {
+      fetchGroups();
+    }
+  }, [isShareDialogOpen, fetchGroups]);
+
   const displayName =
     dbDisplayName?.split(' ')[0]
     ?? user?.email?.split('@')[0]

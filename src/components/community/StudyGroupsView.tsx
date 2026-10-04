@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useStudyGroups } from '../../hooks/useStudyGroups';
+import { useStudyGroupsContext as useStudyGroups } from '../../hooks/StudyGroupsContext';
 import type { StudyGroup } from '../../hooks/useStudyGroups';
 import { Users, Plus, LogIn, Loader2, Copy, LogOut, BookOpen, PenTool, ChevronRight, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
