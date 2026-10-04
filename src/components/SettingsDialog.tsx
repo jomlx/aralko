@@ -754,10 +754,10 @@ export function SettingsDialog({
                     { value: 'prefs',    title: 'Preferences',          desc: 'Your Pomodoro settings, AI preferences, and personal Gemini API key.' },
                   ] as { value: string; title: string; desc: string }[]).map((item) => (
                     <AccordionItem key={item.value} value={item.value} className="border-none">
-                      <AccordionTrigger className="px-5 py-4 text-[14px] font-semibold text-primary no-underline hover:no-underline hover:text-primary rounded-none">
+                      <AccordionTrigger className="px-5 pt-4 pb-1 text-[14px] font-semibold text-primary no-underline hover:no-underline hover:text-primary rounded-none">
                         {item.title}
                       </AccordionTrigger>
-                      <AccordionContent className="px-5 pb-4 text-[13px] text-secondary leading-snug" >
+                      <AccordionContent className="px-5 pb-3 text-[13px] text-secondary leading-snug">
                         {item.desc}
                       </AccordionContent>
                     </AccordionItem>
