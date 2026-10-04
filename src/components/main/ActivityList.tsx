@@ -19,6 +19,7 @@ function ShareDialog({
   onClose, 
   selectedIds, 
   groups,
+  loading,
   shareActivity 
 }: {
   isOpen: boolean;
@@ -326,6 +327,7 @@ export function ActivityList({
         onClose={handleCloseDialog} 
         selectedIds={selectedIds} 
         groups={groups} 
+        loading={loading}
         shareActivity={shareActivity} 
       />
     </>
