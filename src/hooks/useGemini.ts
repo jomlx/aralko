@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { ChatMessage } from '../types';
 import { getReviewerPrompt } from '../prompts/reviewerPrompt';
 import { callAI } from '../lib/aiCall';
@@ -7,16 +7,25 @@ import { getPersonalGeminiKey } from '../lib/aiCall';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
-export function useGemini() {
+export interface UseGeminiOptions {
+  aiConsent: boolean;
+  onConsentRequired: () => void;
+}
+
+export function useGemini(options?: UseGeminiOptions) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isConfigured, setIsConfigured] = useState(true); // always true: shared key is server-side
+  const [isConfigured] = useState(true); // always true: shared key is server-side
   const [retryStatus, setRetryStatus] = useState<string | null>(null);
 
-  useEffect(() => {
-    // isConfigured is always true: personal key OR server-side shared key both work
-    setIsConfigured(true);
-  }, []);
+  /** Consent gate — returns false and triggers dialog if consent not given */
+  const requireConsent = (): boolean => {
+    if (options && !options.aiConsent) {
+      options.onConsentRequired();
+      return false;
+    }
+    return true;
+  };
 
   /** Call AI client-side (personal key path only) */
   const callClientSide = async (body: AIBody): Promise<string> => {
@@ -49,10 +58,11 @@ export function useGemini() {
    *   - No personal key     → call /functions/v1/chat Edge Function (shared key stays server-side)
    */
   const sendChat = async (messages: ChatMessage[], systemPrompt: string): Promise<string> => {
+    if (!requireConsent()) throw new Error('AI consent required');
+
     const personalKey = getPersonalGeminiKey();
 
     if (personalKey) {
-      // Client-side path: personal key
       const contents = messages.map(msg => ({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }],
@@ -92,6 +102,7 @@ export function useGemini() {
   };
 
   const generateReviewer = async (notes: string): Promise<string> => {
+    if (!requireConsent()) throw new Error('AI consent required');
     const body: AIBody = {
       contents: [{ role: 'user', parts: [{ text: getReviewerPrompt(notes) }] }],
       generationConfig: { maxOutputTokens: 65536 },
@@ -100,6 +111,7 @@ export function useGemini() {
   };
 
   const generateExam = async (notes: string, topic: string): Promise<string> => {
+    if (!requireConsent()) throw new Error('AI consent required');
     const prompt = `Generate 10 exam questions about "${topic}" based on these notes:\n\n${notes}\n\nFormat as numbered list with answers at the end.`;
     const body: AIBody = {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],

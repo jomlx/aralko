@@ -19,6 +19,11 @@ interface SettingsDialogProps {
   isAuthenticated: boolean;
   onLogin: () => void;
   onLogout: () => void;
+  aiConsent: boolean;
+  aiConsentDate: string | null;
+  consentLoading: boolean;
+  onConsentOn: () => Promise<void>;
+  onConsentOff: () => Promise<void>;
 }
 
 export function SettingsDialog({
@@ -29,6 +34,11 @@ export function SettingsDialog({
   isAuthenticated,
   onLogin,
   onLogout,
+  aiConsent,
+  aiConsentDate,
+  consentLoading,
+  onConsentOn,
+  onConsentOff,
 }: SettingsDialogProps) {
   const { user } = useAuth();
   // DB is the source of truth — useUserSettings reads user_settings.display_name first
@@ -72,13 +82,11 @@ export function SettingsDialog({
   const [feedbackError, setFeedbackError] = useState('');
 
   // ── Privacy Tab State ─────────────────────────────────────────────────
-  const [aiConsent, setAiConsent] = useState<boolean>(false);
-  const [aiConsentDate, setAiConsentDate] = useState<string | null>(null);
-  const [consentLoading, setConsentLoading] = useState(false);
   const [exportingData, setExportingData] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [consentOffDialogOpen, setConsentOffDialogOpen] = useState(false);
 
   // Seed local state from DB-authoritative values (not user_metadata)
   useEffect(() => {
@@ -106,32 +114,18 @@ export function SettingsDialog({
       .then(({ data, error }) => {
         if (error) console.error('[consent fetch error]', error);
         if (data?.ai_consent_acknowledged_at) {
-          setAiConsent(true);
-          setAiConsentDate(data.ai_consent_acknowledged_at);
         }
         // If data is null/missing acknowledged_at, leave existing state untouched
       });
   }, [userId]);
 
-  // ── Privacy handlers ──────────────────────────────────────────────────
-  const handleToggleConsent = async (_checked: boolean) => {
-    if (!user || aiConsent) return; // read-only once acknowledged
-    const now = new Date().toISOString();
-    // Optimistically update UI immediately so Switch responds to click
-    setAiConsent(true);
-    setAiConsentDate(now);
-    setConsentLoading(true);
-    const { error } = await supabase.from('user_settings').upsert(
-      { user_id: user.id, ai_consent_acknowledged_at: now },
-      { onConflict: 'user_id' }
-    );
-    if (error) {
-      // Roll back optimistic update on failure
-      console.error('[consent save error]', error);
-      setAiConsent(false);
-      setAiConsentDate(null);
+  // ── Privacy handlers ──────────────────────────────────────
+  const handleToggleConsent = (checked: boolean) => {
+    if (checked) {
+      onConsentOn();
+    } else {
+      setConsentOffDialogOpen(true);
     }
-    setConsentLoading(false);
   };
 
   const handleExportData = async () => {
@@ -335,19 +329,10 @@ export function SettingsDialog({
   const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || user?.email?.[0]?.toUpperCase() || '?';
 
   // ── Gemini key state ──────────────────────────────────────────────────
-  const [showKeyDialog, setShowKeyDialog] = useState(false);
   const [keyInput, setKeyInput] = useState('');
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
   const [keyStatus, setKeyStatus] = useState<'idle' | 'success' | 'error'>('idle');
-
-  useEffect(() => {
-    if (keyStatus === 'success') {
-      setShowKeyDialog(false);
-      setKeyError('');
-    }
-  }, [keyStatus]);
-
   const [keyError, setKeyError] = useState('');
   const [showGuide, setShowGuide] = useState(false);
   const guideRef = useRef<HTMLDivElement>(null);
@@ -629,108 +614,147 @@ export function SettingsDialog({
               <div className="pt-2">
                 <h3 className="text-lg font-semibold text-primary mb-3">Connections</h3>
                 {!isAuthenticated ? (
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-token p-4">
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-sm font-semibold text-primary">Connect Spotify</span>
-                      <span className="text-xs text-secondary">Connect Spotify to play your music directly in Aralko.</span>
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-surface p-3">
+                    <div className="flex flex-col gap-3 min-w-0">
+                      <span className="text-sm font-semibold text-primary">Connect your own AI key</span>
+                      <span className="text-xs text-secondary truncate">Connect Spotify to play your music directly in Aralko.</span>
                     </div>
                     <button
                       onClick={onLogin}
-                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors shrink-0"
+                      className="bg-[#1db954] hover:bg-[#1ed760] text-black font-bold text-xs py-1.5 px-4 rounded-xl border-0 transition-colors"
                     >
                       Connect
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-token p-4">
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Music2 size={14} className="text-[#1db954] shrink-0" />
-                        <span className="text-sm font-semibold text-primary">Spotify Connected</span>
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-surface p-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
+                        <Music2 size={14} className="text-[#1db954]" />
                       </div>
-                      <span className="text-xs text-success">Premium active</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-primary truncate">Spotify Connected</span>
+                        <span className="text-2xs text-success">Premium active</span>
+                      </div>
                     </div>
                     <button
                       onClick={onLogout}
-                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors shrink-0"
+                      className="flex items-center gap-1.5 shrink-0 text-xs px-3 py-1.5 rounded-lg text-danger hover:bg-danger/10 border border-danger/20 transition-colors"
                     >
+                      <LogOut size={12} />
                       Disconnect
                     </button>
                   </div>
                 )}
               </div>
 
-              <div className="pt-4">
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-token p-4">
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-primary">Connect your own AI key</span>
-                      <div className="relative" ref={guideRef}>
-                        <button
-                          onClick={() => setShowGuide(v => !v)}
-                          className="flex items-center justify-center rounded-full text-muted hover:text-accent transition-colors"
-                          title="How to get a free key"
-                        >
-                          <Info size={15} />
-                        </button>
-                        {showGuide && (
-                          <div className="absolute top-8 z-10 w-72 rounded-xl border border-token bg-surface p-4 shadow-xl shadow-black/20">
-                            <div className="flex items-center justify-between mb-3">
-                              <p className="text-2xs font-semibold text-primary">How to get your free key</p>
-                              <button onClick={() => setShowGuide(false)} className="text-secondary hover:text-secondary transition-colors">
-                                <X size={13} />
-                              </button>
-                            </div>
-                            {[
-                              <><span className="font-semibold text-accent">"Get Key"</span> button →</>,
-                              <>Click the blue <span className="font-semibold text-primary">"Create API key"</span> button on Google's page</>,
-                              <>Copy the key that appears (starts with <span className="font-mono text-accent">"AIza..."</span>)</>,
-                              <>Paste it and click <span className="font-semibold text-primary">Save</span></>,
-                            ].map((step, i) => (
-                              <div key={i} className="flex items-start gap-2 mb-2 last:mb-0">
-                                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent/30 text-2xs font-bold text-accent mt-0.5">
-                                  {i + 1}
-                                </span>
-                                <p className="text-2xs text-secondary leading-relaxed">{step}</p>
-                              </div>
-                            ))}
+              <div className="pt-4">  
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-primary">Connect your own AI key</span>
+                    <div className="relative" ref={guideRef}>
+                      <button
+                        onClick={() => setShowGuide(v => !v)}
+                        className="flex items-center justify-center rounded-full text-muted hover:text-accent transition-colors"
+                        title="How to get a free key"
+                      >
+                        <Info size={15} />
+                      </button>
+                      {showGuide && (
+                        <div className="absolute top-12 z-10 w-72 rounded-xl border border-token bg-surface p-4 shadow-xl shadow-black/20">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-2xs font-semibold text-primary">How to get your free key</p>
+                            <button onClick={() => setShowGuide(false)} className="text-secondary hover:text-secondary transition-colors">
+                              <X size={13} />
+                            </button>
                           </div>
-                        )}
-                      </div>
+                          {[
+                            <><span className="font-semibold text-accent">"Get my free key"</span> below</>,
+                            <>Click the blue <span className="font-semibold text-primary">"Create API key"</span> button on Google's page</>,
+                            <>Copy the key that appears (starts with <span className="font-mono text-accent">"AIza..."</span>)</>,
+                            <>Paste it below and click <span className="font-semibold text-primary">Save</span></>,
+                          ].map((step, i) => (
+                            <div key={i} className="flex items-start gap-2 mb-2 last:mb-0">
+                              <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent/30 text-2xs font-bold text-accent mt-0.5">
+                                {i + 1}
+                              </span>
+                              <p className="text-2xs text-secondary leading-relaxed">{step}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <span className="text-xs text-secondary">Add your free Gemini API key for faster, more reliable responses.</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowKeyDialog(true)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors shrink-0"
-                  >
-                    Get Key
-                  </button>
-                </div>
-
-                {savedKey && (
-                  <div className="flex items-center justify-between rounded-xl border border-token px-4 py-3 mt-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
-                        <Check size={16} className="text-success" />
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-medium text-primary">Key is active</span>
-                        <span className="text-xs text-secondary font-mono">
-                          {savedKey.slice(0, 4)}••••••••••{savedKey.slice(-4)}
-                        </span>
-                      </div>
-                    </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-secondary leading-relaxed">
+                      Add your free Gemini API key for faster, more reliable responses.
+                    </p>
+                  
                     <button
-                      onClick={handleRemoveKey}
-                      className="rounded-lg p-2 text-muted hover:bg-white/[0.05] hover:text-danger transition-colors"
-                      title="Remove key"
+                      type="button"
+                      onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank', 'noopener,noreferrer')}
+                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors"
                     >
-                      <Trash2 size={16} />
+                      Get Key
                     </button>
                   </div>
-                )}
+
+                  {savedKey ? (
+                    <div className="flex items-center justify-between rounded-xl border border-token bg-surface px-4 py-3 mt-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
+                          <Check size={16} className="text-success" />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-medium text-primary">Key is active</span>
+                          <span className="text-xs text-secondary font-mono">
+                            {savedKey.slice(0, 4)}••••••••••{savedKey.slice(-4)}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleRemoveKey}
+                        className="rounded-lg p-2 text-muted hover:bg-white/[0.05] hover:text-danger transition-colors"
+                        title="Remove key"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 mt-6">
+                        <input
+                          type="password"
+                          placeholder="AIzaSy..."
+                          value={keyInput}
+                          onChange={(e) => setKeyInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveKey(); }}
+                          className="flex-1 rounded-xl border border-token bg-app px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
+                        />
+                        <button
+                          onClick={handleSaveKey}
+                          disabled={validating || !keyInput.trim()}
+                          className="flex w-[80px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-primary hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {validating ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                        </button>
+                      </div>
+                      {keyStatus === 'success' && (
+                        <div className="flex items-center gap-2 text-xs text-success">
+                          <Check size={13} />
+                          Key added - you're all set!
+                        </div>
+                      )}
+                      {keyStatus === 'error' && (
+                        <div className="flex items-start gap-2 text-xs text-red-400">
+                          <X size={13} className="mt-0.5 shrink-0" />
+                          <span>{keyError || "That doesn't look right - please check you copied the full key."}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
                 </div>
               </ScrollArea>
@@ -764,7 +788,7 @@ export function SettingsDialog({
                   <h3 className="text-sm font-semibold text-primary">AI & Data Processing</h3>
                   <Switch
                     checked={aiConsent}
-                    disabled={aiConsent || consentLoading}
+                    disabled={consentLoading}
                     onCheckedChange={handleToggleConsent}
                   />
                 </div>
@@ -774,7 +798,7 @@ export function SettingsDialog({
                 {aiConsent && aiConsentDate && (
                   <p className="text-xs text-success mt-1 flex items-center gap-1.5"><Check size={12} /> Acknowledged {new Date(aiConsentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 )}
-                {!aiConsent && <p className="text-xs text-muted mt-1">Toggle to acknowledge. This does not block any feature.</p>}
+                {!aiConsent && <p className="text-xs text-muted mt-1">AI features are off. Turn this on to use them.</p>}
               </div>
 
               <div className="h-px bg-white/5 my-6" />
@@ -995,65 +1019,28 @@ export function SettingsDialog({
       </AlertDialogContent>
     </AlertDialog>
 
-    <Dialog open={showKeyDialog} onOpenChange={(open) => {
-      setShowKeyDialog(open);
-      if (!open) {
-        setKeyInput('');
-        setKeyError('');
-      }
-    }}>
-      <DialogContent className="w-[95vw] sm:max-w-md bg-app border-token p-6">
-        <DialogHeader>
-          <DialogTitle className="text-primary text-lg font-semibold">Get your free Gemini API key</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <ol className="list-decimal list-inside space-y-2 text-sm text-secondary">
-            <li>Open Google AI Studio</li>
-            <li>Click <strong>"Create API key"</strong></li>
-            <li>Copy the key that appears (starts with "AIza...")</li>
-            <li>Paste it below</li>
-          </ol>
-          <button
-            type="button"
-            onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank', 'noopener,noreferrer')}
-            className="w-full rounded-xl bg-surface border border-token px-4 py-2 text-sm font-semibold text-primary hover:bg-white/[0.04] transition-colors"
+    {/* AI Consent OFF confirmation dialog */}
+    <AlertDialog open={consentOffDialogOpen} onOpenChange={setConsentOffDialogOpen}>
+      <AlertDialogContent className="bg-app border-token">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-primary">Turn off AI features?</AlertDialogTitle>
+          <AlertDialogDescription className="text-secondary">
+            AI features that send your content to Google Gemini will stop working until you turn this back on.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary">
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => { onConsentOff(); setConsentOffDialogOpen(false); }}
+            className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300"
           >
-            Open Google AI Studio
-          </button>
-          <div className="flex flex-col gap-2 mt-4">
-            <div className="flex items-center gap-2">
-              <input
-                type="password"
-                placeholder="AIzaSy..."
-                value={keyInput}
-                onChange={(e) => setKeyInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveKey(); }}
-                className="flex-1 rounded-xl border border-token bg-app px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
-              />
-              <button
-                onClick={handleSaveKey}
-                disabled={validating || !keyInput.trim()}
-                className="flex w-[80px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-primary hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {validating ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
-              </button>
-            </div>
-            {keyStatus === 'success' && (
-              <div className="flex items-center gap-2 text-xs text-success">
-                <Check size={13} />
-                Key added - you're all set!
-              </div>
-            )}
-            {keyStatus === 'error' && (
-              <div className="flex items-start gap-2 text-xs text-red-400">
-                <X size={13} className="mt-0.5 shrink-0" />
-                <span>{keyError || "That doesn't look right - please check you copied the full key."}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+            Turn off
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

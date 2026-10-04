@@ -23,7 +23,18 @@ import { useSpotify } from './hooks/useSpotify';
 import { useUserSettings } from './hooks/useUserSettings';
 import { useStreakLogic } from './hooks/useStreakLogic';
 import { useAuth } from './hooks/useAuth';
+import { useAIConsent } from './hooks/useAIConsent';
 import { AuthPage } from './pages/AuthPage';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './components/ui/alert-dialog';
 
 import type { MainTab, Activity, StudySession } from './types';
 
@@ -129,6 +140,9 @@ function AppContent() {
   }, [loading, activities, selectedActivityId, setSelectedActivityId]);
 
   const { user } = useAuth();
+  const { aiConsent, aiConsentDate, consentLoading, setConsentOn, setConsentOff } = useAIConsent();
+  const [consentGateOpen, setConsentGateOpen] = useState(false);
+  const [pendingConsentAction, setPendingConsentAction] = useState<(() => void) | null>(null);
   
   const streakLogic = useStreakLogic({
     userId: user?.id,
@@ -254,7 +268,38 @@ function AppContent() {
             isAuthenticated={isAuthenticated}
             onLogin={login}
             onLogout={logout}
+            aiConsent={aiConsent}
+            aiConsentDate={aiConsentDate}
+            consentLoading={consentLoading}
+            onConsentOn={setConsentOn}
+            onConsentOff={setConsentOff}
           />
+
+          {/* AI Consent Gate Dialog */}
+          <AlertDialog open={consentGateOpen} onOpenChange={setConsentGateOpen}>
+            <AlertDialogContent className="bg-app border-token">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-primary">Allow AI processing?</AlertDialogTitle>
+                <AlertDialogDescription className="text-secondary">
+                  AI features need your consent to send your content to Google Gemini.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-surface border-token text-secondary hover:bg-white/[0.05] hover:text-primary" onClick={() => setPendingConsentAction(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-accent hover:bg-accent/90 text-primary"
+                  onClick={async () => {
+                    await setConsentOn();
+                    pendingConsentAction?.();
+                    setPendingConsentAction(null);
+                    setConsentGateOpen(false);
+                  }}
+                >
+                  Allow
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           <main className="flex-1 flex flex-col min-h-0 h-full bg-app">
 
@@ -319,6 +364,10 @@ function AppContent() {
                         selectedActivity={selectedActivityId}
                         onUpdateActivity={updateActivity}
                         addXP={userSettings.addXP}
+                        aiConsent={aiConsent}
+                        onConsentRequired={() => {
+                          setConsentGateOpen(true);
+                        }}
                       />
                     ) : (
                       <div className="flex flex-1 flex-col items-center justify-center text-secondary">

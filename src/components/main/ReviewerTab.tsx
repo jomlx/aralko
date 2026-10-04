@@ -15,9 +15,11 @@ interface ReviewerTabProps {
   selectedActivity: number;
   onUpdateActivity: (id: number, updates: Partial<Activity>) => void;
   addXP?: (amount: number, eventKey?: string) => void;
+  aiConsent: boolean;
+  onConsentRequired: () => void;
 }
 
-export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, addXP }: ReviewerTabProps) {
+export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, addXP, aiConsent, onConsentRequired }: ReviewerTabProps) {
   const activeActivity = activities.find(a => a.id === selectedActivity) || activities[0];
 
   const [isDragging, setIsDragging] = useState(false);
@@ -401,7 +403,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
           }`}
         >
           <div className="w-[280px] h-full flex flex-col">
-            <AIChatPanel activeActivity={activeActivity} />
+            <AIChatPanel activeActivity={activeActivity} aiConsent={aiConsent} onConsentRequired={onConsentRequired} />
           </div>
         </div>
 

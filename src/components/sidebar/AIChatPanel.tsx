@@ -33,9 +33,11 @@ import {
 interface AIChatPanelProps {
   activeActivity?: Activity;
   onUpdateActivity?: (id: number, updates: Partial<Activity>) => void;
+  aiConsent: boolean;
+  onConsentRequired: () => void;
 }
 
-export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
+export function AIChatPanel({ activeActivity, aiConsent, onConsentRequired }: AIChatPanelProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -47,7 +49,7 @@ export function AIChatPanel({ activeActivity }: AIChatPanelProps) {
   const { messages, loading: historyLoading, addMessage, clearMessages, getContextMessages } =
     useChat(activeActivity?.id);
 
-  const gemini = useGemini() || {
+  const gemini = useGemini({ aiConsent, onConsentRequired }) || {
     sendChat: async (msgs: ChatMessage[], _prompt: string) =>
       `Simulated response to: ${msgs[msgs.length - 1]?.content || 'Hello'}`,
     generateReviewer: async () => ''

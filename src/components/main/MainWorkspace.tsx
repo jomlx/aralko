@@ -71,6 +71,8 @@ interface MainWorkspaceProps {
   isTestMode: boolean;
   onEnterTestMode: () => void;
   onExitTestMode: () => void;
+  aiConsent: boolean;
+  onConsentRequired: () => void;
 }
 
 export function MainWorkspace({
@@ -83,6 +85,8 @@ export function MainWorkspace({
   isTestMode,
   onEnterTestMode,
   onExitTestMode,
+  aiConsent,
+  onConsentRequired,
 }: MainWorkspaceProps) {
   const { showToast } = useToast();
   const [editingTabId, setEditingTabId] = useState<number | null>(null);
@@ -96,7 +100,7 @@ export function MainWorkspace({
 
   const activeActivity = activities.find((a) => a.id === selectedActivity) || activities[0];
 
-  const gemini = useGemini() || { generateReviewer: async () => '' };
+  const gemini = useGemini({ aiConsent, onConsentRequired }) || { generateReviewer: async () => '' };
 
   const [isGeneratingNewSet, setIsGeneratingNewSet] = useState(false);
 
@@ -371,6 +375,8 @@ export function MainWorkspace({
             <AIChatPanel
               activeActivity={activeActivity}
               onUpdateActivity={onUpdateActivity}
+              aiConsent={aiConsent}
+              onConsentRequired={onConsentRequired}
             />
           </div>
         </div>
