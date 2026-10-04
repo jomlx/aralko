@@ -268,71 +268,46 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
     'linear-gradient(135deg, #FF7A7A, #F5588C)',
     'linear-gradient(135deg, #FF9BE8, #B38CFF)',
   ];
-  const streakBg = streakStage > 0 ? STREAK_GRADIENTS[Math.min(streakStage, 5)] : null;
+  const streakBg = STREAK_GRADIENTS[Math.min(streakStage, 5)];
   const freezeLabel = freezes === 0 ? 'No freezes' : freezes === 1 ? '1 freeze' : `${freezes} freezes`;
+  const textColor = streakBg ? '#111' : undefined;
+  const subColor  = streakBg ? 'rgba(17,17,17,0.8)' : undefined;
+  const avatarBg  = streakBg ? 'rgba(255,255,255,0.5)' : undefined;
 
   return (
     <>
       {/* Profile Card Trigger */}
-      {streakStage === 0 ? (
-        /* ── Stage 0: original card ── */
-        <div
-          onClick={() => setIsOpen(true)}
-          className="flex items-center gap-3 rounded-2xl border border-token bg-surface p-3 hover:bg-white/[0.09] cursor-pointer transition-colors shrink-0"
-        >
-          <Avatar className="h-9 w-9">
-            {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-            <AvatarFallback className="bg-accent text-primary font-bold text-xs">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-semibold text-primary truncate">{displayName}</span>
-              <div className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 text-2xs font-medium">
-                <Flame size={10} />
-                <span>{streak} {streak === 1 ? 'day' : 'days'}</span>
-              </div>
-            </div>
-            {freezes > 0 ? (
-              <div className="inline-flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 text-2xs font-medium w-fit" title="Streak Freezes">
-                <Snowflake size={10} />
-                <span>{freezes} freeze{freezes !== 1 ? 's' : ''}</span>
-              </div>
-            ) : (
-              <span className="text-2xs text-muted mt-0.5">No freezes</span>
-            )}
-          </div>
+      <div
+        onClick={() => setIsOpen(true)}
+        className="flex items-center gap-3 rounded-[14px] cursor-pointer shrink-0 overflow-hidden"
+        style={streakBg
+          ? { background: streakBg, padding: '14px 18px' }
+          : { background: 'var(--color-surface)', border: '1px solid var(--color-token)', padding: '14px 18px' }
+        }
+      >
+        <Avatar className="h-[46px] w-[46px] shrink-0" style={{ background: avatarBg, borderRadius: '50%' }}>
+          {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
+          <AvatarFallback style={{ background: avatarBg, color: textColor }} className="font-bold text-base">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+          <span className="text-[15px] font-medium leading-tight truncate" style={{ color: textColor }}>
+            {displayName}
+          </span>
+          <span className="text-[13px] flex items-center gap-1" style={{ color: subColor, opacity: subColor ? undefined : 0.7 }}>
+            <Snowflake size={12} />
+            {freezeLabel}
+          </span>
         </div>
-      ) : (
-        /* ── Stages 1-5: gradient card ── */
-        <div
-          onClick={() => setIsOpen(true)}
-          className="flex items-center gap-3 rounded-[14px] cursor-pointer shrink-0 overflow-hidden"
-          style={{ background: streakBg!, padding: '14px 18px' }}
-        >
-          <Avatar className="h-[46px] w-[46px] shrink-0" style={{ background: 'rgba(255,255,255,0.5)', borderRadius: '50%' }}>
-            {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-            <AvatarFallback style={{ background: 'rgba(255,255,255,0.5)', color: '#111' }} className="font-bold text-base">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-            <span className="text-[15px] font-medium leading-tight truncate" style={{ color: '#111' }}>
-              {displayName}
-            </span>
-            <span className="text-[13px] flex items-center gap-1" style={{ color: 'rgba(17,17,17,0.8)' }}>
-              <Snowflake size={12} />
-              {freezeLabel}
-            </span>
+        <div className="flex flex-col items-end shrink-0 gap-0.5">
+          <div className="flex items-center gap-1 leading-none">
+            <Flame size={26} style={{ color: textColor }} />
+            <span className="text-[32px] font-medium leading-none tabular-nums" style={{ color: textColor }}>{streak}</span>
           </div>
-          <div className="flex flex-col items-end shrink-0 gap-0.5">
-            <div className="flex items-center gap-1 leading-none">
-              <Flame size={26} style={{ color: '#111' }} />
-              <span className="text-[32px] font-medium leading-none tabular-nums" style={{ color: '#111' }}>{streak}</span>
-            </div>
-            <span className="text-[12px] leading-none" style={{ color: 'rgba(17,17,17,0.8)' }}>day streak</span>
-          </div>
+          <span className="text-[12px] leading-none" style={{ color: subColor, opacity: subColor ? undefined : 0.7 }}>day streak</span>
         </div>
-      )}
+      </div>
 
       {/* Profile Dialog */}
       {isOpen && (
