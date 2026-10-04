@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Check, X, Loader2, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, Trash2, Music2, User, Settings2, MessageSquare, ShieldCheck, Download, AlertTriangle, Info } from 'lucide-react';
+import { Sun, Moon, Check, X, Loader2, SquarePen, Camera, Mail, Lock, Eye, EyeOff, LogOut, Trash2, User, Settings2, MessageSquare, ShieldCheck, Download, AlertTriangle, Info } from 'lucide-react';
 import { getPersonalGeminiKey, setPersonalGeminiKey, validateGeminiKey } from '../lib/aiCall';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -639,7 +639,6 @@ export function SettingsDialog({
                   <div className="flex items-center justify-between gap-4 rounded-xl border border-token p-4">
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <div className="flex items-center gap-2">
-                        <Music2 size={14} className="text-[#1db954] shrink-0" />
                         <span className="text-sm font-semibold text-primary">Spotify Connected</span>
                       </div>
                       <span className="text-xs text-success">Premium active</span>
@@ -740,15 +739,28 @@ export function SettingsDialog({
 
               {/* Section 1: What we collect */}
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-primary">What we store</h3>
-                <ul className="space-y-2 text-sm text-secondary">
-                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Account info</span> — email address, display name, avatar image (in Supabase Storage)</span></li>
-                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Study activity</span> — Pomodoro sessions, daily streak, XP / level, flashcard progress, quiz scores</span></li>
-                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Activities & generated content</span> — your study notes, AI-generated reviewer cheat sheets, flashcard sets, and test questions (stored per-activity)</span></li>
-                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">AI chat messages</span> — messages sent in the AI study assistant chat are saved to the database per activity so conversations persist across sessions</span></li>
-                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Spotify tokens</span> — OAuth access/refresh tokens are stored in the database for cross-device session persistence (not just browser localStorage)</span></li>
-                  <li className="flex items-start gap-2"><Check size={14} className="text-accent mt-0.5 shrink-0" /><span><span className="font-medium text-primary">Preferences</span> — Pomodoro preset, autostart, personal Gemini API key, and AI settings</span></li>
-                </ul>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-primary">What we store</h3>
+                  <span className="inline-flex items-center justify-center rounded-full bg-surface border border-token px-2 py-0.5 text-xs font-medium text-secondary leading-none">6</span>
+                </div>
+                <div className="rounded-xl border border-surface overflow-hidden">
+                  {([
+                    { title: 'Account info', desc: 'Email address, display name, avatar image (in Supabase Storage)' },
+                    { title: 'Study activity', desc: 'Pomodoro sessions, daily streak, XP / level, flashcard progress, quiz scores' },
+                    { title: 'Activities & generated content', desc: 'Your study notes, AI-generated reviewer cheat sheets, flashcard sets, and test questions (stored per-activity)' },
+                    { title: 'AI chat messages', desc: 'Messages sent in the AI study assistant chat are saved to the database per activity so conversations persist across sessions' },
+                    { title: 'Spotify tokens', desc: 'OAuth access/refresh tokens are stored in the database for cross-device session persistence (not just browser localStorage)' },
+                    { title: 'Preferences', desc: 'Pomodoro preset, autostart, personal Gemini API key, and AI settings' },
+                  ] as { title: string; desc: string }[]).map((item, i, arr) => (
+                    <div
+                      key={item.title}
+                      className={`px-[18px] py-[14px]${i < arr.length - 1 ? ' border-b border-surface' : ''}`}
+                    >
+                      <p className="text-[14px] font-semibold text-primary leading-snug">{item.title}</p>
+                      <p className="text-[13px] text-secondary mt-0.5 leading-snug">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="h-px bg-white/5 my-6" />
