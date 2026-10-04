@@ -335,18 +335,10 @@ export function SettingsDialog({
   const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || user?.email?.[0]?.toUpperCase() || '?';
 
   // ── Gemini key state ──────────────────────────────────────────────────
-  const [showKeyDialog, setShowKeyDialog] = useState(false);
   const [keyInput, setKeyInput] = useState('');
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
   const [keyStatus, setKeyStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  
-  useEffect(() => {
-    if (keyStatus === 'success') {
-      setShowKeyDialog(false);
-      setKeyError('');
-    }
-  }, [keyStatus]);
   const [keyError, setKeyError] = useState('');
   const [showGuide, setShowGuide] = useState(false);
   const guideRef = useRef<HTMLDivElement>(null);
@@ -626,41 +618,43 @@ export function SettingsDialog({
               </div>
 
               <div className="pt-2">
-                <h3 className="text-sm font-semibold text-primary mb-3">Integrations</h3>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold text-primary">Connect Spotify</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs text-secondary leading-relaxed">
-                        Link your Spotify Premium account to play music directly.
-                      </p>
-                      {isAuthenticated && (
-                        <span className="text-2xs text-success flex items-center gap-1"><Music2 size={10} /> Premium active</span>
-                      )}
+                <h3 className="text-lg font-semibold text-primary mb-3">Connections</h3>
+                {!isAuthenticated ? (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-surface p-3">
+                    <div className="flex flex-col gap-3 min-w-0">
+                      <span className="text-sm font-semibold text-primary">Connect your own AI key</span>
+                      <span className="text-xs text-secondary truncate">Connect Spotify to play your music directly in Aralko.</span>
                     </div>
-                    {!isAuthenticated ? (
-                      <button
-                        onClick={onLogin}
-                        className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors"
-                      >
-                        Connect
-                      </button>
-                    ) : (
-                      <button
-                        onClick={onLogout}
-                        className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors"
-                      >
-                        Disconnect
-                      </button>
-                    )}
+                    <button
+                      onClick={onLogin}
+                      className="bg-[#1db954] hover:bg-[#1ed760] text-black font-bold text-xs py-1.5 px-4 rounded-xl border-0 transition-colors"
+                    >
+                      Connect
+                    </button>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-token bg-surface p-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1db954]/20 shrink-0">
+                        <Music2 size={14} className="text-[#1db954]" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-primary truncate">Spotify Connected</span>
+                        <span className="text-2xs text-success">Premium active</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onLogout}
+                      className="flex items-center gap-1.5 shrink-0 text-xs px-3 py-1.5 rounded-lg text-danger hover:bg-danger/10 border border-danger/20 transition-colors"
+                    >
+                      <LogOut size={12} />
+                      Disconnect
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className="pt-4">
-                <h3 className="text-sm font-semibold text-primary mb-3">AI</h3>
+              <div className="pt-4">  
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-primary">Connect your own AI key</span>
@@ -705,14 +699,14 @@ export function SettingsDialog({
                   
                     <button
                       type="button"
-                      onClick={() => setShowKeyDialog(true)}
+                      onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank', 'noopener,noreferrer')}
                       className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/20 transition-colors"
                     >
                       Get Key
                     </button>
                   </div>
 
-                  {savedKey && (
+                  {savedKey ? (
                     <div className="flex items-center justify-between rounded-xl border border-token bg-surface px-4 py-3 mt-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
@@ -733,6 +727,38 @@ export function SettingsDialog({
                         <Trash2 size={16} />
                       </button>
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 mt-6">
+                        <input
+                          type="password"
+                          placeholder="AIzaSy..."
+                          value={keyInput}
+                          onChange={(e) => setKeyInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveKey(); }}
+                          className="flex-1 rounded-xl border border-token bg-app px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
+                        />
+                        <button
+                          onClick={handleSaveKey}
+                          disabled={validating || !keyInput.trim()}
+                          className="flex w-[80px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-primary hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {validating ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                        </button>
+                      </div>
+                      {keyStatus === 'success' && (
+                        <div className="flex items-center gap-2 text-xs text-success">
+                          <Check size={13} />
+                          Key added - you're all set!
+                        </div>
+                      )}
+                      {keyStatus === 'error' && (
+                        <div className="flex items-start gap-2 text-xs text-red-400">
+                          <X size={13} className="mt-0.5 shrink-0" />
+                          <span>{keyError || "That doesn't look right - please check you copied the full key."}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -998,67 +1024,6 @@ export function SettingsDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-
-    <Dialog open={showKeyDialog} onOpenChange={(open) => {
-      setShowKeyDialog(open);
-      if (!open) {
-        setKeyInput('');
-        setKeyError('');
-      }
-    }}>
-      <DialogContent className="w-[95vw] sm:max-w-md bg-app border-token p-6">
-        <DialogHeader>
-          <DialogTitle className="text-primary text-lg font-semibold">Get your free Gemini API key</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <ol className="list-decimal list-inside space-y-2 text-sm text-secondary">
-            <li>Open Google AI Studio</li>
-            <li>Click <strong>"Create API key"</strong></li>
-            <li>Copy the key that appears (starts with "AIza...")</li>
-            <li>Paste it below</li>
-          </ol>
-          <button
-            type="button"
-            onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank', 'noopener,noreferrer')}
-            className="w-full rounded-xl bg-surface border border-token px-4 py-2 text-sm font-semibold text-primary hover:bg-white/[0.04] transition-colors"
-          >
-            Open Google AI Studio
-          </button>
-          
-          <div className="flex flex-col gap-2 mt-4">
-            <div className="flex items-center gap-2">
-              <input
-                type="password"
-                placeholder="AIzaSy..."
-                value={keyInput}
-                onChange={(e) => setKeyInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveKey(); }}
-                className="flex-1 rounded-xl border border-token bg-app px-3 py-2 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
-              />
-              <button
-                onClick={handleSaveKey}
-                disabled={validating || !keyInput.trim()}
-                className="flex w-[80px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-primary hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {validating ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
-              </button>
-            </div>
-            {keyStatus === 'success' && (
-              <div className="flex items-center gap-2 text-xs text-success">
-                <Check size={13} />
-                Key added - you're all set!
-              </div>
-            )}
-            {keyStatus === 'error' && (
-              <div className="flex items-start gap-2 text-xs text-red-400">
-                <X size={13} className="mt-0.5 shrink-0" />
-                <span>{keyError || "That doesn't look right - please check you copied the full key."}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
     </>
   );
 }
