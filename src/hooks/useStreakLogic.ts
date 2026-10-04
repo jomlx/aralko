@@ -103,11 +103,11 @@ export function useStreakLogic({ userId, sessions, sessionsLoaded, settingsLoade
       localStorage.setItem(freezeCoverKey, toLocalDateStr(yesterday.toISOString()));
       
       updateStreakData(streakFreezes - 1, savedStreak);
-      setToastMessage('Your streak was protected! ❄️ 1 freeze used.');
+      setToastMessage('streak:protected');
       setTimeout(() => setToastMessage(null), 5000);
     } else if (action === 'reset') {
       updateStreakData(streakFreezes, 0);
-      setToastMessage('Your streak was lost. Keep trying! 🔥');
+      setToastMessage('streak:lost');
       setTimeout(() => setToastMessage(null), 5000);
     }
 
@@ -122,7 +122,7 @@ export function useStreakLogic({ userId, sessions, sessionsLoaded, settingsLoade
 
     if (newStreak % 7 === 0 && streakFreezes < 2) {
       newFreezes += 1;
-      setToastMessage('You earned a Streak Freeze! ❄️ (Max 2)');
+      setToastMessage('streak:earned');
       setTimeout(() => setToastMessage(null), 5000);
     }
 

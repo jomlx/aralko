@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Smartphone, Snowflake } from 'lucide-react';
+import { Smartphone, X } from 'lucide-react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { StudyTracker } from './components/sidebar/StudyTracker';
@@ -418,14 +418,37 @@ function AppContent() {
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      {streakLogic.toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
-          <div className="bg-sky-500/10 border border-sky-500/20 text-sky-400 px-6 py-3 rounded-2xl shadow-xl shadow-black/40 font-medium backdrop-blur-md flex items-center gap-3">
-            <span className="text-xl"><Snowflake size={20} /></span>
-            {streakLogic.toastMessage}
+      {streakLogic.toastMessage && (() => {
+        const msg = streakLogic.toastMessage!;
+        const isLight = document.documentElement.classList.contains('light');
+        const VARIANTS: Record<string, { bg: [string, string]; border: string; title: string; desc: string }> = {
+          'streak:lost':      { bg: ['#FDEDED', 'color-mix(in srgb, #E5484D 14%, #151922)'], border: '#E5484D', title: 'Streak lost',         desc: 'Keep trying! Start a new one today.' },
+          'streak:protected': { bg: ['#EAF2FE', 'color-mix(in srgb, #3E8BF0 14%, #151922)'], border: '#3E8BF0', title: 'Streak protected',    desc: '1 freeze used.' },
+          'streak:earned':    { bg: ['#E8F7EE', 'color-mix(in srgb, #30A46C 14%, #151922)'], border: '#30A46C', title: 'Streak freeze earned', desc: 'You can hold up to 2.' },
+        };
+        const v = VARIANTS[msg];
+        if (!v) return null;
+        return (
+          <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <div
+              className="flex items-start gap-3 rounded-xl border min-w-[260px] max-w-xs"
+              style={{ background: isLight ? v.bg[0] : v.bg[1], borderColor: v.border, padding: '14px 16px' }}
+            >
+              <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                <p className="text-[14px] font-semibold text-primary leading-snug">{v.title}</p>
+                <p className="text-[13px] text-secondary leading-snug">{v.desc}</p>
+              </div>
+              <button
+                onClick={() => { /* auto-dismiss handles removal */ }}
+                className="text-muted hover:text-primary hover:bg-black/5 rounded p-0.5 transition-colors shrink-0 mt-0.5"
+                aria-label="Dismiss"
+              >
+                <X size={14} />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <AddActivityModal 
         isOpen={isModalOpen}
