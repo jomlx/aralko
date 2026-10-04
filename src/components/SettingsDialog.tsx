@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Switch } from './ui/switch';
 import { ScrollArea } from './ui/scroll-area';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './ui/accordion';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -743,24 +744,25 @@ export function SettingsDialog({
                   <h3 className="text-sm font-semibold text-primary">What we store</h3>
                   <span className="inline-flex items-center justify-center rounded-full bg-surface border border-token px-2 py-0.5 text-xs font-medium text-secondary leading-none">6</span>
                 </div>
-                <div className="rounded-xl border border-token overflow-hidden">
+                <Accordion className="rounded-xl border border-token overflow-hidden divide-y divide-token">
                   {([
-                    { title: 'Account information', desc: 'Your email, display name, and profile picture.' },
-                    { title: 'Study progress', desc: 'Pomodoro sessions, streaks, XP, level, flashcard progress, and quiz scores.' },
-                    { title: 'Study content', desc: 'Your notes, reviewers, cheat sheets, flashcards, and test questions.' },
-                    { title: 'AI chat', desc: 'Your conversations with the AI study assistant, saved so you can continue them later.' },
-                    { title: 'Spotify connection', desc: 'Your Spotify access and refresh tokens, securely stored to keep you connected across devices.' },
-                    { title: 'Preferences', desc: 'Your Pomodoro settings, AI preferences, and personal Gemini API key.' },
-                  ] as { title: string; desc: string }[]).map((item, i, arr) => (
-                    <div
-                      key={item.title}
-                      className={`px-5 py-4${i < arr.length - 1 ? ' border-b border-token' : ''}`}
-                    >
-                      <p className="text-[14px] font-semibold text-primary leading-snug">{item.title}</p>
-                      <p className="text-[13px] text-secondary mt-1 leading-snug">{item.desc}</p>
-                    </div>
+                    { value: 'account',  title: 'Account information',  desc: 'Your email, display name, and profile picture.' },
+                    { value: 'progress', title: 'Study progress',       desc: 'Pomodoro sessions, streaks, XP, level, flashcard progress, and quiz scores.' },
+                    { value: 'content',  title: 'Study content',        desc: 'Your notes, reviewers, cheat sheets, flashcards, and test questions.' },
+                    { value: 'chat',     title: 'AI chat',              desc: 'Your conversations with the AI study assistant, saved so you can continue them later.' },
+                    { value: 'spotify',  title: 'Spotify connection',   desc: 'Your Spotify access and refresh tokens, securely stored to keep you connected across devices.' },
+                    { value: 'prefs',    title: 'Preferences',          desc: 'Your Pomodoro settings, AI preferences, and personal Gemini API key.' },
+                  ] as { value: string; title: string; desc: string }[]).map((item) => (
+                    <AccordionItem key={item.value} value={item.value} className="border-none">
+                      <AccordionTrigger className="px-5 py-4 text-[14px] font-semibold text-primary no-underline hover:no-underline hover:text-primary rounded-none">
+                        {item.title}
+                      </AccordionTrigger>
+                      <AccordionContent className="px-5 pb-4 text-[13px] text-secondary leading-snug" >
+                        {item.desc}
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </div>
+                </Accordion>
               </div>
 
               <div className="h-px bg-white/5 my-6" />
