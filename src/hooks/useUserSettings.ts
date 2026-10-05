@@ -162,17 +162,17 @@ export function useUserSettings() {
           if (metaName) setDisplayName(metaName);
           if (metaAvatar) setAvatarUrl(metaAvatar);
         } else if (!data) {
-          if ((window as any).__isDeletingAccount) return;
-          // Row doesn't exist (PGRST116) — first login; seed from OAuth metadata & set consent ON
+          // Row doesn't exist (PGRST116) — seed from OAuth metadata
           const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
           const metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
-          const seedPayload: Record<string, unknown> = {
-            user_id: userId,
-            ai_consent_acknowledged_at: new Date().toISOString(),
-          };
-          if (metaName) { setDisplayName(metaName); seedPayload.display_name = metaName; }
-          if (metaAvatar) { setAvatarUrl(metaAvatar); seedPayload.avatar_url = metaAvatar; }
-          supabase.from('user_settings').upsert(seedPayload, { onConflict: 'user_id' }).then(() => {});
+          if (metaName) {
+            setDisplayName(metaName);
+            supabase.from('user_settings').upsert(
+              { user_id: userId, display_name: metaName, ...(metaAvatar ? { avatar_url: metaAvatar } : {}) },
+              { onConflict: 'user_id' }
+            ).then(() => {});
+          }
+          if (metaAvatar) setAvatarUrl(metaAvatar);
         }
         
         setSettingsLoaded(true);
@@ -196,7 +196,7 @@ export function useUserSettings() {
       .then(({ error }) => { if (error) console.warn('Failed to sync autoStart:', error.message); });
   }, [autoStart, userId]);
 
-  const addXP = useCallback((amount: number, eventKey?: string) => {
+  const addXP = useCallback(async (amount: number, eventKey?: string) => {
     if (!userId) return;
 
     if (eventKey) {
@@ -209,17 +209,22 @@ export function useUserSettings() {
     const newLevel     = xpToLevel(newXp);
     const weekStart    = getCurrentWeekStart();
 
+    const { error } = await supabase.from('user_settings').upsert(
+      { user_id: userId, xp: newXp, level: newLevel, xp_this_week: newWeekXp, week_start: weekStart },
+      { onConflict: 'user_id' }
+    );
+
+    if (error) {
+      console.warn('Failed to sync XP:', error.message);
+      return;
+    }
+
     xpRef.current        = newXp;
     xpThisWeekRef.current = newWeekXp;
 
     setXp(newXp);
     setLevel(newLevel);
     setXpThisWeek(newWeekXp);
-
-    supabase.from('user_settings').upsert(
-      { user_id: userId, xp: newXp, level: newLevel, xp_this_week: newWeekXp, week_start: weekStart },
-      { onConflict: 'user_id' }
-    ).then(({ error }) => { if (error) console.warn('Failed to sync XP:', error.message); });
   }, [userId]);
 
   const updateStreakData = useCallback((newFreezes: number, newStreak: number) => {
