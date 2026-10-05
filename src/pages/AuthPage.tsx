@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 
 type AuthView = 'login' | 'signup';
 
@@ -39,6 +40,7 @@ export function AuthPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Catch OAuth errors returned in the URL hash from Supabase (e.g. email collision)
   useEffect(() => {
@@ -229,6 +231,9 @@ export function AuthPage() {
                     {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
+                <p className="text-[11px] text-muted mt-1.5 leading-snug">
+                  By creating an account, you agree to the <button type="button" onClick={() => setShowPrivacy(true)} className="text-primary hover:underline font-medium">Data & Privacy notice</button>.
+                </p>
               </div>
             )}
 
@@ -308,6 +313,33 @@ export function AuthPage() {
           </p>
         </div>
       </div>
+
+      <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
+        <DialogContent className="max-w-md bg-surface border border-token">
+          <DialogHeader>
+            <DialogTitle className="text-primary">Data & Privacy</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-secondary max-h-[70vh] overflow-y-auto pr-2">
+            <div>
+              <h3 className="font-semibold text-primary mb-2">What we store</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li><strong>Account information:</strong> Your email, display name, and profile picture.</li>
+                <li><strong>Study progress:</strong> Pomodoro sessions, streaks, XP, level, flashcard progress, and quiz scores.</li>
+                <li><strong>Study content:</strong> Your notes, reviewers, cheat sheets, flashcards, and test questions.</li>
+                <li><strong>AI chat:</strong> Your conversations with the AI study assistant, saved so you can continue them later.</li>
+                <li><strong>Spotify connection:</strong> Your Spotify access and refresh tokens, securely stored to keep you connected across devices.</li>
+                <li><strong>Preferences:</strong> Your Pomodoro settings, AI preferences, and personal Gemini API key.</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary mb-1">AI & Data Processing</h3>
+              <p>
+                When you use AI features (like generating flashcards or chatting with the study assistant), your relevant study notes or chat messages are sent to Google's Gemini API for processing. Your data is not used by Google to train their models.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
