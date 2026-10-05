@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { XP_SESSION } from '../../lib/streakConstants';
 import { Upload, FileText, Loader2, Sparkles, BookText, Edit3, FileUp, Trash2, RefreshCw, PanelRight } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
@@ -69,7 +70,7 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
         const { cachedData } = await generateWithBackend(activeActivity.notes, ['reviewer'], personalKey);
         const content = typeof cachedData?.reviewer_result === 'string' ? cachedData.reviewer_result : '';
         onUpdateActivity(activeActivity.id, { reviewerContent: content });
-        addXP?.(5, `reviewer-${activeActivity.id}`);
+        addXP?.(XP_SESSION, `reviewer-${activeActivity.id}`);
       }
     } catch (e: any) {
       if (e?.consentDenied) return;

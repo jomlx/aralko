@@ -6,7 +6,7 @@ import type { PomodoroPreset } from './usePomodoro';
 
 export function xpForLevel(level: number): number {
   if (level <= 1) return 0;
-  return 20 * level * (level - 1);
+  return 10 * (level - 1) * (2 * level + 1);
 }
 
 export function xpToLevel(xp: number): number {

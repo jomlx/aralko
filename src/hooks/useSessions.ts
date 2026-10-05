@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { XP_SESSION } from '../lib/streakConstants';
 import type { StudySession } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
@@ -100,7 +101,7 @@ export function useSessions(addXP?: (amount: number) => void) {
     });
 
     // 3. Award XP for completing a session (no dedup key — every session counts)
-    addXP?.(5);
+    addXP?.(XP_SESSION);
   }, [saveToLocal, userId, addXP]);
 
   // Calculate streak from sessions (timezone-safe)

@@ -1,9 +1,8 @@
-
 import type { StudySession } from '../../types';
 import React, { useState } from 'react';
 import { Snowflake, Info } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { STREAK_THRESHOLDS, STREAK_NAMES, MAX_FREEZES } from '../../lib/streakConstants';
+import { STREAK_THRESHOLDS, STREAK_NAMES, MAX_FREEZES, XP_SESSION, XP_QUIZ_BASE, XP_TEST_BASE, PERFECT_TEST_MIN_QUESTIONS } from '../../lib/streakConstants';
 import { xpForLevel } from '../../hooks/useUserSettings';
 import { useUserSettingsContext } from '../../hooks/UserSettingsContext';
 import { StreakFlame } from '../ui/StreakFlame';
@@ -87,9 +86,10 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
                 <div>
                   <h4 className="font-medium text-primary mb-1.5">XP & Levels</h4>
                   <ul className="list-disc pl-4 space-y-1">
-                    <li>Earn +5 XP for completing a study session or flashcard deck.</li>
-                    <li>Earn up to +60 XP for completing a quiz based on your score.</li>
-                    <li>Level up by reaching XP thresholds (Level N requires 20 * N * (N-1) total XP).</li>
+                    <li>Earn +{XP_SESSION} XP for completing a study session or flashcard deck.</li>
+                    <li>Earn up to +{XP_QUIZ_BASE + 100 * 0.15} XP for completing a quiz based on your score.</li>
+                    <li>Earn up to +{XP_TEST_BASE + 100 * 0.25} XP for completing a test.</li>
+                    <li>Level up by reaching XP thresholds (Level N requires 10 * (N-1) * (2N+1) total XP). Example: Level 2 = 50 XP, Level 3 = 140 XP.</li>
                   </ul>
                 </div>
                 <div>
@@ -102,7 +102,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
                 <div>
                   <h4 className="font-medium text-primary mb-1.5">Freezes</h4>
                   <ul className="list-disc pl-4 space-y-1">
-                    <li>Earn 1 freeze every 7 streak days, or by scoring 100% on a test (3+ questions).</li>
+                    <li>Earn 1 freeze every 7 streak days, or by scoring 100% on a test ({PERFECT_TEST_MIN_QUESTIONS}+ questions).</li>
                     <li>You can hold a maximum of {MAX_FREEZES} freezes at once.</li>
                     <li>If you miss a day, one freeze is automatically consumed to protect your streak.</li>
                   </ul>

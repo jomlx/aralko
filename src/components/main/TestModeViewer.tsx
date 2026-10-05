@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { MAX_FREEZES } from '../../lib/streakConstants';
+import { MAX_FREEZES, XP_TEST_BASE, XP_TEST_MULT, PERFECT_TEST_MIN_QUESTIONS } from '../../lib/streakConstants';
 import { useToast } from '../ui/Toast';
 import {
   Clock,
@@ -625,7 +625,8 @@ export function TestModeViewer({
   onGenerateQuestions,
   onExit,
   onTestStateChange,
-  awardFreeze
+  awardFreeze,
+  addXP
 }: TestModeViewerProps) {
   const { showToast } = useToast();
   const [phase, setPhase] = useState<Phase>('setup');
@@ -657,7 +658,11 @@ export function TestModeViewer({
     }).length;
     
     const pct = Math.round((correctCount / activeQuestions.length) * 100);
-    if (pct === 100 && activeQuestions.length >= 3 && awardFreeze) {
+
+    // Award XP once per completed attempt
+    addXP?.(XP_TEST_BASE + Math.round(pct * XP_TEST_MULT), `test-${activityName}-${Date.now()}`);
+
+    if (pct === 100 && activeQuestions.length >= PERFECT_TEST_MIN_QUESTIONS && awardFreeze) {
       const today = new Date().toISOString().slice(0, 10);
       const key = `aralko-freeze-award:${activityName}:${today}`;
       if (!localStorage.getItem(key)) {
@@ -668,7 +673,7 @@ export function TestModeViewer({
         }
       }
     }
-  }, [onTestStateChange, activeQuestions, awardFreeze, showToast, activityName]);
+  }, [onTestStateChange, activeQuestions, awardFreeze, showToast, activityName, addXP]);
 
   const handleRetake = useCallback(() => {
     setActiveQuestions(shuffleArray(questions));

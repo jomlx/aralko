@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { XP_FLASHCARD, XP_QUIZ_BASE, XP_QUIZ_MULT } from '../../lib/streakConstants';
 import type { Activity } from '../../types';
 import { Loader2, X, Share2 } from 'lucide-react';
 import { FlashcardsViewer } from './FlashcardsViewer';
@@ -255,7 +256,7 @@ export function LearnTab({
                     onProceedToTest={() => onUpdateActivity(activeActivity.id, { technique: 'Quiz' })}
                     onUpdateDeck={(newCards) => onUpdateActivity(activeActivity.id, { techniqueData: newCards })}
                     onClearReviewed={() => onUpdateActivity(activeActivity.id, { reviewedCards: [] })}
-                    onDeckComplete={() => addXP?.(5, `flashcard-${activeActivity.id}`)}
+                    onDeckComplete={() => addXP?.(XP_FLASHCARD, `flashcard-${activeActivity.id}`)}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
@@ -285,7 +286,7 @@ export function LearnTab({
                     questions={activeActivity.quizData}
                     onRegenerateQuiz={handleGenerateQuizFromFlashcards}
                     isRegenerating={isGeneratingQuiz}
-                    onQuizComplete={(score) => addXP?.(10 + Math.round(score / 2), `quiz-${activeActivity.id}`)}
+                    onQuizComplete={(score, total) => addXP?.(XP_QUIZ_BASE + Math.round((score / total) * 100 * XP_QUIZ_MULT), `quiz-${activeActivity.id}`)}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-64 gap-4">
