@@ -168,7 +168,7 @@ export function SettingsDialog({
       (window as any).__isDeletingAccount = true;
       const { error } = await supabase.rpc('delete_my_account');
       if (error) throw error;
-      
+
       await supabase.auth.signOut();
       onLogout();
       onClose();

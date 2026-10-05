@@ -163,17 +163,16 @@ export function useUserSettings() {
           if (metaAvatar) setAvatarUrl(metaAvatar);
         } else if (!data) {
           if ((window as any).__isDeletingAccount) return;
-          // Row doesn't exist (PGRST116) — seed from OAuth metadata
+          // Row doesn't exist (PGRST116) — first login; seed from OAuth metadata & set consent ON
           const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
           const metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
-          if (metaName) {
-            setDisplayName(metaName);
-            supabase.from('user_settings').upsert(
-              { user_id: userId, display_name: metaName, ...(metaAvatar ? { avatar_url: metaAvatar } : {}) },
-              { onConflict: 'user_id' }
-            ).then(() => {});
-          }
-          if (metaAvatar) setAvatarUrl(metaAvatar);
+          const seedPayload: Record<string, unknown> = {
+            user_id: userId,
+            ai_consent_acknowledged_at: new Date().toISOString(),
+          };
+          if (metaName) { setDisplayName(metaName); seedPayload.display_name = metaName; }
+          if (metaAvatar) { setAvatarUrl(metaAvatar); seedPayload.avatar_url = metaAvatar; }
+          supabase.from('user_settings').upsert(seedPayload, { onConflict: 'user_id' }).then(() => {});
         }
         
         setSettingsLoaded(true);
@@ -184,14 +183,14 @@ export function useUserSettings() {
   useEffect(() => { xpThisWeekRef.current = xpThisWeek; }, [xpThisWeek]);
 
   useEffect(() => {
-    if (!userId || (window as any).__isDeletingAccount) return;
+    if (!userId) return;
     supabase.from('user_settings')
       .upsert({ user_id: userId, pomodoro_preset: preset }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) console.warn('Failed to sync preset:', error.message); });
   }, [preset, userId]);
 
   useEffect(() => {
-    if (!userId || (window as any).__isDeletingAccount) return;
+    if (!userId) return;
     supabase.from('user_settings')
       .upsert({ user_id: userId, pomodoro_autostart: autoStart }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) console.warn('Failed to sync autoStart:', error.message); });
