@@ -2,7 +2,7 @@ import type { StudySession } from '../../types';
 import React, { useState } from 'react';
 import { Snowflake, Info } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { STREAK_THRESHOLDS, STREAK_NAMES, MAX_FREEZES, XP_SESSION, XP_QUIZ_BASE, XP_TEST_BASE, PERFECT_TEST_MIN_QUESTIONS } from '../../lib/streakConstants';
+import { STREAK_THRESHOLDS, STREAK_NAMES, MAX_FREEZES, XP_SESSION, XP_ADD_FILE, XP_QUIZ_BASE, XP_TEST_BASE, PERFECT_TEST_MIN_QUESTIONS } from '../../lib/streakConstants';
 import { xpForLevel } from '../../hooks/useUserSettings';
 import { useUserSettingsContext } from '../../hooks/UserSettingsContext';
 import { StreakFlame } from '../ui/StreakFlame';
@@ -87,6 +87,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
                   <h4 className="font-medium text-primary mb-1.5">XP & Levels</h4>
                   <ul className="list-disc pl-4 space-y-1">
                     <li>Earn +{XP_SESSION} XP for completing a study session or flashcard deck.</li>
+                    <li>Earn +{XP_ADD_FILE} XP for adding a study file (once per unique content).</li>
                     <li>Earn up to +{XP_QUIZ_BASE + 100 * 0.15} XP for completing a quiz based on your score.</li>
                     <li>Earn up to +{XP_TEST_BASE + 100 * 0.25} XP for completing a test.</li>
                     <li>Level up by reaching XP thresholds (Level N requires 10 * (N-1) * (2N+1) total XP). Example: Level 2 = 50 XP, Level 3 = 140 XP.</li>

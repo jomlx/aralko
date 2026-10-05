@@ -1,10 +1,11 @@
-﻿import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Loader2, X } from 'lucide-react';
 import type { Activity } from '../../types';
 import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
 import { generateWithBackend } from '../../lib/apiClient';
 import { getPersonalGeminiKey } from '../../lib/aiCall';
+import { XP_ADD_FILE } from '../../lib/streakConstants';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
@@ -12,6 +13,7 @@ interface AddActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
   onActivityAdded: (activity: Activity) => void;
+  addXP?: (amount: number, eventKey?: string) => void;
 }
 
 function nameFromFile(fileName: string): string {
@@ -23,7 +25,16 @@ function nameFromFile(fileName: string): string {
     .slice(0, 60) || 'New Activity';
 }
 
-export function AddActivityModal({ isOpen, onClose, onActivityAdded }: AddActivityModalProps) {
+async function generateContentHash(text: string): Promise<string> {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(normalized);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+export function AddActivityModal({ isOpen, onClose, onActivityAdded, addXP }: AddActivityModalProps) {
   const [step, setStep] = useState<'upload' | 'analyzing' | 'error'>('upload');
   const [loadingMsg, setLoadingMsg] = useState('Reading your file...');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -86,6 +97,9 @@ export function AddActivityModal({ isOpen, onClose, onActivityAdded }: AddActivi
         techniqueData: flashcards.length > 0 ? flashcards : undefined,
         quizData: undefined,
       };
+
+      const contentHash = await generateContentHash(rawText);
+      addXP?.(XP_ADD_FILE, `file-add-${contentHash}`);
 
       onActivityAdded(newActivity);
       handleClose();

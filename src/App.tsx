@@ -457,6 +457,7 @@ function AppContent() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onActivityAdded={handleActivityAdded}
+        addXP={userSettings.addXP}
       />
     </div>
   );

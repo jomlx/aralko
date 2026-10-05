@@ -45,11 +45,11 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
     if (isGenerating) return;  // already in progress
 
     // Auto-trigger generation
-    generateFromText(activeActivity.notes);
+    generateFromText(activeActivity.notes, undefined, true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeActivity?.id]);
 
-  const generateFromText = async (text: string, fileName?: string) => {
+  const generateFromText = async (text: string, fileName?: string, isAuto: boolean = false) => {
     if (isGenerating || reviewerCooldown) return;
     setReviewerCooldown(true);
     setInlineError(null);
@@ -70,7 +70,9 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
         const { cachedData } = await generateWithBackend(activeActivity.notes, ['reviewer'], personalKey);
         const content = typeof cachedData?.reviewer_result === 'string' ? cachedData.reviewer_result : '';
         onUpdateActivity(activeActivity.id, { reviewerContent: content });
-        addXP?.(XP_SESSION, `reviewer-${activeActivity.id}`);
+        if (!isAuto) {
+          addXP?.(XP_SESSION, `reviewer-${activeActivity.id}`);
+        }
       }
     } catch (e: any) {
       if (e?.consentDenied) return;

@@ -4,6 +4,7 @@ export const MAX_FREEZES = 3;
 
 // XP Rules
 export const XP_SESSION = 3;
+export const XP_ADD_FILE = 1;
 export const XP_FLASHCARD = 3;
 export const XP_QUIZ_BASE = 5;
 export const XP_QUIZ_MULT = 0.15; // Max 20 (5 + 100 * 0.15)
