@@ -21,7 +21,7 @@ function friendlyError(msg: string): string {
   if (m.includes('password') && m.includes('6'))
     return 'Password must be at least 6 characters.';
   if (m.includes('rate limit') || m.includes('too many'))
-    return 'Too many attempts. Please wait a moment and try again.';
+    return 'Too many attempts. Please try Continue with Google, or wait a while.';
   if (m.includes('network') || m.includes('fetch'))
     return 'Unable to connect. Please check your internet connection.';
     
@@ -163,7 +163,7 @@ export function AuthPage() {
                 <input
                   type="text"
                   value={name}
-                  onChange={e => setName(e.target.value)}
+                  onChange={e => { setName(e.target.value); setError(null); }}
                   placeholder="e.g. study_buddy"
                   required
                   autoComplete="username"
@@ -178,7 +178,7 @@ export function AuthPage() {
               <input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={e => { setEmail(e.target.value); setError(null); }}
                 placeholder="your@email.com"
                 required
                 autoComplete="email"
@@ -193,7 +193,7 @@ export function AuthPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={e => { setPassword(e.target.value); setError(null); }}
                   placeholder="••••••••"
                   required
                   autoComplete={isLogin ? 'current-password' : 'new-password'}
@@ -217,7 +217,7 @@ export function AuthPage() {
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
+                    onChange={e => { setConfirmPassword(e.target.value); setError(null); }}
                     placeholder="••••••••"
                     required
                     autoComplete="new-password"
