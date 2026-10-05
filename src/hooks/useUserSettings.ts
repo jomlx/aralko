@@ -162,24 +162,18 @@ export function useUserSettings() {
           if (metaName) setDisplayName(metaName);
           if (metaAvatar) setAvatarUrl(metaAvatar);
         } else if (!data) {
-          // Row doesn't exist (PGRST116) — seed from OAuth metadata & enable AI consent
+          if ((window as any).__isDeletingAccount) return;
+          // Row doesn't exist (PGRST116) — seed from OAuth metadata
           const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
           const metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
-          const initialData: any = { 
-            user_id: userId,
-            ai_consent_acknowledged_at: new Date().toISOString()
-          };
-          
           if (metaName) {
             setDisplayName(metaName);
-            initialData.display_name = metaName;
+            supabase.from('user_settings').upsert(
+              { user_id: userId, display_name: metaName, ...(metaAvatar ? { avatar_url: metaAvatar } : {}) },
+              { onConflict: 'user_id' }
+            ).then(() => {});
           }
-          if (metaAvatar) {
-            setAvatarUrl(metaAvatar);
-            initialData.avatar_url = metaAvatar;
-          }
-
-          supabase.from('user_settings').upsert(initialData, { onConflict: 'user_id' }).then(() => {});
+          if (metaAvatar) setAvatarUrl(metaAvatar);
         }
         
         setSettingsLoaded(true);
@@ -190,18 +184,18 @@ export function useUserSettings() {
   useEffect(() => { xpThisWeekRef.current = xpThisWeek; }, [xpThisWeek]);
 
   useEffect(() => {
-    if (!userId || !settingsLoaded) return;
+    if (!userId || (window as any).__isDeletingAccount) return;
     supabase.from('user_settings')
       .upsert({ user_id: userId, pomodoro_preset: preset }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) console.warn('Failed to sync preset:', error.message); });
-  }, [preset, userId, settingsLoaded]);
+  }, [preset, userId]);
 
   useEffect(() => {
-    if (!userId || !settingsLoaded) return;
+    if (!userId || (window as any).__isDeletingAccount) return;
     supabase.from('user_settings')
       .upsert({ user_id: userId, pomodoro_autostart: autoStart }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) console.warn('Failed to sync autoStart:', error.message); });
-  }, [autoStart, userId, settingsLoaded]);
+  }, [autoStart, userId]);
 
   const addXP = useCallback((amount: number, eventKey?: string) => {
     if (!userId) return;

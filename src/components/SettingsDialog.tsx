@@ -165,21 +165,16 @@ export function SettingsDialog({
     setDeletingAccount(true);
     setDeleteError('');
     try {
-      const uid = user.id;
-      // Delete all user data rows we own (client-side, no service role needed)
-      await Promise.all([
-        supabase.from('chat_messages').delete().eq('user_id', uid),
-        supabase.from('sessions').delete().eq('user_id', uid),
-        supabase.from('activities').delete().eq('user_id', uid),
-        supabase.from('user_settings').delete().eq('user_id', uid),
-      ]);
-      // Sign the user out — the auth.users record itself cannot be deleted
-      // from the client side without a service-role Edge Function.
-      // Full auth deletion requires a backend call (see notes in Settings).
+      (window as any).__isDeletingAccount = true;
+      const { error } = await supabase.rpc('delete_my_account');
+      if (error) throw error;
+      
       await supabase.auth.signOut();
       onLogout();
       onClose();
+      window.location.href = '/';
     } catch (err: any) {
+      (window as any).__isDeletingAccount = false;
       setDeleteError(err.message || 'An error occurred. Please try again.');
       setDeletingAccount(false);
     }

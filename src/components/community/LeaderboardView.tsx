@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserSettingsContext as useUserSettings } from '../../hooks/UserSettingsContext';
@@ -18,12 +18,10 @@ interface LeaderboardUser {
 
 export function LeaderboardView() {
   const { user } = useAuth();
-  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl, xp: myXp, xpThisWeek: myXpThisWeek, level: myLevel } = useUserSettings();
+  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
   const [range, setRange] = useState<TimeRange>('all_time');
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
-  // firstLoad: show spinner only on very first fetch; later refetches update quietly
-  const [firstLoad, setFirstLoad] = useState(true);
-  const isMountedRef = useRef(false);
+  const [loading, setLoading] = useState(true);
 
   const [selectedUser, setSelectedUser] = useState<LeaderboardUser | null>(null);
   const [selectedUserExtra, setSelectedUserExtra] = useState<{ sessionsCount: number, totalMinutes: number, streak: number, joinDate: string | null } | null>(null);
@@ -45,6 +43,7 @@ export function LeaderboardView() {
 
       let joinDate = null;
       if (us?.updated_at) {
+        // Fallback to updated_at since created_at is not available
         joinDate = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(us.updated_at));
       }
 
@@ -59,79 +58,34 @@ export function LeaderboardView() {
     }
   };
 
-  const fetchLeaderboard = useCallback(async () => {
-    if (!user) return;
-    const orderBy = range === 'all_time' ? 'xp' : 'xp_this_week';
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
 
-    const { data, error } = await supabase
-      .from('leaderboard_public')
-      .select('user_id, display_name, avatar_url, xp, xp_this_week, level')
-      .order(orderBy, { ascending: false })
-      .limit(50);
+    const fetchLeaderboard = async () => {
+      const orderBy = range === 'all_time' ? 'xp' : 'xp_this_week';
+      
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('user_id, display_name, avatar_url, xp, xp_this_week, level')
+        .order(orderBy, { ascending: false })
+        .limit(50);
 
-    if (!isMountedRef.current) return;
-
-    if (error) {
-      console.error('Leaderboard fetch error:', error);
-      // Don't silently fall back — keep existing list (or empty) rather than showing only current user
-    } else if (data) {
-      // Merge: if current user not in fetched list, insert from context so they never disappear
-      let merged = [...data] as LeaderboardUser[];
-      const alreadyInList = merged.some(u => u.user_id === user.id);
-      if (!alreadyInList && user.id) {
-        merged.push({
-          user_id: user.id,
-          display_name: dbDisplayName || null,
-          avatar_url: dbAvatarUrl || null,
-          xp: myXp,
-          xp_this_week: myXpThisWeek,
-          level: myLevel,
-        });
+      if (isMounted) {
+        if (error) {
+          console.error('Leaderboard fetch error:', error);
+        } else if (data) {
+          // Filter out users with 0 XP for the selected range to keep it clean
+          const filtered = data.filter(u => range === 'all_time' ? u.xp > 0 : u.xp_this_week > 0);
+          setUsers(filtered);
+        }
+        setLoading(false);
       }
-      // Re-sort by the active range column
-      merged.sort((a, b) => (orderBy === 'xp' ? b.xp - a.xp : b.xp_this_week - a.xp_this_week));
-      setUsers(merged);
-    }
-    setFirstLoad(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range, user]);
+    };
 
-  // Mount + range change: refetch (show spinner only on very first mount)
-  useEffect(() => {
-    isMountedRef.current = true;
     fetchLeaderboard();
-    return () => { isMountedRef.current = false; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchLeaderboard]);
-
-  // Refetch when current user's XP / display name / avatar changes (quiet update)
-  const prevXpRef = useRef(myXp);
-  const prevNameRef = useRef(dbDisplayName);
-  const prevAvatarRef = useRef(dbAvatarUrl);
-  useEffect(() => {
-    const xpChanged   = myXp !== prevXpRef.current;
-    const nameChanged = dbDisplayName !== prevNameRef.current;
-    const avatarChanged = dbAvatarUrl !== prevAvatarRef.current;
-    prevXpRef.current    = myXp;
-    prevNameRef.current  = dbDisplayName;
-    prevAvatarRef.current = dbAvatarUrl;
-    if (xpChanged || nameChanged || avatarChanged) {
-      fetchLeaderboard();
-    }
-  }, [myXp, dbDisplayName, dbAvatarUrl, fetchLeaderboard]);
-
-  // Refetch every 30 s while visible
-  useEffect(() => {
-    const interval = setInterval(fetchLeaderboard, 30_000);
-    return () => clearInterval(interval);
-  }, [fetchLeaderboard]);
-
-  // Refetch on window focus
-  useEffect(() => {
-    const onFocus = () => fetchLeaderboard();
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [fetchLeaderboard]);
+    return () => { isMounted = false; };
+  }, [range]);
 
   const getInitials = (name: string | null, userId: string) => {
     if (name) return name.slice(0, 2).toUpperCase();
@@ -184,7 +138,7 @@ export function LeaderboardView() {
 
       {/* Leaderboard List */}
       <div className="bg-surface rounded-2xl border border-token overflow-hidden">
-        {firstLoad ? (
+        {loading ? (
           <div className="flex flex-col items-center justify-center h-64">
             <Loader2 size={18} className="animate-spin text-accent mb-4" />
             <p className="text-sm text-secondary">Loading rankings...</p>
