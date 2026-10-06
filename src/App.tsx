@@ -197,6 +197,7 @@ function AppContent() {
     onSessionComplete: handleSessionComplete,
     preset:    userSettings.preset,
     autoStart: userSettings.autoStart,
+    userId:    user?.id,
   });
 
 

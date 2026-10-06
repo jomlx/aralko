@@ -55,7 +55,15 @@ export function useUserSettings() {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const [preset, setPreset] = useState<PomodoroPreset>('classic');
+  const [preset, setPreset] = useState<PomodoroPreset>(() => {
+    if (userId) {
+      try {
+        const local = localStorage.getItem(`aralko:pomodoro-preset:${userId}`);
+        if (local === 'short' || local === 'extended' || local === 'classic') return local;
+      } catch {}
+    }
+    return 'classic';
+  });
   const [autoStart, setAutoStart] = useState(false);
   const [geminiKey, setGeminiKey] = useState<string | null>(null);
 
@@ -202,6 +210,7 @@ export function useUserSettings() {
 
   useEffect(() => {
     if (!userId) return;
+    try { localStorage.setItem(`aralko:pomodoro-preset:${userId}`, preset); } catch {}
     supabase.from('user_settings')
       .upsert({ user_id: userId, pomodoro_preset: preset }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) console.warn('Failed to sync preset:', error.message); });
