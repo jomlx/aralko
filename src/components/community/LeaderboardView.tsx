@@ -18,7 +18,7 @@ interface LeaderboardUser {
 
 export function LeaderboardView() {
   const { user } = useAuth();
-  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
+  const { xp, xpThisWeek, level, displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
   const [range, setRange] = useState<TimeRange>('all_time');
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ export function LeaderboardView() {
       const orderBy = range === 'all_time' ? 'xp' : 'xp_this_week';
       
       const { data, error } = await supabase
-        .from('user_settings')
+        .from('leaderboard_public')
         .select('user_id, display_name, avatar_url, xp, xp_this_week, level')
         .order(orderBy, { ascending: false })
         .limit(50);
@@ -77,6 +77,25 @@ export function LeaderboardView() {
         } else if (data) {
           // Filter out users with 0 XP for the selected range to keep it clean
           const filtered = data.filter(u => range === 'all_time' ? u.xp > 0 : u.xp_this_week > 0);
+          
+          if (user) {
+            const userXp = range === 'all_time' ? xp : xpThisWeek;
+            if (userXp > 0) {
+              const existingIdx = filtered.findIndex(u => u.user_id === user.id);
+              const myRow = {
+                user_id: user.id,
+                display_name: dbDisplayName,
+                avatar_url: dbAvatarUrl,
+                xp, xp_this_week: xpThisWeek, level
+              };
+              if (existingIdx >= 0) {
+                filtered[existingIdx] = { ...filtered[existingIdx], ...myRow };
+              } else {
+                filtered.push(myRow);
+              }
+              filtered.sort((a, b) => range === 'all_time' ? b.xp - a.xp : b.xp_this_week - a.xp_this_week);
+            }
+          }
           setUsers(filtered);
         }
         setLoading(false);
@@ -84,8 +103,15 @@ export function LeaderboardView() {
     };
 
     fetchLeaderboard();
-    return () => { isMounted = false; };
-  }, [range]);
+    const interval = setInterval(fetchLeaderboard, 30000);
+    const handleFocus = () => fetchLeaderboard();
+    window.addEventListener('focus', handleFocus);
+    return () => { 
+      isMounted = false; 
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [range, user, xp, xpThisWeek, dbDisplayName, dbAvatarUrl, level]);
 
   const getInitials = (name: string | null, userId: string) => {
     if (name) return name.slice(0, 2).toUpperCase();
