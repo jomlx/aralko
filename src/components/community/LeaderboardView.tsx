@@ -31,7 +31,7 @@ export function LeaderboardView() {
     setSelectedUserExtra(null);
     
     try {
-      const { data: sessions } = await supabase.from('sessions').select('minutes').eq('user_id', u.user_id);
+      const { data: sessions } = await supabase.from('session_minutes_public').select('minutes').eq('user_id', u.user_id);
       const { data: us } = await supabase.from('leaderboard_public').select('saved_streak, updated_at').eq('user_id', u.user_id).single();
       
       let totalMinutes = 0;
