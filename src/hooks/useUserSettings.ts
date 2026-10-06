@@ -136,16 +136,7 @@ export function useUserSettings() {
               supabase.from('user_settings').upsert(
                 { user_id: userId, display_name: metaName },
                 { onConflict: 'user_id' }
-              ).then(({ error }) => {
-                if (error && error.code === '23505') {
-                  const fallback = `${metaName}${Math.floor(1000 + Math.random() * 9000)}`;
-                  setDisplayName(fallback);
-                  supabase.from('user_settings').upsert(
-                    { user_id: userId, display_name: fallback },
-                    { onConflict: 'user_id' }
-                  ).then(() => {});
-                }
-              });
+              ).then(() => {});
             }
           }
 
@@ -179,16 +170,7 @@ export function useUserSettings() {
             supabase.from('user_settings').upsert(
               { user_id: userId, display_name: metaName, ...(metaAvatar ? { avatar_url: metaAvatar } : {}) },
               { onConflict: 'user_id' }
-            ).then(({ error }) => {
-              if (error && error.code === '23505') {
-                const fallback = `${metaName}${Math.floor(1000 + Math.random() * 9000)}`;
-                setDisplayName(fallback);
-                supabase.from('user_settings').upsert(
-                  { user_id: userId, display_name: fallback, ...(metaAvatar ? { avatar_url: metaAvatar } : {}) },
-                  { onConflict: 'user_id' }
-                ).then(() => {});
-              }
-            });
+            ).then(() => {});
           }
           if (metaAvatar) setAvatarUrl(metaAvatar);
         }
