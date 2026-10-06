@@ -1,7 +1,7 @@
 import type { StudySession } from '../../types';
 import React, { useState, useMemo } from 'react';
-import { Snowflake, Info, CheckCircle2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Snowflake, Info, CheckCircle2, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogClose } from '../ui/dialog';
 import {
   STREAK_THRESHOLDS, STREAK_NAMES, MAX_FREEZES,
   XP_SESSION, XP_ADD_FILE, XP_QUIZ_BASE, XP_TEST_BASE, PERFECT_TEST_MIN_QUESTIONS,
@@ -9,6 +9,7 @@ import {
 import { xpForLevel } from '../../hooks/useUserSettings';
 import { useUserSettingsContext } from '../../hooks/UserSettingsContext';
 import { StreakFlame } from '../ui/StreakFlame';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface StatsViewProps {
   sessions: StudySession[];
@@ -131,10 +132,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
     .map(([name, minutes]) => ({ name, hours: minutes / 60 }))
     .sort((a, b) => b.hours - a.hours);
 
-  // Dev mock state
-  const isDev = import.meta.env.MODE !== 'production';
-  const [mockStreak, setMockStreak] = useState<number | null>(null);
-  const displayStreak = mockStreak !== null ? mockStreak : streak;
+  const displayStreak = streak;
   const displayStage = STREAK_THRESHOLDS.reduce((s, t) => displayStreak >= t ? s + 1 : s, 0);
   const displayNext = STREAK_THRESHOLDS[displayStage];
   const displayPrev = displayStage > 0 ? STREAK_THRESHOLDS[displayStage - 1] : 0;
@@ -202,23 +200,36 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
 
       {/* Guide dialog: How streaks work */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-app border-token max-w-md rounded-3xl max-h-[88vh] overflow-y-auto">
-          <DialogHeader className="border-b border-token pb-4">
+        <DialogContent
+          className="w-[95vw] sm:max-w-md h-[85vh] max-h-[640px] bg-app border-token text-primary overflow-hidden flex flex-col p-0 gap-0"
+          initialFocus={false}
+          showCloseButton={false}
+        >
+          {/* Fixed header (outside the scroll area): no jitter, divider spans full width */}
+          <div className="shrink-0 flex items-center justify-between bg-app border-b border-token px-5 py-4">
             <DialogTitle className="text-primary text-lg">How streaks work</DialogTitle>
-          </DialogHeader>
+            <DialogClose
+              aria-label="Close"
+              className="rounded-md p-1 text-muted hover:text-primary hover:bg-surface transition-colors"
+            >
+              <X size={18} />
+            </DialogClose>
+          </div>
 
-          <div className="space-y-7 text-sm text-secondary pt-1">
+          <ScrollArea className="flex-1 min-h-0">
+          <div className="text-sm text-secondary px-5 py-5">
+          <div className="space-y-7">
             {/* Streak badges */}
             <section>
               <h4 className="font-semibold text-primary mb-1.5">Streak badges</h4>
-              <p>Study every day to keep your streak going. Log at least one study session in a day to grow your streak. Reach a milestone to unlock the next badge.</p>
+              <p>Study at least once a day to grow your streak and unlock new flame badges.</p>
               <div className="mt-4 flex items-start justify-between w-full">
                 {STREAK_THRESHOLDS.map((threshold, i) => {
                   const reached = displayStreak >= threshold;
                   return (
                     <React.Fragment key={threshold}>
-                      <div className="flex flex-col items-center shrink min-w-[36px]">
-                        <div className="w-[32px] h-[40px] shrink-0">
+                      <div className="flex flex-col items-center shrink min-w-[32px]">
+                        <div className="w-[24px] h-[30px] shrink-0">
                           <StreakFlame stage={i + 1} locked={!reached} aria-hidden="true" className="w-full h-full" />
                         </div>
                         <span className={`mt-1.5 text-[12px] ${reached ? 'font-medium text-primary' : 'text-muted'}`}>
@@ -230,7 +241,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
                       </div>
                       {i < STREAK_THRESHOLDS.length - 1 && (
                         <div
-                          className="h-[3px] rounded-full flex-1 mx-1.5 mt-[20px] shrink min-w-[6px]"
+                          className="h-[3px] rounded-full flex-1 mx-1.5 mt-[14px] shrink min-w-[6px]"
                           style={{ backgroundColor: displayStreak >= STREAK_THRESHOLDS[i + 1] ? 'rgba(255,154,51,0.45)' : 'var(--border)' }}
                         />
                       )}
@@ -246,36 +257,35 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
             {/* Streak freezes */}
             <section>
               <h4 className="font-semibold text-primary mb-1.5">Streak freezes</h4>
-              <p>A freeze protects your streak if you miss a day. You can hold up to {MAX_FREEZES}.</p>
+              <p>Miss a day? A freeze saves your streak automatically. You can hold up to {MAX_FREEZES}.</p>
               <div className="mt-3">{freezeIcons('w-7 h-7', 14)}</div>
-              <ul className="mt-3 list-disc pl-4 space-y-1">
-                <li>Earn 1 freeze every 7 streak days, or by scoring 100% on a test ({PERFECT_TEST_MIN_QUESTIONS}+ questions).</li>
-                <li>You can hold a maximum of {MAX_FREEZES} freezes at once.</li>
-                <li>If you miss a day, one freeze is automatically consumed to protect your streak.</li>
-              </ul>
+              <p className="mt-3">Earn one every 7 streak days, or by scoring 100% on a test with {PERFECT_TEST_MIN_QUESTIONS}+ questions.</p>
             </section>
 
             {/* XP and levels */}
             <section>
               <h4 className="font-semibold text-primary mb-1.5">XP and levels</h4>
               <ul className="list-disc pl-4 space-y-1">
-                <li>Earn +{XP_SESSION} XP for completing a study session or flashcard deck.</li>
-                <li>Earn +{XP_ADD_FILE} XP for adding a study file (once per unique content).</li>
-                <li>Earn up to +{XP_QUIZ_BASE + 100 * 0.15} XP for completing a quiz based on your score.</li>
-                <li>Earn up to +{XP_TEST_BASE + 100 * 0.25} XP for completing a test.</li>
-                <li>Level up by reaching XP thresholds (Level N requires 10*(N-1)*(2N+1) total XP). Example: Level 2 = 50 XP, Level 3 = 140 XP.</li>
+                <li><span className="font-medium text-primary">+{XP_SESSION} XP</span> for a study session or flashcard deck</li>
+                <li><span className="font-medium text-primary">+{XP_ADD_FILE} XP</span> for adding a new study file</li>
+                <li><span className="font-medium text-primary">Up to +{XP_QUIZ_BASE + 100 * 0.15} XP</span> for a quiz</li>
+                <li><span className="font-medium text-primary">Up to +{XP_TEST_BASE + 100 * 0.25} XP</span> for a test</li>
               </ul>
+              <p className="mt-3">Collect XP to level up: Level 2 at {xpForLevel(2)} XP, Level 3 at {xpForLevel(3)} XP, and so on.</p>
             </section>
 
-            <div className="flex justify-end pt-1">
+          </div>
+
+            <div className="flex justify-end mt-4">
               <button
                 onClick={() => setIsDialogOpen(false)}
-                className="px-5 py-2 rounded-xl border border-token text-primary hover:bg-surface transition-colors"
+                className="px-5 py-2 rounded-xl bg-accent text-white font-medium hover:opacity-90 transition-opacity"
               >
                 Got it
               </button>
             </div>
           </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
@@ -298,8 +308,8 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
           </div>
 
           {/* Progress bar to next stage */}
-          <div className="mt-4 w-full sm:w-[400px] max-w-full">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-app">
+          <div className="mt-4 w-full sm:w-[340px] max-w-full">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface border border-token">
               <div
                 className="h-full rounded-full bg-amber-400 transition-all duration-500"
                 style={{ width: `${displayProgress}%` }}
@@ -392,22 +402,6 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* 5. Dev-only preview toggles */}
-      {isDev && (
-        <div className="mt-2 pt-4 border-t border-dashed border-token flex items-center gap-3 flex-wrap">
-          <span className="text-[11px] text-muted font-medium">Preview only:</span>
-          <button onClick={() => setMockStreak(null)} className="px-3 py-1 text-[11px] rounded-lg border border-token text-secondary hover:text-primary transition-colors">
-            Real data
-          </button>
-          <button onClick={() => setMockStreak(0)} className="px-3 py-1 text-[11px] rounded-lg border border-token text-secondary hover:text-primary transition-colors">
-            New user
-          </button>
-          <button onClick={() => setMockStreak(134)} className="px-3 py-1 text-[11px] rounded-lg border border-token text-secondary hover:text-primary transition-colors">
-            134 day streak
-          </button>
         </div>
       )}
     </div>
