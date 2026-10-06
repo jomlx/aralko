@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserSettingsContext as useUserSettings } from '../../hooks/UserSettingsContext';
@@ -18,13 +18,10 @@ interface LeaderboardUser {
 
 export function LeaderboardView() {
   const { user } = useAuth();
-  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl, xp: ctxXp, xpThisWeek: ctxXpThisWeek, level: ctxLevel } = useUserSettings();
+  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
   const [range, setRange] = useState<TimeRange>('all_time');
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const isMountedRef = useRef(true);
-  const lastGoodListRef = useRef<LeaderboardUser[]>([]);
-  const xpRefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [selectedUser, setSelectedUser] = useState<LeaderboardUser | null>(null);
   const [selectedUserExtra, setSelectedUserExtra] = useState<{ sessionsCount: number, totalMinutes: number, streak: number, joinDate: string | null } | null>(null);
@@ -46,6 +43,7 @@ export function LeaderboardView() {
 
       let joinDate = null;
       if (us?.updated_at) {
+        // Fallback to updated_at since created_at is not available
         joinDate = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(us.updated_at));
       }
 
@@ -60,87 +58,34 @@ export function LeaderboardView() {
     }
   };
 
-  const fetchLeaderboard = useCallback(async (isInitial = false) => {
-    // Wait for auth session before querying
-    if (!user) return;
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
 
-    if (isInitial) setLoading(true);
+    const fetchLeaderboard = async () => {
+      const orderBy = range === 'all_time' ? 'xp' : 'xp_this_week';
+      
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('user_id, display_name, avatar_url, xp, xp_this_week, level')
+        .order(orderBy, { ascending: false })
+        .limit(50);
 
-    const orderBy = range === 'all_time' ? 'xp' : 'xp_this_week';
-    const xpFilter = range === 'all_time' ? 'xp' : 'xp_this_week';
-
-    console.log('[Leaderboard] fetching from leaderboard_public, range:', range, 'user:', user.id);
-
-    const { data, error } = await supabase
-      .from('leaderboard_public')
-      .select('user_id, display_name, avatar_url, xp, xp_this_week, level')
-      .gt(xpFilter, 0)
-      .order(orderBy, { ascending: false })
-      .limit(50);
-
-    if (!isMountedRef.current) return;
-
-    if (error) {
-      console.error('[Leaderboard] fetch error:', error);
-      // Keep the last good list — never fall back to showing only the current user
-      if (isInitial) setLoading(false);
-      return;
-    }
-
-    let list: LeaderboardUser[] = data ?? [];
-
-    // Merge current user into list if their XP for this tab is > 0 and they're not already present
-    const myXp = range === 'all_time' ? ctxXp : ctxXpThisWeek;
-    if (user && myXp > 0) {
-      const alreadyIn = list.some(u => u.user_id === user.id);
-      if (!alreadyIn) {
-        list = [
-          ...list,
-          {
-            user_id: user.id,
-            display_name: dbDisplayName,
-            avatar_url: dbAvatarUrl,
-            xp: ctxXp,
-            xp_this_week: ctxXpThisWeek,
-            level: ctxLevel,
-          },
-        ].sort((a, b) => (range === 'all_time' ? b.xp - a.xp : b.xp_this_week - a.xp_this_week));
+      if (isMounted) {
+        if (error) {
+          console.error('Leaderboard fetch error:', error);
+        } else if (data) {
+          // Filter out users with 0 XP for the selected range to keep it clean
+          const filtered = data.filter(u => range === 'all_time' ? u.xp > 0 : u.xp_this_week > 0);
+          setUsers(filtered);
+        }
+        setLoading(false);
       }
-    }
-
-    lastGoodListRef.current = list;
-    setUsers(list);
-    if (isInitial) setLoading(false);
-  }, [range, user, ctxXp, ctxXpThisWeek, ctxLevel, dbDisplayName, dbAvatarUrl]);
-
-  // Initial fetch + refetch when range or auth changes
-  useEffect(() => {
-    isMountedRef.current = true;
-    fetchLeaderboard(true);
-    return () => { isMountedRef.current = false; };
-  }, [range, user?.id]);
-
-  // Poll every 30 seconds
-  useEffect(() => {
-    const id = setInterval(() => { fetchLeaderboard(false); }, 30000);
-    return () => clearInterval(id);
-  }, [fetchLeaderboard]);
-
-  // Refetch on window focus
-  useEffect(() => {
-    const onFocus = () => fetchLeaderboard(false);
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [fetchLeaderboard]);
-
-  // Refetch ~1s after XP, name, or avatar changes (wait for DB write to propagate)
-  useEffect(() => {
-    if (xpRefetchTimerRef.current) clearTimeout(xpRefetchTimerRef.current);
-    xpRefetchTimerRef.current = setTimeout(() => { fetchLeaderboard(false); }, 1000);
-    return () => {
-      if (xpRefetchTimerRef.current) clearTimeout(xpRefetchTimerRef.current);
     };
-  }, [ctxXp, ctxXpThisWeek, dbDisplayName, dbAvatarUrl]);
+
+    fetchLeaderboard();
+    return () => { isMounted = false; };
+  }, [range]);
 
   const getInitials = (name: string | null, userId: string) => {
     if (name) return name.slice(0, 2).toUpperCase();
@@ -278,7 +223,7 @@ export function LeaderboardView() {
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedUser(null); }}
         >
           <div className="w-full max-w-sm flex flex-col items-center">
-            {/* Stats Card */}
+            {/* ── Stats Card ─────────────────────────── */}
             <div className="w-full rounded-2xl bg-surface bg-gradient-to-br from-accent/25 via-violet-600/10 to-indigo-500/10 border border-accent/20 p-5 mb-4 shadow-2xl shadow-black/60">
               {/* Card header */}
               <div className="flex items-center justify-between mb-4">

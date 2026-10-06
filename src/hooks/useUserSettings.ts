@@ -196,7 +196,7 @@ export function useUserSettings() {
       .then(({ error }) => { if (error) console.warn('Failed to sync autoStart:', error.message); });
   }, [autoStart, userId]);
 
-  const addXP = useCallback(async (amount: number, eventKey?: string) => {
+  const addXP = useCallback((amount: number, eventKey?: string) => {
     if (!userId) return;
 
     if (eventKey) {
@@ -209,22 +209,17 @@ export function useUserSettings() {
     const newLevel     = xpToLevel(newXp);
     const weekStart    = getCurrentWeekStart();
 
-    const { error } = await supabase.from('user_settings').upsert(
-      { user_id: userId, xp: newXp, level: newLevel, xp_this_week: newWeekXp, week_start: weekStart },
-      { onConflict: 'user_id' }
-    );
-
-    if (error) {
-      console.warn('Failed to sync XP:', error.message);
-      return;
-    }
-
     xpRef.current        = newXp;
     xpThisWeekRef.current = newWeekXp;
 
     setXp(newXp);
     setLevel(newLevel);
     setXpThisWeek(newWeekXp);
+
+    supabase.from('user_settings').upsert(
+      { user_id: userId, xp: newXp, level: newLevel, xp_this_week: newWeekXp, week_start: weekStart },
+      { onConflict: 'user_id' }
+    ).then(({ error }) => { if (error) console.warn('Failed to sync XP:', error.message); });
   }, [userId]);
 
   const updateStreakData = useCallback((newFreezes: number, newStreak: number) => {

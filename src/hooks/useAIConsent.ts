@@ -31,15 +31,8 @@ export function useAIConsent(): AIConsentState {
       .eq('user_id', userId)
       .single()
       .then(({ data, error }) => {
-        if (error && error.code === 'PGRST116') {
-          // No row yet — new user; useUserSettings will create it with consent ON via DB default
-          setAiConsent(true);
-          setAiConsentDate(new Date().toISOString());
-        } else if (error) {
-          console.error('[consent fetch error]', error);
-          setAiConsent(false);
-          setAiConsentDate(null);
-        } else if (data?.ai_consent_acknowledged_at) {
+        if (error) console.error('[consent fetch error]', error);
+        if (data?.ai_consent_acknowledged_at) {
           setAiConsent(true);
           setAiConsentDate(data.ai_consent_acknowledged_at);
         } else {
