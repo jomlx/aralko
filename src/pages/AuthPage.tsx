@@ -172,16 +172,11 @@ export function AuthPage() {
       const { data, error: err } = await supabase.auth.verifyOtp({ email, token: otp, type: 'signup' });
       if (err) throw err;
       if (data?.user?.id) {
-        const userId = data.user.id;
-        const defaultAvatarUrl = `/avatars/avatar${Math.floor(Math.random() * 7) + 1}.svg`;
-        supabase.from('user_settings').select('avatar_url').eq('user_id', userId).maybeSingle().then(({ data: settings }) => {
-          const payload: any = { user_id: userId, ai_consent_acknowledged_at: new Date().toISOString() };
-          if (!settings?.avatar_url) {
-            payload.avatar_url = defaultAvatarUrl;
-          }
-          supabase.from('user_settings').upsert(payload, { onConflict: 'user_id' }).then(({ error }) => {
-            if (error) console.error('Failed to set initial settings:', error);
-          });
+        supabase.from('user_settings').upsert(
+          { user_id: data.user.id, ai_consent_acknowledged_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        ).then(({ error }) => {
+          if (error) console.error('Failed to set initial AI consent:', error);
         });
       }
     } catch (err: any) {

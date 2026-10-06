@@ -50,6 +50,7 @@ function markXPAwarded(userId: string, event: string): void {
     }
   } catch {}
 }
+const sessionAssignedAvatars = new Set<string>();
 
 export function useUserSettings() {
   const { user } = useAuth();
@@ -158,30 +159,56 @@ export function useUserSettings() {
           }
 
           // Same logic for avatar_url
+          const ensureAvatar = () => {
+            let metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+            if (!metaAvatar && !sessionAssignedAvatars.has(userId)) {
+              sessionAssignedAvatars.add(userId);
+              metaAvatar = `/avatars/avatar${Math.floor(Math.random() * 7) + 1}.svg`;
+            }
+            if (metaAvatar) {
+              setAvatarUrl(metaAvatar);
+              supabase.from('user_settings').select('avatar_url').eq('user_id', userId).maybeSingle().then(({ data: check }) => {
+                if (!check?.avatar_url) {
+                  supabase.from('user_settings').upsert({ user_id: userId, avatar_url: metaAvatar }, { onConflict: 'user_id' }).then(() => {});
+                }
+              });
+            }
+          };
+
           if (data.avatar_url) {
             setAvatarUrl(data.avatar_url);
           } else {
-            const metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
-            if (metaAvatar) {
-              setAvatarUrl(metaAvatar);
-              supabase.from('user_settings').upsert(
-                { user_id: userId, avatar_url: metaAvatar },
-                { onConflict: 'user_id' }
-              ).then(() => {});
-            }
+            ensureAvatar();
           }
         } else if (error && error.code !== 'PGRST116') {
           console.warn('Failed to load user settings:', error.message);
 
           // No DB row yet — seed from OAuth metadata
           const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
-          const metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
           if (metaName) setDisplayName(metaName);
-          if (metaAvatar) setAvatarUrl(metaAvatar);
+          
+          let metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+          if (!metaAvatar && !sessionAssignedAvatars.has(userId)) {
+            sessionAssignedAvatars.add(userId);
+            metaAvatar = `/avatars/avatar${Math.floor(Math.random() * 7) + 1}.svg`;
+          }
+          if (metaAvatar) {
+            setAvatarUrl(metaAvatar);
+            supabase.from('user_settings').select('avatar_url').eq('user_id', userId).maybeSingle().then(({ data: check }) => {
+              if (!check?.avatar_url) {
+                supabase.from('user_settings').upsert({ user_id: userId, avatar_url: metaAvatar }, { onConflict: 'user_id' }).then(() => {});
+              }
+            });
+          }
         } else if (!data) {
           // Row doesn't exist (PGRST116) — seed from OAuth metadata
           const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
-          const metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+          let metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+          if (!metaAvatar && !sessionAssignedAvatars.has(userId)) {
+            sessionAssignedAvatars.add(userId);
+            metaAvatar = `/avatars/avatar${Math.floor(Math.random() * 7) + 1}.svg`;
+          }
+
           if (metaName) {
             setDisplayName(metaName);
             supabase.from('user_settings').upsert(
@@ -197,6 +224,8 @@ export function useUserSettings() {
                 ).then(() => {});
               }
             });
+          } else if (metaAvatar) {
+            supabase.from('user_settings').upsert({ user_id: userId, avatar_url: metaAvatar }, { onConflict: 'user_id' }).then(() => {});
           }
           if (metaAvatar) setAvatarUrl(metaAvatar);
         }
