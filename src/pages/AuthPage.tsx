@@ -139,8 +139,16 @@ export function AuthPage() {
     }
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.verifyOtp({ email, token: otp, type: 'signup' });
+      const { data, error: err } = await supabase.auth.verifyOtp({ email, token: otp, type: 'signup' });
       if (err) throw err;
+      if (data?.user?.id) {
+        supabase.from('user_settings').upsert(
+          { user_id: data.user.id, ai_consent_acknowledged_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        ).then(({ error }) => {
+          if (error) console.error('Failed to set initial AI consent:', error);
+        });
+      }
     } catch (err: any) {
       setError(friendlyError(err.message || ''));
     } finally {
