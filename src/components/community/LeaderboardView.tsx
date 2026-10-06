@@ -18,7 +18,7 @@ interface LeaderboardUser {
 
 export function LeaderboardView() {
   const { user } = useAuth();
-  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
+  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl, xp: myXp, xpThisWeek: myXpThisWeek, level: myLevel } = useUserSettings();
   const [range, setRange] = useState<TimeRange>('all_time');
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ export function LeaderboardView() {
       const orderBy = range === 'all_time' ? 'xp' : 'xp_this_week';
       
       const { data, error } = await supabase
-        .from('user_settings')
+        .from('leaderboard_public')
         .select('user_id, display_name, avatar_url, xp, xp_this_week, level')
         .order(orderBy, { ascending: false })
         .limit(50);
@@ -84,7 +84,15 @@ export function LeaderboardView() {
     };
 
     fetchLeaderboard();
-    return () => { isMounted = false; };
+    
+    const interval = setInterval(fetchLeaderboard, 30000);
+    window.addEventListener('focus', fetchLeaderboard);
+
+    return () => { 
+      isMounted = false; 
+      clearInterval(interval);
+      window.removeEventListener('focus', fetchLeaderboard);
+    };
   }, [range]);
 
   const getInitials = (name: string | null, userId: string) => {
@@ -143,7 +151,7 @@ export function LeaderboardView() {
             <Loader2 size={18} className="animate-spin text-accent mb-4" />
             <p className="text-sm text-secondary">Loading rankings...</p>
           </div>
-        ) : users.length === 0 ? (
+        ) : users.length === 0 && !(user && ((range === 'all_time' && myXp > 0) || (range === 'this_week' && myXpThisWeek > 0))) ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <Trophy size={18} className="text-slate-700 mb-4" />
             <p className="text-secondary font-medium">No activity yet</p>
@@ -161,7 +169,19 @@ export function LeaderboardView() {
 
             {/* User Rows */}
             <div className="divide-y divide-white/[0.03]">
-              {users.map((u, i) => {
+              {(() => {
+                let list = [...users];
+                if (user && myXp > 0) {
+                  const meIdx = list.findIndex(u => u.user_id === user.id);
+                  if (meIdx >= 0) {
+                    list[meIdx] = { ...list[meIdx], xp: Math.max(list[meIdx].xp, myXp), xp_this_week: Math.max(list[meIdx].xp_this_week, myXpThisWeek), level: Math.max(list[meIdx].level, myLevel) };
+                  } else if ((range === 'all_time' && myXp > 0) || (range === 'this_week' && myXpThisWeek > 0)) {
+                    list.push({ user_id: user.id, display_name: dbDisplayName, avatar_url: dbAvatarUrl, xp: myXp, xp_this_week: myXpThisWeek, level: myLevel });
+                  }
+                  list.sort((a, b) => range === 'all_time' ? b.xp - a.xp : b.xp_this_week - a.xp_this_week);
+                }
+                return list;
+              })().map((u, i) => {
                 const isMe = u.user_id === user?.id;
                 const rank = i + 1;
                 const displayXp = range === 'all_time' ? u.xp : u.xp_this_week;
