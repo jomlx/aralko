@@ -213,28 +213,25 @@ export function SettingsDialog({
     setNameSuccess(false);
     setNameError('');
     try {
-      const { data: existing } = await supabase
-        .from('user_settings')
-        .select('user_id')
-        .ilike('display_name', trimmed)
-        .neq('user_id', user.id)
-        .limit(1);
-        
-      if (existing && existing.length > 0) {
-        setNameError('Username is already taken by another user.');
+      const { data: avail } = await supabase.rpc('is_username_available', { p_name: trimmed });
+      if (avail === false) {
+        setNameError('That username is taken');
         setSavingName(false);
         return;
       }
 
-      // Write to user_settings DB (source of truth) — skipping auth.updateUser
-      // which can fail due to Supabase email rate limits and is no longer needed
-      // since we read display_name from user_settings, not user_metadata.
+      // Write to user_settings DB (source of truth)
       const { error: upsertError } = await supabase.from('user_settings').upsert(
         { user_id: user.id, display_name: trimmed },
         { onConflict: 'user_id' }
       );
       if (upsertError) {
         console.error('[handleSaveName] upsert error:', upsertError);
+        if (upsertError.code === '23505') {
+          setNameError('That username is taken');
+          setSavingName(false);
+          return;
+        }
         throw upsertError;
       }
 
@@ -245,8 +242,12 @@ export function SettingsDialog({
       setTimeout(() => setNameSuccess(false), 3000);
     } catch (err: any) {
       console.error('[handleSaveName] full error:', JSON.stringify(err), err);
-      const errMsg = err?.message || err?.error_description || err?.code || JSON.stringify(err) || 'Unknown error';
-      setNameError(errMsg);
+      if (err?.code === '23505') {
+        setNameError('That username is taken');
+      } else {
+        const errMsg = err?.message || err?.error_description || err?.code || JSON.stringify(err) || 'Unknown error';
+        setNameError(errMsg);
+      }
     } finally {
       setSavingName(false);
     }

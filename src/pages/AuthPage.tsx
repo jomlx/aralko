@@ -43,10 +43,24 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [nameTaken, setNameTaken] = useState(false);
 
   const [otp, setOtp] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resending, setResending] = useState(false);
+
+  useEffect(() => {
+    if (view !== 'signup' || !name.trim()) {
+      setNameTaken(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase.rpc('is_username_available', { p_name: name.trim() });
+      if (data === false) setNameTaken(true);
+      else setNameTaken(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [name, view]);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -80,6 +94,7 @@ export function AuthPage() {
     setShowPassword(false);
     setShowConfirm(false);
     setOtp('');
+    setNameTaken(false);
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -91,6 +106,9 @@ export function AuthPage() {
       setError('Please enter your name.');
       return;
     }
+    if (view === 'signup' && nameTaken) {
+      return;
+    }
     if (view === 'signup' && password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -98,6 +116,14 @@ export function AuthPage() {
     if (password.length < 6) {
       setError('Password must be at least 6 characters.');
       return;
+    }
+
+    if (view === 'signup') {
+      const { data: avail } = await supabase.rpc('is_username_available', { p_name: name.trim() });
+      if (avail === false) {
+        setNameTaken(true);
+        return;
+      }
     }
 
     setLoading(true);
@@ -123,7 +149,11 @@ export function AuthPage() {
         if (err) throw err;
       }
     } catch (err: any) {
-      setError(friendlyError(err.message || ''));
+      if (err?.code === '23505' || err?.message?.includes('23505') || err?.message?.includes('username')) {
+        setError('That username is taken');
+      } else {
+        setError(friendlyError(err.message || ''));
+      }
       setSuccessMsg(null);
     } finally {
       setLoading(false);
@@ -262,8 +292,11 @@ export function AuthPage() {
                       placeholder="e.g. study_buddy"
                       required
                       autoComplete="username"
-                      className="w-full rounded-xl border border-token bg-app px-4 py-2.5 text-sm text-primary placeholder-slate-500 outline-none focus:border-accent/60 transition-colors"
+                      className={`w-full rounded-xl border px-4 py-2.5 text-sm text-primary placeholder-slate-500 outline-none transition-colors ${
+                        nameTaken ? 'border-red-500 focus:border-red-500 bg-red-500/5' : 'border-token focus:border-accent/60 bg-app'
+                      }`}
                     />
+                    {nameTaken && <p className="text-xs text-red-500">That username is taken</p>}
                   </div>
                 )}
 
