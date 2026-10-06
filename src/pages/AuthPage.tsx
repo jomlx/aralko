@@ -383,21 +383,31 @@ export function AuthPage() {
           </DialogHeader>
           <div className="space-y-4 text-sm text-secondary max-h-[70vh] overflow-y-auto pr-2">
             <div>
-              <h3 className="font-semibold text-primary mb-2">What we store</h3>
+              <h3 className="font-semibold text-primary mb-2">What we keep</h3>
               <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Account information:</strong> Your email, display name, and profile picture.</li>
-                <li><strong>Study progress:</strong> Pomodoro sessions, streaks, XP, level, flashcard progress, and quiz scores.</li>
-                <li><strong>Study content:</strong> Your notes, reviewers, cheat sheets, flashcards, and test questions.</li>
-                <li><strong>AI chat:</strong> Your conversations with the AI study assistant, saved so you can continue them later.</li>
-                <li><strong>Spotify connection:</strong> Your Spotify access and refresh tokens, securely stored to keep you connected across devices.</li>
-                <li><strong>Preferences:</strong> Your Pomodoro settings, AI preferences, and personal Gemini API key.</li>
+                <li><strong>Your account:</strong> your email, name, and profile picture.</li>
+                <li><strong>Your progress:</strong> study sessions, streaks, XP, level, flashcards, and quiz scores.</li>
+                <li><strong>Your study stuff:</strong> notes, reviewers, cheat sheets, flashcards, and tests.</li>
+                <li><strong>Your AI chats,</strong> so you can pick up where you left off.</li>
+                <li><strong>Your Spotify connection,</strong> if you choose to connect it.</li>
+                <li><strong>Your settings,</strong> and your own Gemini key if you add one.</li>
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold text-primary mb-1">AI & Data Processing</h3>
-              <p>
-                When you use AI features (like generating flashcards or chatting with the study assistant), your relevant study notes or chat messages are sent to Google's Gemini API for processing. Your data is not used by Google to train their models.
-              </p>
+              <h3 className="font-semibold text-primary mb-1">What other people can see</h3>
+              <p>Your name, profile picture, level, and streak show up on the community leaderboard. Nothing else is public.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary mb-1">Who helps us run Aralko</h3>
+              <p>We use trusted services to run the app: Supabase keeps your account and data, Google Gemini powers the AI tools, Spotify plays your music, and an email service sends your verification codes. If you send us feedback, we get your message, email, and name.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary mb-1">About the AI</h3>
+              <p>When you use the AI tools, the notes, files, or messages you give it are sent to Google's Gemini to make your flashcards, quizzes, and answers. Google treats free and paid Gemini keys differently. With a free key, Google may use your content to improve its products, and a person at Google may read it. With a paid key, it doesn't. So please don't put in anything private or personal.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary mb-1">You're in control</h3>
+              <p>You can download your data or delete your account anytime in Settings. When you delete, your data is removed for good. Questions? Email us at joml.app.dev@gmail.com.</p>
             </div>
           </div>
         </DialogContent>

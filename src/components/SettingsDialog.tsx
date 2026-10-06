@@ -763,6 +763,34 @@ export function SettingsDialog({
               </div>
 
               <div className="h-px bg-white/5 my-6" />
+              
+              <div className="space-y-1.5">
+                <h3 className="text-sm font-semibold text-primary">What other people can see</h3>
+                <p className="text-[13px] text-secondary leading-snug">Your name, profile picture, level, and streak show up on the community leaderboard. Nothing else is public.</p>
+              </div>
+
+              <div className="h-px bg-white/5 my-6" />
+
+              <div className="space-y-1.5">
+                <h3 className="text-sm font-semibold text-primary">Who helps us run Aralko</h3>
+                <p className="text-[13px] text-secondary leading-snug">We use trusted services to run the app: Supabase keeps your account and data, Google Gemini powers the AI tools, Spotify plays your music, and an email service sends your verification codes. If you send us feedback, we get your message, email, and name.</p>
+              </div>
+
+              <div className="h-px bg-white/5 my-6" />
+
+              <div className="space-y-1.5">
+                <h3 className="text-sm font-semibold text-primary">About the AI</h3>
+                <p className="text-[13px] text-secondary leading-snug">When you use the AI tools, the notes, files, or messages you give it are sent to Google's Gemini to make your flashcards, quizzes, and answers. Google treats free and paid Gemini keys differently. With a free key, Google may use your content to improve its products, and a person at Google may read it. With a paid key, it doesn't. So please don't put in anything private or personal.</p>
+              </div>
+
+              <div className="h-px bg-white/5 my-6" />
+
+              <div className="space-y-1.5">
+                <h3 className="text-sm font-semibold text-primary">You're in control</h3>
+                <p className="text-[13px] text-secondary leading-snug">You can download your data or delete your account anytime below. When you delete, your data is removed for good. Questions? Email us at joml.app.dev@gmail.com.</p>
+              </div>
+
+              <div className="h-px bg-white/5 my-6" />
               {/* Section 2: AI consent toggle */}
               <div className="flex items-center justify-between gap-4 rounded-xl border border-token p-4">
                 <div className="flex flex-col gap-0.5 min-w-0">
