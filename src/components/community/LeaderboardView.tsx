@@ -32,7 +32,7 @@ export function LeaderboardView() {
     
     try {
       const { data: sessions } = await supabase.from('sessions').select('minutes').eq('user_id', u.user_id);
-      const { data: us } = await supabase.from('user_settings').select('saved_streak, updated_at').eq('user_id', u.user_id).single();
+      const { data: us } = await supabase.from('leaderboard_public').select('saved_streak, updated_at').eq('user_id', u.user_id).single();
       
       let totalMinutes = 0;
       let sessionsCount = 0;
