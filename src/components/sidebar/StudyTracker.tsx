@@ -18,7 +18,7 @@ type StudyTrackerProps = {
   setPreset: (preset: PomodoroPreset) => void;
   autoStart: boolean;
   setAutoStart: (val: boolean) => void;
-  WORK_TIME: number;
+  currentPhaseLength: number;
 };
 
 export function StudyTracker({
@@ -33,7 +33,7 @@ export function StudyTracker({
   setPreset,
   autoStart,
   setAutoStart,
-  WORK_TIME,
+  currentPhaseLength,
 }: StudyTrackerProps) {
   const [showSettings, setShowSettings] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -56,12 +56,17 @@ export function StudyTracker({
     day: 'numeric',
   }).format(today);
 
+  const prevSecondsRef = useRef(secondsLeft);
+  const skipTransition = Math.abs(prevSecondsRef.current - secondsLeft) > 1;
+  useEffect(() => {
+    prevSecondsRef.current = secondsLeft;
+  }, [secondsLeft]);
+
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   const timeFormatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-  const totalPhaseSeconds = phase === 'work' ? WORK_TIME : POMODORO_PRESETS[preset].break;
-  const progress = Math.max(0, Math.min(1, 1 - secondsLeft / totalPhaseSeconds));
+  const progress = Math.max(0, Math.min(1, 1 - secondsLeft / currentPhaseLength));
 
   const isWork = phase === 'work';
   const presetKeys = Object.keys(POMODORO_PRESETS) as PomodoroPreset[];
@@ -154,7 +159,7 @@ export function StudyTracker({
                 cx="65"
                 cy="65"
                 r={58}
-                className={`transition-all duration-1000 ease-linear ${isWork ? 'stroke-violet-500' : 'stroke-emerald-500'}`}
+                className={`${skipTransition ? '' : 'transition-all duration-1000 ease-linear'} ${isWork ? 'stroke-violet-500' : 'stroke-emerald-500'}`}
                 strokeWidth="5"
                 fill="none"
                 strokeLinecap="round"

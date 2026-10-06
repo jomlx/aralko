@@ -256,7 +256,7 @@ function AppContent() {
                   setPreset={userSettings.setPreset}
                   autoStart={userSettings.autoStart}
                   setAutoStart={userSettings.setAutoStart}
-                  WORK_TIME={pomodoro.WORK_TIME}
+                  currentPhaseLength={pomodoro.currentPhaseLength}
                 />
                 <div className="flex-1 min-h-0 flex flex-col">
                   <MusicPlayerCompact />

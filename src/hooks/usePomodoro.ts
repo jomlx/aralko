@@ -211,6 +211,8 @@ export function usePomodoro({ onSessionComplete, preset, autoStart, userId }: Us
     }
   }, [phase, BREAK_TIME, WORK_TIME, preset, storageKey]);
 
+  const currentPhaseLength = phase === 'work' ? (POMODORO_PRESETS[runningPreset]?.work ?? WORK_TIME) : (POMODORO_PRESETS[runningPreset]?.break ?? BREAK_TIME);
+
   return {
     secondsLeft,
     phase,
@@ -222,6 +224,7 @@ export function usePomodoro({ onSessionComplete, preset, autoStart, userId }: Us
     togglePhase,
     WORK_TIME,
     BREAK_TIME,
+    currentPhaseLength,
   };
 }
 
