@@ -225,9 +225,10 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
         </DialogContent>
       </Dialog>
 
-      {/* 2. Streak hero */}
-      <div className="mb-8 flex flex-col items-center py-8 rounded-2xl border border-token bg-surface">
-        <div className="w-[80px] h-[100px]">
+      {/* 2. Streak hero – no card, horizontal row */}
+      <div className="mb-8 flex flex-col sm:flex-row items-center gap-6 justify-center">
+        {/* Flame */}
+        <div className="w-[100px] h-[125px] shrink-0">
           <StreakFlame
             stage={displayStage}
             locked={displayStreak < 3}
@@ -237,39 +238,43 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
           />
         </div>
 
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-[60px] font-bold text-primary leading-none tabular-nums">{displayStreak}</span>
-          <span className="text-lg text-secondary">day streak</span>
-        </div>
-
-        {/* Progress bar to next stage */}
-        <div className="mt-5 w-full max-w-xs px-6">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-app">
-            <div
-              className="h-full rounded-full bg-amber-400 transition-all duration-500"
-              style={{ width: `${displayProgress}%` }}
-            />
+        {/* Text column */}
+        <div className="flex flex-col items-center sm:items-start text-center sm:text-left gap-3">
+          {/* Number + label */}
+          <div className="flex items-baseline gap-2">
+            <span className="text-[60px] font-bold text-primary leading-none tabular-nums">{displayStreak}</span>
+            <span className="text-lg text-secondary">day streak</span>
           </div>
-          <p className="mt-1.5 text-[12px] text-center text-muted">
-            {displayStage >= STREAK_THRESHOLDS.length
-              ? 'Max stage reached!'
-              : displayStreak < 3
-                ? `${3 - displayStreak} days to first badge`
-                : `${displayDaysToNext} days to next stage`}
-          </p>
-        </div>
 
-        {/* Freeze icons */}
-        <div className="mt-5 flex items-center gap-2">
-          <div className="flex gap-1.5">
-            {Array.from({ length: MAX_FREEZES }).map((_, i) => (
-              <div key={i} className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors
-                ${i < streakFreezes ? 'bg-[#3E8BF0]/[0.18] border border-[#3E8BF0]' : 'border border-dashed border-token'}`}>
-                {i < streakFreezes && <Snowflake size={14} className="text-[#3E8BF0]" />}
-              </div>
-            ))}
+          {/* Progress bar */}
+          <div className="w-full max-w-[400px]">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-app">
+              <div
+                className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                style={{ width: `${displayProgress}%` }}
+              />
+            </div>
+            <p className="mt-1 text-[12px] text-muted">
+              {displayStage >= STREAK_THRESHOLDS.length
+                ? 'Max stage reached!'
+                : displayStreak < 3
+                  ? `${3 - displayStreak} days to first badge`
+                  : `${displayDaysToNext} days to next stage`}
+            </p>
           </div>
-          <span className="text-[13px] text-secondary">{streakFreezes} of {MAX_FREEZES} freezes</span>
+
+          {/* Freeze icons */}
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1.5">
+              {Array.from({ length: MAX_FREEZES }).map((_, i) => (
+                <div key={i} className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors
+                  ${i < streakFreezes ? 'bg-[#3E8BF0]/[0.18] border border-[#3E8BF0]' : 'border border-dashed border-token'}`}>
+                  {i < streakFreezes && <Snowflake size={14} className="text-[#3E8BF0]" />}
+                </div>
+              ))}
+            </div>
+            <span className="text-[13px] text-secondary">{streakFreezes} of {MAX_FREEZES} freezes</span>
+          </div>
         </div>
       </div>
 
