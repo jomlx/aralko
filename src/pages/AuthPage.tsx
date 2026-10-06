@@ -319,7 +319,7 @@ export function AuthPage() {
                       </button>
                     </div>
                     <p className="text-[11px] text-muted mt-1.5 leading-snug">
-                      By creating an account, you agree to the <button type="button" onClick={() => setShowPrivacy(true)} className="text-primary hover:underline font-medium">Data & Privacy notice</button>.
+                      By creating an account, you agree to the <button type="button" onClick={() => setShowPrivacy(true)} className="text-accent hover:underline font-medium">Privacy Policy</button>.
                     </p>
                   </div>
                 )}
@@ -355,18 +355,18 @@ export function AuthPage() {
                   <>Don't have an account?{' '}
                     <button
                       onClick={() => switchView('signup')}
-                      className="text-primary font-semibold hover:text-accent transition-colors"
+                      className="text-accent font-semibold hover:text-accent transition-colors"
                     >
-                      Sign up
+                      Register
                     </button>
                   </>
                 ) : (
                   <>Already have an account?{' '}
                     <button
                       onClick={() => switchView('login')}
-                      className="text-primary font-semibold hover:text-accent transition-colors"
+                      className="text-accent font-semibold hover:text-accent transition-colors"
                     >
-                      Sign in
+                      Log in
                     </button>
                   </>
                 )}
