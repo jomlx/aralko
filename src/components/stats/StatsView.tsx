@@ -143,6 +143,17 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
     : 100;
   const displayDaysToNext = displayNext ? displayNext - displayStreak : 0;
 
+  const freezeIcons = (size: string, iconSize: number) => (
+    <div className="flex gap-1.5">
+      {Array.from({ length: MAX_FREEZES }).map((_, i) => (
+        <div key={i} className={`flex items-center justify-center ${size} rounded-full transition-colors
+          ${i < streakFreezes ? 'bg-[#3E8BF0]/[0.18] border border-[#3E8BF0]' : 'border border-dashed border-token'}`}>
+          {i < streakFreezes && <Snowflake size={iconSize} className="text-[#3E8BF0]" />}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="px-[var(--gutter)] pt-4 pb-10">
 
@@ -154,7 +165,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
             <button
               onClick={() => setIsDialogOpen(true)}
               className="text-muted hover:text-primary transition-colors focus:outline-none"
-              aria-label="How it works"
+              aria-label="How streaks work"
             >
               <Info size={16} />
             </button>
@@ -189,15 +200,64 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
         </div>
       </div>
 
-      {/* Info dialog */}
+      {/* Guide dialog: How streaks work */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-app border-token max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-primary">How it works</DialogTitle>
+        <DialogContent className="bg-app border-token max-w-md rounded-3xl max-h-[88vh] overflow-y-auto">
+          <DialogHeader className="border-b border-token pb-4">
+            <DialogTitle className="text-primary text-lg">How streaks work</DialogTitle>
           </DialogHeader>
-          <div className="space-y-5 text-sm text-secondary mt-2">
-            <div>
-              <h4 className="font-medium text-primary mb-1.5">XP &amp; Levels</h4>
+
+          <div className="space-y-7 text-sm text-secondary pt-1">
+            {/* Streak badges */}
+            <section>
+              <h4 className="font-semibold text-primary mb-1.5">Streak badges</h4>
+              <p>Study every day to keep your streak going. Log at least one study session in a day to grow your streak. Reach a milestone to unlock the next badge.</p>
+              <div className="mt-4 flex items-start justify-between w-full">
+                {STREAK_THRESHOLDS.map((threshold, i) => {
+                  const reached = displayStreak >= threshold;
+                  return (
+                    <React.Fragment key={threshold}>
+                      <div className="flex flex-col items-center shrink min-w-[36px]">
+                        <div className="w-[32px] h-[40px] shrink-0">
+                          <StreakFlame stage={i + 1} locked={!reached} aria-hidden="true" className="w-full h-full" />
+                        </div>
+                        <span className={`mt-1.5 text-[12px] ${reached ? 'font-medium text-primary' : 'text-muted'}`}>
+                          {threshold}d
+                        </span>
+                        <span className={`text-[10px] ${reached ? 'text-secondary' : 'text-muted/60'}`}>
+                          {STREAK_NAMES[i]}
+                        </span>
+                      </div>
+                      {i < STREAK_THRESHOLDS.length - 1 && (
+                        <div
+                          className="h-[3px] rounded-full flex-1 mx-1.5 mt-[20px] shrink min-w-[6px]"
+                          style={{ backgroundColor: displayStreak >= STREAK_THRESHOLDS[i + 1] ? 'rgba(255,154,51,0.45)' : 'var(--border)' }}
+                        />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+              <p className="mt-3 text-xs text-muted">
+                You've unlocked {STREAK_THRESHOLDS.filter(t => displayStreak >= t).length} of {STREAK_THRESHOLDS.length} badges.
+              </p>
+            </section>
+
+            {/* Streak freezes */}
+            <section>
+              <h4 className="font-semibold text-primary mb-1.5">Streak freezes</h4>
+              <p>A freeze protects your streak if you miss a day. You can hold up to {MAX_FREEZES}.</p>
+              <div className="mt-3">{freezeIcons('w-7 h-7', 14)}</div>
+              <ul className="mt-3 list-disc pl-4 space-y-1">
+                <li>Earn 1 freeze every 7 streak days, or by scoring 100% on a test ({PERFECT_TEST_MIN_QUESTIONS}+ questions).</li>
+                <li>You can hold a maximum of {MAX_FREEZES} freezes at once.</li>
+                <li>If you miss a day, one freeze is automatically consumed to protect your streak.</li>
+              </ul>
+            </section>
+
+            {/* XP and levels */}
+            <section>
+              <h4 className="font-semibold text-primary mb-1.5">XP and levels</h4>
               <ul className="list-disc pl-4 space-y-1">
                 <li>Earn +{XP_SESSION} XP for completing a study session or flashcard deck.</li>
                 <li>Earn +{XP_ADD_FILE} XP for adding a study file (once per unique content).</li>
@@ -205,29 +265,23 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
                 <li>Earn up to +{XP_TEST_BASE + 100 * 0.25} XP for completing a test.</li>
                 <li>Level up by reaching XP thresholds (Level N requires 10*(N-1)*(2N+1) total XP). Example: Level 2 = 50 XP, Level 3 = 140 XP.</li>
               </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-primary mb-1.5">Streak</h4>
-              <ul className="list-disc pl-4 space-y-1">
-                <li>Log at least one study session in a day to grow your streak.</li>
-                <li>Unlock new flame badges at {STREAK_THRESHOLDS.join(', ')} days.</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-primary mb-1.5">Freezes</h4>
-              <ul className="list-disc pl-4 space-y-1">
-                <li>Earn 1 freeze every 7 streak days, or by scoring 100% on a test ({PERFECT_TEST_MIN_QUESTIONS}+ questions).</li>
-                <li>You can hold a maximum of {MAX_FREEZES} freezes at once.</li>
-                <li>If you miss a day, one freeze is automatically consumed to protect your streak.</li>
-              </ul>
+            </section>
+
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => setIsDialogOpen(false)}
+                className="px-5 py-2 rounded-xl border border-token text-primary hover:bg-surface transition-colors"
+              >
+                Got it
+              </button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* 2. Streak hero */}
-      <div className="mb-8 flex flex-col items-center py-8 rounded-2xl border border-token bg-surface">
-        <div className="w-[80px] h-[100px]">
+      {/* 2. Streak hero: no card, flame left, text right */}
+      <div className="mb-8 flex flex-col items-center justify-center gap-6 py-8 sm:flex-row sm:gap-12">
+        <div className="w-[120px] h-[150px] shrink-0">
           <StreakFlame
             stage={displayStage}
             locked={displayStreak < 3}
@@ -237,39 +291,34 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
           />
         </div>
 
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-[60px] font-bold text-primary leading-none tabular-nums">{displayStreak}</span>
-          <span className="text-lg text-secondary">day streak</span>
-        </div>
-
-        {/* Progress bar to next stage */}
-        <div className="mt-5 w-full max-w-xs px-6">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-app">
-            <div
-              className="h-full rounded-full bg-amber-400 transition-all duration-500"
-              style={{ width: `${displayProgress}%` }}
-            />
+        <div className="flex flex-col items-center sm:items-start">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[72px] font-bold text-primary leading-none tabular-nums">{displayStreak}</span>
+            <span className="text-lg text-secondary">day streak</span>
           </div>
-          <p className="mt-1.5 text-[12px] text-center text-muted">
-            {displayStage >= STREAK_THRESHOLDS.length
-              ? 'Max stage reached!'
-              : displayStreak < 3
-                ? `${3 - displayStreak} days to first badge`
-                : `${displayDaysToNext} days to next stage`}
-          </p>
-        </div>
 
-        {/* Freeze icons */}
-        <div className="mt-5 flex items-center gap-2">
-          <div className="flex gap-1.5">
-            {Array.from({ length: MAX_FREEZES }).map((_, i) => (
-              <div key={i} className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors
-                ${i < streakFreezes ? 'bg-[#3E8BF0]/[0.18] border border-[#3E8BF0]' : 'border border-dashed border-token'}`}>
-                {i < streakFreezes && <Snowflake size={14} className="text-[#3E8BF0]" />}
-              </div>
-            ))}
+          {/* Progress bar to next stage */}
+          <div className="mt-4 w-full sm:w-[400px] max-w-full">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-app">
+              <div
+                className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                style={{ width: `${displayProgress}%` }}
+              />
+            </div>
+            <p className="mt-1.5 text-[12px] text-muted">
+              {displayStage >= STREAK_THRESHOLDS.length
+                ? 'Max stage reached!'
+                : displayStreak < 3
+                  ? `${3 - displayStreak} days to first badge`
+                  : `${displayDaysToNext} days to next stage`}
+            </p>
           </div>
-          <span className="text-[13px] text-secondary">{streakFreezes} of {MAX_FREEZES} freezes</span>
+
+          {/* Freeze icons */}
+          <div className="mt-4 flex items-center gap-2">
+            {freezeIcons('w-7 h-7', 14)}
+            <span className="text-[13px] text-secondary">{streakFreezes} of {MAX_FREEZES} freezes</span>
+          </div>
         </div>
       </div>
 
@@ -318,37 +367,6 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
                 <div className="h-px w-full bg-token mt-1" />
                 <span className="text-[11px] font-medium text-muted mt-1">{DAY_LABELS[i]}</span>
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Streak badges (kept) */}
-      <div className="mb-6 rounded-2xl border border-token bg-surface p-6">
-        <h3 className="text-[14px] font-semibold text-primary mb-5">Streak badges</h3>
-        <div className="flex items-center justify-between w-full">
-          {STREAK_THRESHOLDS.map((threshold, i) => {
-            const reached = displayStreak >= threshold;
-            return (
-              <React.Fragment key={threshold}>
-                <div className="flex flex-col items-center shrink min-w-[40px]">
-                  <div className="w-[38px] h-[48px] sm:w-[44px] sm:h-[55px] shrink-0">
-                    <StreakFlame stage={i + 1} locked={!reached} aria-hidden="true" className="w-full h-full" />
-                  </div>
-                  <span className={`mt-2 text-[12px] ${reached ? 'font-medium text-primary' : 'text-muted'}`}>
-                    {threshold}d
-                  </span>
-                  <span className={`text-[10px] ${reached ? 'text-secondary' : 'text-muted/60'}`}>
-                    {STREAK_NAMES[i]}
-                  </span>
-                </div>
-                {i < STREAK_THRESHOLDS.length - 1 && (
-                  <div
-                    className="h-[3px] rounded-full flex-1 mx-2 shrink min-w-[8px]"
-                    style={{ backgroundColor: displayStreak >= STREAK_THRESHOLDS[i + 1] ? 'rgba(255,154,51,0.45)' : 'var(--border)' }}
-                  />
-                )}
-              </React.Fragment>
             );
           })}
         </div>
