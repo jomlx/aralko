@@ -10,7 +10,7 @@ export const POMODORO_PRESETS = {
 };
 
 interface UsePomodoroProps {
-  onSessionComplete?: () => void;
+  onSessionComplete?: (focusMinutes: number) => void;
   /** Controlled by useUserSettings — preset/autoStart come from Supabase-backed state */
   preset:    PomodoroPreset;
   autoStart: boolean;
@@ -52,7 +52,7 @@ export function usePomodoro({ onSessionComplete, preset, autoStart }: UsePomodor
 
       if (phase === 'work') {
         setSessionsCompleted(c => c + 1);
-        onSessionCompleteRef.current?.();
+        onSessionCompleteRef.current?.(Math.round(WORK_TIME / 60));
         setPhase('break');
         setSecondsLeft(BREAK_TIME);
         if (!autoStart) setIsRunning(false);

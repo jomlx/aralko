@@ -170,14 +170,14 @@ function AppContent() {
     updateStreakData: userSettings.updateStreakData
   });
 
-  const handleSessionComplete = useCallback(() => {
+  const handleSessionComplete = useCallback((focusMinutes: number) => {
     const currentActId = selectedActivityIdRef.current;
     const currentActs = activitiesRef.current;
     const currentAct = currentActs.find(a => a.id === currentActId) || currentActs[0];
 
     const newSession: StudySession = {
       date: new Date().toISOString(),
-      minutes: 25,
+      minutes: focusMinutes,
       activityId: currentAct?.id || 1,
       activityName: currentAct?.name || 'Unknown Activity'
     };

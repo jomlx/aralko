@@ -45,6 +45,17 @@ function addDays(ymd: string, n: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function toLocalDateStr(dateStr: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatHours(hours: number): string {
+  if (hours < 1) return `${Math.round(hours * 60)}m`;
+  return `${hours.toFixed(1)}h`;
+}
+
 function LevelCard({ xp, level }: { xp: number; level: number }) {
   const nextLvlXp = xpForLevel(level + 1);
   const prevLvlXp = xpForLevel(level);
@@ -89,7 +100,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
   const thisWeekMinutes = useMemo(() => {
     const map: Record<string, number> = {};
     for (const s of sessions) {
-      const d = s.date.slice(0, 10);
+      const d = toLocalDateStr(s.date);
       if (d >= wsStart && d <= today) map[d] = (map[d] || 0) + s.minutes;
     }
     return thisWeekDates.map(d => (map[d] || 0) / 60);
@@ -99,16 +110,16 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
     const pwStart = prevWeekStartStr();
     const pwEnd = addDays(wsStart, -1);
     return sessions
-      .filter(s => { const d = s.date.slice(0, 10); return d >= pwStart && d <= pwEnd; })
+      .filter(s => { const d = toLocalDateStr(s.date); return d >= pwStart && d <= pwEnd; })
       .reduce((a, s) => a + s.minutes, 0) / 60;
   }, [sessions, wsStart]);
 
-  const totalHours = (sessions.reduce((sum, s) => sum + s.minutes, 0) / 60).toFixed(1);
+  const totalHoursNum = sessions.reduce((sum, s) => sum + s.minutes, 0) / 60;
   const sessionsCompleted = sessions.length;
   const thisWeekTotalHours = thisWeekMinutes.reduce((a, h) => a + h, 0);
 
   const thisWeekSessions = useMemo(() =>
-    sessions.filter(s => { const d = s.date.slice(0, 10); return d >= wsStart && d <= today; }).length,
+    sessions.filter(s => { const d = toLocalDateStr(s.date); return d >= wsStart && d <= today; }).length,
     [sessions, wsStart, today]
   );
 
@@ -117,7 +128,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
     : null;
 
   const studiedDates = useMemo(
-    () => new Set(sessions.map(s => s.date.slice(0, 10))),
+    () => new Set(sessions.map(s => toLocalDateStr(s.date))),
     [sessions]
   );
   const todayDayIndex = (() => { const d = new Date(); return d.getDay() === 0 ? 6 : d.getDay() - 1; })();
@@ -337,7 +348,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
         <LevelCard xp={xp} level={level} />
         <StatCard
           label="Total study hours"
-          value={`${totalHours}h`}
+          value={formatHours(totalHoursNum)}
           sub={pctChange !== null
             ? <span className={Number(pctChange) >= 0 ? 'text-success' : 'text-red-400'}>
                 {Number(pctChange) >= 0 ? '+' : ''}{pctChange}% from last week
@@ -365,7 +376,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
             return (
               <div key={i} className="flex flex-1 flex-col items-center gap-0">
                 <span className="text-[11px] text-secondary mb-1 h-4">
-                  {hours > 0 ? `${hours.toFixed(1)}h` : '0h'}
+                  {hours > 0 ? formatHours(hours) : '0m'}
                 </span>
                 <div className="flex-1 w-full flex items-end justify-center">
                   <div
@@ -398,7 +409,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
                     />
                   </div>
                 </div>
-                <span className="w-12 text-right text-sm text-secondary">{item.hours.toFixed(1)}h</span>
+                <span className="w-12 text-right text-sm text-secondary">{formatHours(item.hours)}</span>
               </div>
             ))}
           </div>
