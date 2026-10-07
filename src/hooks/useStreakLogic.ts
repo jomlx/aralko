@@ -44,19 +44,17 @@ export function evaluateStreak({
   freezes: number;
   savedStreak: number;
 }): { displayedStreak: number; action: StreakAction } {
-  if (savedStreak === 0 && !lastStudyDate) {
-    return { displayedStreak: 0, action: 'none' };
+  if (!lastStudyDate) {
+    return { displayedStreak: savedStreak > 0 ? savedStreak : 0, action: 'none' };
   }
 
   const todayDate = parseLocalDate(today);
   todayDate.setHours(0, 0, 0, 0);
 
   let gap = Infinity;
-  if (lastStudyDate) {
-    const last = parseLocalDate(lastStudyDate);
-    last.setHours(0, 0, 0, 0);
-    gap = Math.round((todayDate.getTime() - last.getTime()) / 86_400_000);
-  }
+  const last = parseLocalDate(lastStudyDate);
+  last.setHours(0, 0, 0, 0);
+  gap = Math.round((todayDate.getTime() - last.getTime()) / 86_400_000);
 
   const isAlive = gap <= 1;
   const freezeEligible = gap === 2 && freezes > 0;

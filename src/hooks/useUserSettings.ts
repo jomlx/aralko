@@ -317,11 +317,12 @@ export function useUserSettings() {
       longestStreakRef.current = newLongest;
     }
 
-    supabase.from('user_settings').upsert(
-      { user_id: userId, streak_freezes: newFreezes, saved_streak: newStreak, longest_streak: newLongest },
-      { onConflict: 'user_id' }
-    ).then(({ error }) => { if (error) console.warn('Failed to sync streak data:', error.message); });
-  }, [userId]);
+    if (!settingsLoaded) return; // Wait until loaded
+
+    supabase.from('user_settings').update(
+      { streak_freezes: newFreezes, saved_streak: newStreak, longest_streak: newLongest }
+    ).eq('user_id', userId).then(({ error }) => { if (error) console.warn('Failed to sync streak data:', error.message); });
+  }, [userId, settingsLoaded]);
 
   return { 
     preset, setPreset, autoStart, setAutoStart, geminiKey, 
