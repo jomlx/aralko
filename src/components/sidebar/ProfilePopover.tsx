@@ -1,12 +1,13 @@
 import { STREAK_THRESHOLDS } from '../../lib/streakConstants';
 import { useState, useCallback } from 'react';
-import { Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays } from 'lucide-react';
+import { Flame, Star, Zap, BookOpen, Clock, Share, X, CalendarDays, Trophy } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 
 import { useAuth } from '../../hooks/useAuth';
 import { xpToLevel } from '../../hooks/useUserSettings';
 import { useUserSettingsContext as useUserSettings } from '../../hooks/UserSettingsContext';
 import { useToast } from '../ui/Toast';
+import { formatHours } from '../stats/StatsView';
 
 interface ProfilePopoverProps {
   streak: number;
@@ -14,9 +15,10 @@ interface ProfilePopoverProps {
   totalMinutes: number;
   sessionsCount: number;
   freezes: number;
+  longestStreak: number;
 }
 
-export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freezes: _freezes }: ProfilePopoverProps) {
+export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freezes: _freezes, longestStreak }: ProfilePopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const { showToast } = useToast();
@@ -24,7 +26,6 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
   const { user } = useAuth();
   const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
 
-  const displayEmail = user?.email ?? 'Not signed in';
   // DB is source of truth for display_name — avoids showing stale OAuth metadata name
   const displayName =
     dbDisplayName
@@ -41,7 +42,6 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
     .slice(0, 2);
 
   const level = xpToLevel(xp);
-  const totalHours = (totalMinutes / 60).toFixed(1);
 
   const joinDate = user?.created_at
     ? new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(user.created_at))
@@ -112,13 +112,10 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
       ctx.fill();
     }
 
-    // "Aralko" + username
+    // "Aralko"
     ctx.fillStyle = textPri;
-    ctx.font = 'bold 13px system-ui, sans-serif';
-    ctx.fillText('Aralko', x0 + 34, y0 + 11);
-    ctx.fillStyle = textMut;
-    ctx.font = '10px system-ui, sans-serif';
-    ctx.fillText(displayEmail, x0 + 34, y0 + 24);
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.fillText('Aralko', x0 + 36, y0 + 19);
 
     // "Study Stats" top-right
     ctx.fillStyle = textMut;
@@ -321,9 +318,8 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
                   <div className="flex h-7 w-7 shrink-0 overflow-hidden rounded-xl shadow-sm">
                     <img src="/logo.png" alt="Aralko" className="w-full h-full object-cover" crossOrigin="anonymous" />
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-primary tracking-wide leading-none">Aralko</span>
-                    <span className="text-[10px] text-muted leading-tight mt-0.5">{displayEmail}</span>
+                  <div className="flex flex-col justify-center">
+                    <span className="text-[13px] font-bold text-primary tracking-wide leading-none">Aralko</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -363,28 +359,30 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
 
               {/* Stats grid */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-white/[0.07] p-2.5 text-center">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <Zap size={11} className="text-accent" />
-                  </div>
+                <div className="rounded-xl bg-white/[0.07] p-2.5 flex flex-col items-center justify-between min-h-[72px]">
                   <p className="text-base font-bold text-primary leading-none">{level}</p>
-                  <p className="text-[10px] text-muted mt-0.5">Level</p>
+                  <p className="text-[10px] text-muted leading-tight mt-1 mb-1.5">Level</p>
+                  <Zap size={14} className="text-accent mt-auto" />
                 </div>
 
-                <div className="rounded-xl bg-white/[0.07] p-2.5 text-center">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <Star size={11} className="text-amber-400" />
-                  </div>
+                <div className="rounded-xl bg-white/[0.07] p-2.5 flex flex-col items-center justify-between min-h-[72px]">
                   <p className="text-base font-bold text-primary leading-none">{xp.toLocaleString()}</p>
-                  <p className="text-[10px] text-muted mt-0.5">Total XP</p>
+                  <p className="text-[10px] text-muted leading-tight mt-1 mb-1.5">Total XP</p>
+                  <Star size={14} className="text-amber-400 mt-auto" />
                 </div>
 
-                <div className="rounded-xl bg-white/[0.07] p-2.5 text-center">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <BookOpen size={11} className="text-success" />
-                  </div>
+                <div className="rounded-xl bg-white/[0.07] p-2.5 flex flex-col items-center justify-between min-h-[72px]">
                   <p className="text-base font-bold text-primary leading-none">{sessionsCount}</p>
-                  <p className="text-[10px] text-muted mt-0.5">Sessions</p>
+                  <p className="text-[10px] text-muted leading-tight mt-1 mb-1.5">Sessions</p>
+                  <BookOpen size={14} className="text-success mt-auto" />
+                </div>
+
+                <div className="col-span-3 rounded-xl bg-white/[0.07] p-2.5 flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-2">
+                    <Trophy size={11} className="text-secondary" />
+                    <span className="text-[11px] text-secondary">Longest streak</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-primary">{longestStreak} {longestStreak === 1 ? 'day' : 'days'}</span>
                 </div>
 
                 <div className="col-span-3 rounded-xl bg-white/[0.07] p-2.5 flex items-center justify-between">
@@ -392,7 +390,7 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
                     <Clock size={11} className="text-secondary" />
                     <span className="text-[11px] text-secondary">Total study time</span>
                   </div>
-                  <span className="text-[11px] font-bold text-primary">{totalHours} hrs</span>
+                  <span className="text-[11px] font-bold text-primary">{formatHours(totalMinutes / 60)}</span>
                 </div>
 
                 {joinDate && (

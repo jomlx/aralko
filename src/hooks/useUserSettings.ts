@@ -74,6 +74,7 @@ export function useUserSettings() {
 
   const [streakFreezes, setStreakFreezes] = useState(0);
   const [savedStreak, setSavedStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -81,6 +82,7 @@ export function useUserSettings() {
 
   const xpRef = useRef(0);
   const xpThisWeekRef = useRef(0);
+  const longestStreakRef = useRef(0);
 
   useEffect(() => {
     if (!userId) {
@@ -92,15 +94,17 @@ export function useUserSettings() {
       setXpThisWeek(0);
       setStreakFreezes(0);
       setSavedStreak(0);
+      setLongestStreak(0);
       setSettingsLoaded(false);
       xpRef.current = 0;
       xpThisWeekRef.current = 0;
+      longestStreakRef.current = 0;
       return;
     }
 
     supabase
       .from('user_settings')
-      .select('pomodoro_preset, pomodoro_autostart, gemini_api_key, xp, level, xp_this_week, week_start, display_name, avatar_url, streak_freezes, saved_streak')
+      .select('pomodoro_preset, pomodoro_autostart, gemini_api_key, xp, level, xp_this_week, week_start, display_name, avatar_url, streak_freezes, saved_streak, longest_streak')
       .eq('user_id', userId)
       .limit(1)
       .single()
@@ -130,6 +134,17 @@ export function useUserSettings() {
           
           if (data.streak_freezes !== undefined) setStreakFreezes(data.streak_freezes);
           if (data.saved_streak !== undefined) setSavedStreak(data.saved_streak);
+          
+          const loadedLongest = data.longest_streak ?? 0;
+          const currentStreakVal = data.saved_streak ?? 0;
+          if (currentStreakVal > loadedLongest) {
+            setLongestStreak(currentStreakVal);
+            longestStreakRef.current = currentStreakVal;
+            supabase.from('user_settings').upsert({ user_id: userId, longest_streak: currentStreakVal }, { onConflict: 'user_id' }).then(() => {});
+          } else {
+            setLongestStreak(loadedLongest);
+            longestStreakRef.current = loadedLongest;
+          }
 
           // DB is the source of truth for display_name.
           // If the DB has a saved name, always use it (even after OAuth re-login which would
@@ -285,8 +300,16 @@ export function useUserSettings() {
     if (!userId) return;
     setStreakFreezes(newFreezes);
     setSavedStreak(newStreak);
+    
+    let newLongest = longestStreakRef.current;
+    if (newStreak > newLongest) {
+      newLongest = newStreak;
+      setLongestStreak(newLongest);
+      longestStreakRef.current = newLongest;
+    }
+
     supabase.from('user_settings').upsert(
-      { user_id: userId, streak_freezes: newFreezes, saved_streak: newStreak },
+      { user_id: userId, streak_freezes: newFreezes, saved_streak: newStreak, longest_streak: newLongest },
       { onConflict: 'user_id' }
     ).then(({ error }) => { if (error) console.warn('Failed to sync streak data:', error.message); });
   }, [userId]);
@@ -294,7 +317,7 @@ export function useUserSettings() {
   return { 
     preset, setPreset, autoStart, setAutoStart, geminiKey, 
     xp, level, xpThisWeek, addXP,
-    streakFreezes, savedStreak, updateStreakData, settingsLoaded,
+    streakFreezes, savedStreak, longestStreak, updateStreakData, settingsLoaded,
     displayName, setDisplayName, avatarUrl, setAvatarUrl,
   };
 }

@@ -268,6 +268,7 @@ function AppContent() {
                   totalMinutes={sessions.reduce((a, s) => a + s.minutes, 0)}
                   sessionsCount={sessions.length}
                   freezes={userSettings.streakFreezes}
+                  longestStreak={userSettings.longestStreak}
                 />
               </Sidebar>
             </ResizablePanel>

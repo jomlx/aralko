@@ -51,7 +51,7 @@ function toLocalDateStr(dateStr: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function formatHours(hours: number): string {
+export function formatHours(hours: number): string {
   if (hours < 1) return `${Math.round(hours * 60)}m`;
   return `${hours.toFixed(1)}h`;
 }

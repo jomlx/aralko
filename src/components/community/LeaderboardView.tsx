@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useUserSettingsContext as useUserSettings } from '../../hooks/UserSettingsContext';
 import { Trophy, Target, CalendarDays, Loader2, Flame, Zap, Star, BookOpen, Clock, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { formatHours } from '../stats/StatsView';
 
 type TimeRange = 'all_time' | 'this_week';
 
@@ -24,15 +25,15 @@ export function LeaderboardView() {
   const [loading, setLoading] = useState(true);
 
   const [selectedUser, setSelectedUser] = useState<LeaderboardUser | null>(null);
-  const [selectedUserExtra, setSelectedUserExtra] = useState<{ sessionsCount: number, totalMinutes: number, streak: number, joinDate: string | null } | null>(null);
+  const [selectedUserExtra, setSelectedUserExtra] = useState<{ sessionsCount: number, totalMinutes: number, streak: number, longest_streak?: number, joinDate: string | null } | null>(null);
 
   const handleUserClick = async (u: LeaderboardUser) => {
     setSelectedUser(u);
     setSelectedUserExtra(null);
     
     try {
-      const { data: sessions } = await supabase.from('session_minutes_public').select('minutes').eq('user_id', u.user_id);
-      const { data: us } = await supabase.from('leaderboard_public').select('saved_streak, updated_at').eq('user_id', u.user_id).single();
+      const { data: sessions } = await supabase.from('sessions').select('minutes').eq('user_id', u.user_id);
+      const { data: us } = await supabase.from('user_settings').select('saved_streak, longest_streak, updated_at').eq('user_id', u.user_id).single();
       
       let totalMinutes = 0;
       let sessionsCount = 0;
@@ -51,6 +52,7 @@ export function LeaderboardView() {
         sessionsCount,
         totalMinutes,
         streak: us?.saved_streak || 0,
+        longest_streak: us?.longest_streak,
         joinDate
       });
     } catch (err) {
@@ -287,39 +289,43 @@ export function LeaderboardView() {
 
               {/* Stats grid */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-white/[0.07] p-2.5 text-center">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <Zap size={18} className="text-accent" />
-                  </div>
+                <div className="rounded-xl bg-white/[0.07] p-2.5 flex flex-col items-center justify-between min-h-[72px]">
                   <p className="text-base font-bold text-primary leading-none">{selectedUser.level}</p>
-                  <p className="text-[10px] text-muted mt-0.5">Level</p>
+                  <p className="text-[10px] text-muted leading-tight mt-1 mb-1.5">Level</p>
+                  <Zap size={14} className="text-accent mt-auto" />
                 </div>
 
-                <div className="rounded-xl bg-white/[0.07] p-2.5 text-center">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <Star size={18} className="text-amber-400" />
-                  </div>
+                <div className="rounded-xl bg-white/[0.07] p-2.5 flex flex-col items-center justify-between min-h-[72px]">
                   <p className="text-base font-bold text-primary leading-none">{(range === 'all_time' ? selectedUser.xp : selectedUser.xp_this_week).toLocaleString()}</p>
-                  <p className="text-[10px] text-muted mt-0.5">XP {range === 'this_week' && 'Week'}</p>
+                  <p className="text-[10px] text-muted leading-tight mt-1 mb-1.5">XP {range === 'this_week' && 'Week'}</p>
+                  <Star size={14} className="text-amber-400 mt-auto" />
                 </div>
 
-                <div className="rounded-xl bg-white/[0.07] p-2.5 text-center">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <BookOpen size={18} className="text-success" />
-                  </div>
+                <div className="rounded-xl bg-white/[0.07] p-2.5 flex flex-col items-center justify-between min-h-[72px]">
                   <p className="text-base font-bold text-primary leading-none">
                     {selectedUserExtra ? selectedUserExtra.sessionsCount : '-'}
                   </p>
-                  <p className="text-[10px] text-muted mt-0.5">Sessions</p>
+                  <p className="text-[10px] text-muted leading-tight mt-1 mb-1.5">Sessions</p>
+                  <BookOpen size={14} className="text-success mt-auto" />
+                </div>
+
+                <div className="col-span-3 rounded-xl bg-white/[0.07] p-2.5 flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-2">
+                    <Trophy size={11} className="text-secondary" />
+                    <span className="text-[11px] text-secondary">Longest streak</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-primary">
+                    {selectedUserExtra && selectedUserExtra.longest_streak !== undefined ? `${selectedUserExtra.longest_streak} ${selectedUserExtra.longest_streak === 1 ? 'day' : 'days'}` : '—'}
+                  </span>
                 </div>
 
                 <div className="col-span-3 rounded-xl bg-white/[0.07] p-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock size={18} className="text-secondary" />
+                    <Clock size={11} className="text-secondary" />
                     <span className="text-[11px] text-secondary">Total study time</span>
                   </div>
                   <span className="text-[11px] font-bold text-primary">
-                    {selectedUserExtra ? (selectedUserExtra.totalMinutes / 60).toFixed(1) : '-'} hrs
+                    {selectedUserExtra ? formatHours(selectedUserExtra.totalMinutes / 60) : '-'}
                   </span>
                 </div>
 
