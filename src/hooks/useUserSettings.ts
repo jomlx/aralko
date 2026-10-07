@@ -28,7 +28,11 @@ function getCurrentWeekStart(): string {
   const diff = day === 0 ? -6 : 1 - day;
   const monday = new Date(now);
   monday.setDate(now.getDate() + diff);
-  return monday.toISOString().slice(0, 10);
+  
+  const yyyy = monday.getFullYear();
+  const mm = String(monday.getMonth() + 1).padStart(2, '0');
+  const dd = String(monday.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 const XP_EVENTS_KEY = 'aralko-xp-events';
@@ -83,6 +87,7 @@ export function useUserSettings() {
   const xpRef = useRef(0);
   const xpThisWeekRef = useRef(0);
   const longestStreakRef = useRef(0);
+  const weekStartRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -99,6 +104,7 @@ export function useUserSettings() {
       xpRef.current = 0;
       xpThisWeekRef.current = 0;
       longestStreakRef.current = 0;
+      weekStartRef.current = null;
       return;
     }
 
@@ -120,10 +126,9 @@ export function useUserSettings() {
 
           if (data.week_start !== currentWeekStart) {
             weekXp = 0;
-            supabase.from('user_settings').upsert(
-              { user_id: userId, xp_this_week: 0, week_start: currentWeekStart },
-              { onConflict: 'user_id' }
-            ).then(() => {});
+            supabase.from('user_settings').update(
+              { xp_this_week: 0, week_start: currentWeekStart }
+            ).eq('user_id', userId).then(() => {});
           }
 
           setXp(loadedXp);
@@ -131,6 +136,7 @@ export function useUserSettings() {
           setXpThisWeek(weekXp);
           xpRef.current = loadedXp;
           xpThisWeekRef.current = weekXp;
+          weekStartRef.current = currentWeekStart;
           
           if (data.streak_freezes !== undefined) setStreakFreezes(data.streak_freezes);
           if (data.saved_streak !== undefined) setSavedStreak(data.saved_streak);
@@ -274,12 +280,15 @@ export function useUserSettings() {
       if (hasAwardedXP(userId, eventKey)) return;
       markXPAwarded(userId, eventKey);
     }
+    const weekStart    = getCurrentWeekStart();
+    if (weekStartRef.current !== weekStart) {
+      xpThisWeekRef.current = 0;
+      weekStartRef.current = weekStart;
+    }
 
     const newXp        = xpRef.current + amount;
     const newWeekXp    = xpThisWeekRef.current + amount;
     const newLevel     = xpToLevel(newXp);
-    const weekStart    = getCurrentWeekStart();
-
     const { error } = await supabase.from('user_settings').upsert(
       { user_id: userId, xp: newXp, level: newLevel, xp_this_week: newWeekXp, week_start: weekStart },
       { onConflict: 'user_id' }
