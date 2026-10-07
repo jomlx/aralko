@@ -15,48 +15,70 @@ interface LeaderboardUser {
   xp: number;
   xp_this_week: number;
   level: number;
+  streak: number;
 }
 
 export function LeaderboardView() {
   const { user } = useAuth();
-  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl, xp: myXp, xpThisWeek: myXpThisWeek, level: myLevel } = useUserSettings();
+  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl, xp: myXp, xpThisWeek: myXpThisWeek, level: myLevel, savedStreak: myStreak } = useUserSettings();
   const [range, setRange] = useState<TimeRange>('all_time');
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedUser, setSelectedUser] = useState<LeaderboardUser | null>(null);
-  const [selectedUserExtra, setSelectedUserExtra] = useState<{ sessionsCount: number, totalMinutes: number, streak: number, longest_streak?: number, joinDate: string | null } | null>(null);
+  const [selectedUserExtra, setSelectedUserExtra] = useState<{ sessionsCount: number | string, totalMinutes: number | string, streak: number, longest_streak?: number | string, joinDate: string | null } | null>(null);
+  const [profileCache, setProfileCache] = useState<Record<string, any>>({});
 
   const handleUserClick = async (u: LeaderboardUser) => {
     setSelectedUser(u);
+    if (profileCache[u.user_id]) {
+      setSelectedUserExtra(profileCache[u.user_id]);
+      return;
+    }
     setSelectedUserExtra(null);
     
     try {
-      const { data: sessions } = await supabase.from('sessions').select('minutes').eq('user_id', u.user_id);
-      const { data: us } = await supabase.from('user_settings').select('saved_streak, longest_streak, updated_at').eq('user_id', u.user_id).single();
+      const { data: rpcData, error } = await supabase.rpc('get_public_profile', { p_user_id: u.user_id });
       
-      let totalMinutes = 0;
-      let sessionsCount = 0;
-      if (sessions) {
-        sessionsCount = sessions.length;
-        totalMinutes = sessions.reduce((acc, s) => acc + s.minutes, 0);
+      if (error || !rpcData || (Array.isArray(rpcData) && rpcData.length === 0)) {
+        const fallback = {
+          sessionsCount: '-',
+          totalMinutes: '-',
+          streak: u.streak || 0,
+          longest_streak: u.streak || 0,
+          joinDate: '-'
+        };
+        setSelectedUserExtra(fallback);
+        setProfileCache(prev => ({ ...prev, [u.user_id]: fallback }));
+        return;
       }
 
-      let joinDate = null;
-      if (us?.updated_at) {
-        // Fallback to updated_at since created_at is not available
-        joinDate = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(us.updated_at));
+      const profile = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+
+      let joinDate = '-';
+      if (profile.active_since) {
+        joinDate = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(profile.active_since));
       }
 
-      setSelectedUserExtra({
-        sessionsCount,
-        totalMinutes,
-        streak: us?.saved_streak || 0,
-        longest_streak: us?.longest_streak,
+      const extra = {
+        sessionsCount: profile.sessions_count ?? '-',
+        totalMinutes: profile.total_minutes ?? '-',
+        streak: Math.max(u.streak || 0, profile.saved_streak || 0),
+        longest_streak: Math.max(u.streak || 0, profile.longest_streak || 0),
         joinDate
-      });
+      };
+
+      setSelectedUserExtra(extra);
+      setProfileCache(prev => ({ ...prev, [u.user_id]: extra }));
     } catch (err) {
       console.error(err);
+      setSelectedUserExtra({
+        sessionsCount: '-',
+        totalMinutes: '-',
+        streak: u.streak || 0,
+        longest_streak: u.streak || 0,
+        joinDate: '-'
+      });
     }
   };
 
@@ -69,7 +91,7 @@ export function LeaderboardView() {
       
       const { data, error } = await supabase
         .from('leaderboard_public')
-        .select('user_id, display_name, avatar_url, xp, xp_this_week, level')
+        .select('user_id, display_name, avatar_url, xp, xp_this_week, level, streak')
         .order(orderBy, { ascending: false })
         .limit(50);
 
@@ -176,9 +198,9 @@ export function LeaderboardView() {
                 if (user && myXp > 0) {
                   const meIdx = list.findIndex(u => u.user_id === user.id);
                   if (meIdx >= 0) {
-                    list[meIdx] = { ...list[meIdx], xp: Math.max(list[meIdx].xp, myXp), xp_this_week: Math.max(list[meIdx].xp_this_week, myXpThisWeek), level: Math.max(list[meIdx].level, myLevel) };
+                    list[meIdx] = { ...list[meIdx], xp: Math.max(list[meIdx].xp, myXp), xp_this_week: Math.max(list[meIdx].xp_this_week, myXpThisWeek), level: Math.max(list[meIdx].level, myLevel), streak: Math.max(list[meIdx].streak || 0, myStreak) };
                   } else if ((range === 'all_time' && myXp > 0) || (range === 'this_week' && myXpThisWeek > 0)) {
-                    list.push({ user_id: user.id, display_name: dbDisplayName, avatar_url: dbAvatarUrl, xp: myXp, xp_this_week: myXpThisWeek, level: myLevel });
+                    list.push({ user_id: user.id, display_name: dbDisplayName, avatar_url: dbAvatarUrl, xp: myXp, xp_this_week: myXpThisWeek, level: myLevel, streak: myStreak });
                   }
                   list.sort((a, b) => range === 'all_time' ? b.xp - a.xp : b.xp_this_week - a.xp_this_week);
                 }
@@ -281,7 +303,7 @@ export function LeaderboardView() {
                 <Flame size={18} className="text-amber-400 shrink-0" />
                 <div className="flex items-baseline gap-1.5">
                   <p className="text-3xl font-extrabold text-primary leading-none">
-                    {selectedUserExtra ? selectedUserExtra.streak : <Loader2 size={18} className="animate-spin inline text-muted" />}
+                    {selectedUserExtra ? selectedUserExtra.streak : (selectedUser.streak || 0)}
                   </p>
                   <p className="text-xs text-muted font-medium">day streak</p>
                 </div>
@@ -303,7 +325,7 @@ export function LeaderboardView() {
 
                 <div className="rounded-xl bg-white/[0.07] p-2.5 flex flex-col items-center justify-between min-h-[72px]">
                   <p className="text-base font-bold text-primary leading-none">
-                    {selectedUserExtra ? selectedUserExtra.sessionsCount : '-'}
+                    {selectedUserExtra ? selectedUserExtra.sessionsCount : <span className="inline-block h-4 w-8 bg-white/10 rounded animate-pulse" />}
                   </p>
                   <p className="text-[10px] text-muted leading-tight mt-1 mb-1.5">Sessions</p>
                   <BookOpen size={14} className="text-success mt-auto" />
@@ -315,7 +337,7 @@ export function LeaderboardView() {
                     <span className="text-[11px] text-secondary">Longest streak</span>
                   </div>
                   <span className="text-[11px] font-bold text-primary">
-                    {selectedUserExtra && selectedUserExtra.longest_streak !== undefined ? `${selectedUserExtra.longest_streak} ${selectedUserExtra.longest_streak === 1 ? 'day' : 'days'}` : '—'}
+                    {selectedUserExtra ? (typeof selectedUserExtra.longest_streak === 'number' ? `${selectedUserExtra.longest_streak} ${selectedUserExtra.longest_streak === 1 ? 'day' : 'days'}` : '—') : <span className="inline-block h-3 w-8 bg-white/10 rounded animate-pulse" />}
                   </span>
                 </div>
 
@@ -325,19 +347,19 @@ export function LeaderboardView() {
                     <span className="text-[11px] text-secondary">Total study time</span>
                   </div>
                   <span className="text-[11px] font-bold text-primary">
-                    {selectedUserExtra ? formatHours(selectedUserExtra.totalMinutes / 60) : '-'}
+                    {selectedUserExtra ? (typeof selectedUserExtra.totalMinutes === 'number' ? formatHours(selectedUserExtra.totalMinutes / 60) : '—') : <span className="inline-block h-3 w-8 bg-white/10 rounded animate-pulse" />}
                   </span>
                 </div>
 
-                {selectedUserExtra?.joinDate && (
-                  <div className="col-span-3 rounded-xl bg-white/[0.07] p-2.5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays size={18} className="text-secondary" />
-                      <span className="text-[11px] text-secondary">Active since</span>
-                    </div>
-                    <span className="text-[11px] font-semibold text-primary">{selectedUserExtra.joinDate}</span>
+                <div className="col-span-3 rounded-xl bg-white/[0.07] p-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays size={11} className="text-secondary" />
+                    <span className="text-[11px] text-secondary">Active since</span>
                   </div>
-                )}
+                  <span className="text-[11px] font-semibold text-primary">
+                    {selectedUserExtra ? (selectedUserExtra.joinDate !== '-' ? selectedUserExtra.joinDate : '—') : <span className="inline-block h-3 w-16 bg-white/10 rounded animate-pulse" />}
+                  </span>
+                </div>
               </div>
             </div>
 

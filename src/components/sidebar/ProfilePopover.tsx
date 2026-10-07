@@ -19,6 +19,7 @@ interface ProfilePopoverProps {
 }
 
 export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freezes: _freezes, longestStreak }: ProfilePopoverProps) {
+  const displayLongestStreak = Math.max(longestStreak, streak);
   const [isOpen, setIsOpen] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const { showToast } = useToast();
@@ -382,7 +383,7 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
                     <Trophy size={11} className="text-secondary" />
                     <span className="text-[11px] text-secondary">Longest streak</span>
                   </div>
-                  <span className="text-[11px] font-bold text-primary">{longestStreak} {longestStreak === 1 ? 'day' : 'days'}</span>
+                  <span className="text-[11px] font-bold text-primary">{displayLongestStreak} {displayLongestStreak === 1 ? 'day' : 'days'}</span>
                 </div>
 
                 <div className="col-span-3 rounded-xl bg-white/[0.07] p-2.5 flex items-center justify-between">
