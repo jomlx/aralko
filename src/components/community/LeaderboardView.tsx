@@ -15,18 +15,18 @@ interface LeaderboardUser {
   xp: number;
   xp_this_week: number;
   level: number;
-  streak: number;
 }
 
 export function LeaderboardView() {
   const { user } = useAuth();
-  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl, xp: myXp, xpThisWeek: myXpThisWeek, level: myLevel, savedStreak: myStreak } = useUserSettings();
+  const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl, xp: myXp, xpThisWeek: myXpThisWeek, level: myLevel } = useUserSettings();
   const [range, setRange] = useState<TimeRange>('all_time');
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const [selectedUser, setSelectedUser] = useState<LeaderboardUser | null>(null);
-  const [selectedUserExtra, setSelectedUserExtra] = useState<{ sessionsCount: number | string, totalMinutes: number | string, streak: number, longest_streak?: number | string, joinDate: string | null } | null>(null);
+  const [selectedUserExtra, setSelectedUserExtra] = useState<{ sessionsCount: number | string, totalMinutes: number | string, streak: number | string, longest_streak?: number | string, joinDate: string | null } | null>(null);
   const [profileCache, setProfileCache] = useState<Record<string, any>>({});
 
   const handleUserClick = async (u: LeaderboardUser) => {
@@ -44,8 +44,8 @@ export function LeaderboardView() {
         const fallback = {
           sessionsCount: '-',
           totalMinutes: '-',
-          streak: u.streak || 0,
-          longest_streak: u.streak || 0,
+          streak: '-',
+          longest_streak: '-',
           joinDate: '-'
         };
         setSelectedUserExtra(fallback);
@@ -60,11 +60,14 @@ export function LeaderboardView() {
         joinDate = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(profile.active_since));
       }
 
+      const fetchedStreak = profile.saved_streak || 0;
+      const fetchedLongest = profile.longest_streak || 0;
+
       const extra = {
         sessionsCount: profile.sessions_count ?? '-',
         totalMinutes: profile.total_minutes ?? '-',
-        streak: Math.max(u.streak || 0, profile.saved_streak || 0),
-        longest_streak: Math.max(u.streak || 0, profile.longest_streak || 0),
+        streak: fetchedStreak,
+        longest_streak: Math.max(fetchedStreak, fetchedLongest),
         joinDate
       };
 
@@ -75,8 +78,8 @@ export function LeaderboardView() {
       setSelectedUserExtra({
         sessionsCount: '-',
         totalMinutes: '-',
-        streak: u.streak || 0,
-        longest_streak: u.streak || 0,
+        streak: '-',
+        longest_streak: '-',
         joinDate: '-'
       });
     }
@@ -91,14 +94,16 @@ export function LeaderboardView() {
       
       const { data, error } = await supabase
         .from('leaderboard_public')
-        .select('user_id, display_name, avatar_url, xp, xp_this_week, level, streak')
+        .select('user_id, display_name, avatar_url, xp, xp_this_week, level')
         .order(orderBy, { ascending: false })
         .limit(50);
 
       if (isMounted) {
         if (error) {
           console.error('Leaderboard fetch error:', error);
+          setFetchError(error.message || 'Failed to load leaderboard');
         } else if (data) {
+          setFetchError(null);
           // Filter out users with 0 XP for the selected range to keep it clean
           const filtered = data.filter(u => range === 'all_time' ? u.xp > 0 : u.xp_this_week > 0);
           setUsers(filtered);
@@ -170,10 +175,15 @@ export function LeaderboardView() {
 
       {/* Leaderboard List */}
       <div className="bg-surface rounded-2xl border border-token overflow-hidden">
-        {loading ? (
+        {loading && users.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64">
             <Loader2 size={18} className="animate-spin text-accent mb-4" />
             <p className="text-sm text-secondary">Loading rankings...</p>
+          </div>
+        ) : fetchError && users.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <p className="text-red-500 font-medium">Error loading leaderboard</p>
+            <p className="text-sm text-muted mt-1">{fetchError}</p>
           </div>
         ) : users.length === 0 && !(user && ((range === 'all_time' && myXp > 0) || (range === 'this_week' && myXpThisWeek > 0))) ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
@@ -198,9 +208,9 @@ export function LeaderboardView() {
                 if (user && myXp > 0) {
                   const meIdx = list.findIndex(u => u.user_id === user.id);
                   if (meIdx >= 0) {
-                    list[meIdx] = { ...list[meIdx], xp: Math.max(list[meIdx].xp, myXp), xp_this_week: Math.max(list[meIdx].xp_this_week, myXpThisWeek), level: Math.max(list[meIdx].level, myLevel), streak: Math.max(list[meIdx].streak || 0, myStreak) };
+                    list[meIdx] = { ...list[meIdx], xp: Math.max(list[meIdx].xp, myXp), xp_this_week: Math.max(list[meIdx].xp_this_week, myXpThisWeek), level: Math.max(list[meIdx].level, myLevel) };
                   } else if ((range === 'all_time' && myXp > 0) || (range === 'this_week' && myXpThisWeek > 0)) {
-                    list.push({ user_id: user.id, display_name: dbDisplayName, avatar_url: dbAvatarUrl, xp: myXp, xp_this_week: myXpThisWeek, level: myLevel, streak: myStreak });
+                    list.push({ user_id: user.id, display_name: dbDisplayName, avatar_url: dbAvatarUrl, xp: myXp, xp_this_week: myXpThisWeek, level: myLevel });
                   }
                   list.sort((a, b) => range === 'all_time' ? b.xp - a.xp : b.xp_this_week - a.xp_this_week);
                 }
@@ -303,7 +313,7 @@ export function LeaderboardView() {
                 <Flame size={18} className="text-amber-400 shrink-0" />
                 <div className="flex items-baseline gap-1.5">
                   <p className="text-3xl font-extrabold text-primary leading-none">
-                    {selectedUserExtra ? selectedUserExtra.streak : (selectedUser.streak || 0)}
+                    {selectedUserExtra ? selectedUserExtra.streak : <span className="inline-block h-6 w-6 bg-white/10 rounded animate-pulse" />}
                   </p>
                   <p className="text-xs text-muted font-medium">day streak</p>
                 </div>
