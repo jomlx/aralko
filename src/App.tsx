@@ -56,9 +56,34 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 
 import { handleSpotifyCallback } from './lib/spotifyAuth';
 
+function useMobileDetect() {
+  const [isMobile, setIsMobile] = useState(false);
 
+  useEffect(() => {
+    const checkMobile = () => {
+      const isSmallScreen = window.innerWidth < 768;
+      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      setIsMobile(isSmallScreen || (isMobileUA && hasTouch));
+    };
+
+    checkMobile();
+
+    window.addEventListener('resize', checkMobile);
+    window.addEventListener('orientationchange', checkMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('orientationchange', checkMobile);
+    };
+  }, []);
+
+  return isMobile;
+}
 
 function AppContent() {
+  const isMobile = useMobileDetect();
   const [activeTab, setActiveTab] = useState<MainTab>('main');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -221,9 +246,9 @@ function AppContent() {
       
       <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0">
         {/* Sidebar */}
-        {!isTestMode && (
+        {!isTestMode && !isMobile && (
           <>
-            <ResizablePanel defaultSize={25} minSize={22} maxSize={32} className="hidden md:flex flex-col h-full">
+            <ResizablePanel defaultSize={25} minSize={22} maxSize={32}>
               <Sidebar>
                 <StudyTracker 
                   secondsLeft={pomodoro.secondsLeft}
@@ -253,7 +278,7 @@ function AppContent() {
                 />
               </Sidebar>
             </ResizablePanel>
-            <ResizableHandle className="hidden md:flex" />
+            <ResizableHandle />
           </>
         )}
 
