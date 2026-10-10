@@ -1,5 +1,5 @@
 import { STREAK_THRESHOLDS } from '../../lib/streakConstants';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { X, Flame } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { ProfileCard } from '../profile/ProfileCard';
@@ -24,6 +24,13 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
   const [isOpen, setIsOpen] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const { showToast } = useToast();
+
+
+  useEffect(() => {
+    const handleOpenShare = () => setShowShareMenu(true);
+    window.addEventListener('openShareModal', handleOpenShare);
+    return () => window.removeEventListener('openShareModal', handleOpenShare);
+  }, []);
 
   const { user } = useAuth();
   const { displayName: dbDisplayName, avatarUrl: dbAvatarUrl } = useUserSettings();
@@ -320,7 +327,6 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
               streak={streak}
               level={level}
               xp={xp.toLocaleString()}
-              xpLabel="Total XP"
               sessionsCount={sessionsCount}
               longestStreak={`${displayLongestStreak} ${displayLongestStreak === 1 ? 'day' : 'days'}`}
               totalTime={formatHours(totalMinutes / 60)}

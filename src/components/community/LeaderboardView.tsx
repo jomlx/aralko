@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserSettingsContext as useUserSettings } from '../../hooks/UserSettingsContext';
-import { Trophy, Target, Loader2, X, CalendarDays } from 'lucide-react';
+import { Trophy, Target, Loader2, CalendarDays } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { formatHours } from '../stats/StatsView';
 import { ProfileCard } from '../profile/ProfileCard';
@@ -282,25 +282,17 @@ export function LeaderboardView() {
             <ProfileCard
               displayName={selectedUser.display_name || 'Anonymous Learner'}
               avatarUrl={selectedUser.avatar_url}
-              handle={`@${(selectedUser.display_name || 'user').replace(/\\s+/g, '').toLowerCase()}`}
               initials={getInitials(selectedUser.display_name, selectedUser.user_id)}
               streak={selectedUserExtra ? selectedUserExtra.streak : <span className="inline-block h-6 w-6 bg-white/10 rounded animate-pulse" />}
               level={selectedUser.level}
               xp={(range === 'all_time' ? selectedUser.xp : selectedUser.xp_this_week).toLocaleString()}
-              xpLabel={`XP ${range === 'this_week' ? 'Week' : ''}`.trim()}
               sessionsCount={selectedUserExtra ? selectedUserExtra.sessionsCount : <span className="inline-block h-4 w-8 bg-white/10 rounded animate-pulse" />}
               longestStreak={selectedUserExtra ? (typeof selectedUserExtra.longest_streak === 'number' ? `${selectedUserExtra.longest_streak} ${selectedUserExtra.longest_streak === 1 ? 'day' : 'days'}` : '—') : <span className="inline-block h-3 w-8 bg-white/10 rounded animate-pulse" />}
               totalTime={selectedUserExtra ? (typeof selectedUserExtra.totalMinutes === 'number' ? formatHours(selectedUserExtra.totalMinutes / 60) : '—') : <span className="inline-block h-3 w-8 bg-white/10 rounded animate-pulse" />}
               joinDate={selectedUserExtra ? (selectedUserExtra.joinDate !== '-' ? selectedUserExtra.joinDate : '—') : <span className="inline-block h-3 w-16 bg-white/10 rounded animate-pulse" />}
+              showShareButton={selectedUser.user_id === user?.id}
+              onShareClick={() => window.dispatchEvent(new CustomEvent('openShareModal'))}
             />
-
-            <button
-              onClick={() => setSelectedUser(null)}
-              className="rounded-xl bg-surface hover:bg-white/[0.05] border border-token px-6 py-2.5 text-sm font-semibold text-primary transition-colors flex items-center gap-2"
-            >
-              <X size={18} />
-              Close
-            </button>
           </div>
         </div>
       )}

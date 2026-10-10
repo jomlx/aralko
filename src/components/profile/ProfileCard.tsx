@@ -4,12 +4,10 @@ import { Flame, Zap, Star, BookOpen, Trophy, Clock, CalendarDays, Share } from '
 interface ProfileCardProps {
   displayName: string;
   avatarUrl?: string | null;
-  handle?: string;
   initials: string;
   streak: React.ReactNode;
   level: React.ReactNode;
   xp: React.ReactNode;
-  xpLabel?: string;
   sessionsCount: React.ReactNode;
   longestStreak: React.ReactNode;
   totalTime: React.ReactNode;
@@ -21,12 +19,10 @@ interface ProfileCardProps {
 export function ProfileCard({
   displayName,
   avatarUrl,
-  handle,
   initials,
   streak,
   level,
   xp,
-  xpLabel = 'XP',
   sessionsCount,
   longestStreak,
   totalTime,
@@ -44,7 +40,6 @@ export function ProfileCard({
           </div>
           <div className="flex flex-col justify-center">
             <span className="text-[13px] font-bold text-primary tracking-wide leading-none">Aralko</span>
-            {handle && <span className="text-[10px] text-muted leading-tight mt-0.5">{handle}</span>}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -94,7 +89,7 @@ export function ProfileCard({
 
         <div className="rounded-xl bg-white/[0.07] p-2.5 flex flex-col items-center justify-between min-h-[72px]">
           <p className="text-base font-bold text-primary leading-none">{xp}</p>
-          <p className="text-[10px] text-muted leading-tight mt-1 mb-1.5">{xpLabel}</p>
+          <p className="text-[10px] text-muted leading-tight mt-1 mb-1.5">Total XP</p>
           <Star size={14} className="text-amber-400 mt-auto" />
         </div>
 
