@@ -315,10 +315,11 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
       {/* Profile Dialog */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-end md:justify-center bg-black/60 backdrop-blur-sm p-4 pb-8 md:p-4"
           onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         >
-          <div className="w-full max-w-sm flex flex-col items-center">
+          <div className="w-full max-w-sm flex flex-col items-center animate-in slide-in-from-bottom-8 fade-in md:zoom-in-95 duration-200">
+            <div className="md:hidden w-12 h-1.5 bg-white/20 rounded-full shrink-0 mb-3" />
             {/* ── Stats Card ─────────────────────────── */}
             <ProfileCard
               displayName={displayName}
@@ -343,10 +344,11 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
       {/* ── Share with Friends Modal ──────────────────────── */}
       {showShareMenu && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[60] flex items-end justify-center md:items-center bg-black/60 backdrop-blur-sm p-4 pb-8 md:p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setShowShareMenu(false); }}
         >
-          <div className="w-full max-w-xs rounded-2xl border border-token bg-surface p-6 shadow-2xl shadow-black/60 animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-full max-w-xs rounded-2xl border border-token bg-surface p-6 shadow-2xl shadow-black/60 animate-in slide-in-from-bottom-8 fade-in md:zoom-in-95 duration-200 flex flex-col relative">
+            <div className="md:hidden w-12 h-1.5 bg-secondary/30 rounded-full shrink-0 absolute -top-3 left-1/2 -translate-x-1/2" />
             {/* Header */}
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-base font-bold text-primary">Share with Friends</h2>

@@ -217,59 +217,56 @@ export function FlashcardsViewer({
   return (
     <div className="flex flex-col w-full min-h-[420px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-3">
-        {/* Tracker Header */}
-        <div className="w-full mb-1 flex flex-col gap-3">
-          {/* Progress Bar Row */}
-          <div className="flex items-center w-full mt-3 mb-1">
-            <div className="relative flex-1 h-2 bg-white/[0.05] rounded-full">
-              <div
-                className="absolute top-0 left-0 h-full bg-accent rounded-full transition-all duration-300"
-                style={{ width: `${playDeck.length > 0 ? Math.round(((currentIndex + 1) / playDeck.length) * 100) : 0}%` }}
-              >
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 bg-accent/20 text-accent text-2xs font-bold px-1.5 py-0.5 rounded-md backdrop-blur-md border border-accent/30 shadow-sm whitespace-nowrap">
-                  {playDeck.length > 0 ? Math.round(((currentIndex + 1) / playDeck.length) * 100) : 0}%
-                </div>
+        {/* Progress Bar Row */}
+        <div className="flex items-center w-full mt-3 mb-1 order-1">
+          <div className="relative flex-1 h-2 bg-white/[0.05] rounded-full">
+            <div
+              className="absolute top-0 left-0 h-full bg-accent rounded-full transition-all duration-300"
+              style={{ width: `${playDeck.length > 0 ? Math.round(((currentIndex + 1) / playDeck.length) * 100) : 0}%` }}
+            >
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 bg-accent/20 text-accent text-2xs font-bold px-1.5 py-0.5 rounded-md backdrop-blur-md border border-accent/30 shadow-sm whitespace-nowrap">
+                {playDeck.length > 0 ? Math.round(((currentIndex + 1) / playDeck.length) * 100) : 0}%
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Stats Cards Row */}
-          <div className="flex gap-4 w-full">
-            <div className="flex-1 bg-blue-500/10 border border-blue-500/20 rounded-xl px-3 py-1.5 flex items-center gap-2.5 shadow-sm">
-              <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-                <BookOpen size={14} className="text-blue-500" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-bold text-primary leading-tight">{playDeck.length - (currentCorrect + currentIncorrect)}</span>
-                <span className="text-2xs font-medium text-blue-500">Learning</span>
-              </div>
+        {/* Stats Cards Row */}
+        <div className="flex gap-4 w-full order-last md:order-2 mt-2 md:mt-0 mb-4 md:mb-0">
+          <div className="flex-1 bg-blue-500/10 border border-blue-500/20 rounded-xl px-3 py-1.5 flex items-center gap-2.5 shadow-sm">
+            <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+              <BookOpen size={14} className="text-blue-500" />
             </div>
-
-            <div className="flex-1 bg-slate-500/10 border border-slate-500/20 rounded-xl px-3 py-1.5 flex items-center gap-2.5 shadow-sm">
-              <div className="w-7 h-7 rounded-full bg-slate-500/20 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(100,116,139,0.2)]">
-                <PenTool size={14} className="text-muted" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-bold text-primary leading-tight">{currentIncorrect}</span>
-                <span className="text-2xs font-medium text-muted">Reviewing</span>
-              </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-primary leading-tight">{playDeck.length - (currentCorrect + currentIncorrect)}</span>
+              <span className="text-2xs font-medium text-blue-500">Learning</span>
             </div>
+          </div>
 
-            <div className="flex-1 bg-success-muted border border-success/20 rounded-xl px-3 py-1.5 flex items-center gap-2.5 shadow-sm">
-              <div className="w-7 h-7 rounded-full bg-success/20 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                <Check size={14} className="text-success" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-bold text-primary leading-tight">{currentCorrect}</span>
-                <span className="text-2xs font-medium text-success">Known</span>
-              </div>
+          <div className="flex-1 bg-slate-500/10 border border-slate-500/20 rounded-xl px-3 py-1.5 flex items-center gap-2.5 shadow-sm">
+            <div className="w-7 h-7 rounded-full bg-slate-500/20 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(100,116,139,0.2)]">
+              <PenTool size={14} className="text-muted" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-primary leading-tight">{currentIncorrect}</span>
+              <span className="text-2xs font-medium text-muted">Reviewing</span>
+            </div>
+          </div>
+
+          <div className="flex-1 bg-success-muted border border-success/20 rounded-xl px-3 py-1.5 flex items-center gap-2.5 shadow-sm">
+            <div className="w-7 h-7 rounded-full bg-success/20 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+              <Check size={14} className="text-success" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-primary leading-tight">{currentCorrect}</span>
+              <span className="text-2xs font-medium text-success">Known</span>
             </div>
           </div>
         </div>
 
         {/* Flashcard — proper 3D flip with preserve-3d to avoid blur */}
         <div 
-          className={`relative w-full h-64 ${(!hasMultipleChoice || answered) ? 'cursor-pointer' : ''}`}
+          className={`relative w-full h-64 order-3 md:order-none ${(!hasMultipleChoice || answered) ? 'cursor-pointer' : ''}`}
           style={{ perspective: '1000px' }}
           onClick={() => {
             if (hasMultipleChoice && !answered) return;
@@ -309,7 +306,7 @@ export function FlashcardsViewer({
 
         {/* Test Mode: Multiple-Choice Options */}
         {hasMultipleChoice && (
-          <div className="w-full max-w-4xl grid grid-cols-2 gap-2 mb-4">
+          <div className="w-full max-w-4xl grid grid-cols-2 gap-2 mb-4 order-4 md:order-none">
             {shuffledOptions.map((option, idx) => {
               const isCorrect = option === card.back;
               const isSelected = selectedOption === option;
@@ -345,7 +342,7 @@ export function FlashcardsViewer({
         {/* Controls */}
         {isTestMode ? (
           answered && (
-            <div className="flex w-full max-w-4xl items-center justify-between mt-2">
+            <div className="flex w-full max-w-4xl items-center justify-between mt-2 order-5 md:order-none">
               <button
                 onClick={() => onFlagForReview?.(card)}
                 className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
@@ -366,7 +363,7 @@ export function FlashcardsViewer({
             </div>
           )
         ) : (
-          <div className="flex flex-col items-center w-full mt-4 gap-2">
+          <div className="flex flex-col items-center w-full mt-4 gap-2 order-5 md:order-none">
             {/* Single row: [Left Action] [Mode Toggle] [Right Action] clustered together */}
             <div className="flex items-center justify-center gap-5">
               

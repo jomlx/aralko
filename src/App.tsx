@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { MAX_FREEZES } from './lib/streakConstants';
-import { Smartphone, X } from 'lucide-react';
+import { X, LayoutDashboard, BookOpen, FileText, BarChart3, Users, Settings as SettingsIcon, Pause } from 'lucide-react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { StudyTracker } from './components/sidebar/StudyTracker';
@@ -39,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './components/ui/alert-dialog';
+import { Dialog, DialogContent } from './components/ui/dialog';
 
 import type { MainTab, Activity, StudySession } from './types';
 
@@ -55,39 +56,13 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 
 import { handleSpotifyCallback } from './lib/spotifyAuth';
 
-function useMobileDetect() {
-  const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => {
-    const checkMobile = () => {
-      const isSmallScreen = window.innerWidth < 768;
-      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      
-      setIsMobile(isSmallScreen || (isMobileUA && hasTouch));
-    };
-
-    // Check immediately
-    checkMobile();
-
-    // Re-check on resize or orientation change
-    window.addEventListener('resize', checkMobile);
-    window.addEventListener('orientationchange', checkMobile);
-
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-      window.removeEventListener('orientationchange', checkMobile);
-    };
-  }, []);
-
-  return isMobile;
-}
 
 function AppContent() {
-  const isMobile = useMobileDetect();
   const [activeTab, setActiveTab] = useState<MainTab>('main');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTimerSheetOpen, setIsTimerSheetOpen] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
   const [theme, setTheme] = useLocalStorage<'dark' | 'light'>('aralko-theme', 'light');
 
@@ -210,39 +185,45 @@ function AppContent() {
     });
   };
 
-  if (isMobile) {
-    return (
-      <div className="min-h-screen bg-app flex items-center justify-center p-6 text-center" data-theme={theme}>
-        <div className="max-w-md w-full bg-surface border border-token rounded-3xl p-8 flex flex-col items-center shadow-2xl mx-4">
-          <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mb-6 border border-accent/20">
-            <Smartphone size={32} className="text-accent" />
-          </div>
-          <h1 className="text-2xl font-bold text-primary mb-3">
-            Aralko is desktop-only for now
-          </h1>
-          <p className="text-secondary leading-relaxed">
-            Unfortunately, Aralko isn't available on mobile phones yet. Please open it on a desktop or laptop to study.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div 
       data-theme={theme}
       className="h-screen overflow-hidden bg-app text-slate-100 flex flex-col"
     >
-      {/* Header */}
-      <div className="flex-shrink-0 h-[60px]">
+      {/* Desktop Header */}
+      <div className="flex-shrink-0 h-[60px] hidden md:block">
         <Header activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} disabled={isTestMode} />
+      </div>
+
+      {/* Mobile Header */}
+      <div className="flex-shrink-0 h-[60px] md:hidden flex items-center justify-between px-4 border-b border-token bg-app">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 overflow-hidden rounded-lg shadow-sm">
+            <img src="/logo.png" alt="Aralko Logo" className="w-full h-full object-cover" />
+          </div>
+          <h1 className="text-lg font-bold text-primary">Aralko</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-muted hover:text-primary">
+            <SettingsIcon size={20} />
+          </button>
+          <div className="h-8 w-8 rounded-full overflow-hidden border border-token">
+            {userSettings.avatarUrl ? (
+              <img src={userSettings.avatarUrl} alt="Avatar" className="w-full h-full object-cover" crossOrigin="anonymous" />
+            ) : (
+              <div className="w-full h-full bg-slate-800 flex items-center justify-center text-xs font-bold text-secondary">
+                {userSettings.displayName?.charAt(0) || 'U'}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       
       <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0">
         {/* Sidebar */}
         {!isTestMode && (
           <>
-            <ResizablePanel defaultSize="25%" minSize="22%" maxSize="32%">
+            <ResizablePanel defaultSize={25} minSize={22} maxSize={32} className="hidden md:flex flex-col h-full">
               <Sidebar>
                 <StudyTracker 
                   secondsLeft={pomodoro.secondsLeft}
@@ -272,7 +253,7 @@ function AppContent() {
                 />
               </Sidebar>
             </ResizablePanel>
-            <ResizableHandle />
+            <ResizableHandle className="hidden md:flex" />
           </>
         )}
 
@@ -319,7 +300,7 @@ function AppContent() {
             </AlertDialogContent>
           </AlertDialog>
 
-          <main className="flex-1 flex flex-col min-h-0 h-full bg-app">
+          <main className="flex-1 flex flex-col min-h-0 h-full bg-app pb-[72px] md:pb-0 px-4 md:px-0">
 
             {/* Content area */}
             <div className="flex-1 min-h-0 flex flex-col">
@@ -461,6 +442,84 @@ function AppContent() {
         onActivityAdded={handleActivityAdded}
         addXP={userSettings.addXP}
       />
+      {/* Mobile Bottom Navigation & Pomodoro */}
+      <div className="md:hidden">
+        {pomodoro.isRunning && (
+          <div 
+            onClick={() => setIsTimerSheetOpen(true)}
+            className="fixed bottom-[80px] left-4 right-4 bg-surface border border-token rounded-2xl p-3 flex items-center justify-between shadow-2xl z-40"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative h-10 w-10 rounded-full border-2 border-accent/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-accent">
+                  {pomodoro.phase === 'work' ? 'W' : 'B'}
+                </span>
+              </div>
+              <span className="font-mono font-bold text-primary text-lg tracking-tight">
+                {Math.floor(pomodoro.secondsLeft / 60).toString().padStart(2, '0')}:{(pomodoro.secondsLeft % 60).toString().padStart(2, '0')}
+              </span>
+            </div>
+            <button 
+              onClick={(e) => { e.stopPropagation(); pomodoro.pause(); }}
+              className="h-10 w-10 bg-accent/10 rounded-full flex items-center justify-center text-accent hover:bg-accent/20 transition-colors"
+            >
+              <Pause size={18} />
+            </button>
+          </div>
+        )}
+        <Dialog open={isTimerSheetOpen} onOpenChange={setIsTimerSheetOpen}>
+          <DialogContent className="p-0 border-0 bg-transparent shadow-none" showCloseButton={false}>
+            <div className="bg-surface rounded-2xl overflow-hidden shadow-2xl border border-token p-4 w-full">
+              <StudyTracker 
+                secondsLeft={pomodoro.secondsLeft}
+                phase={pomodoro.phase}
+                isRunning={pomodoro.isRunning}
+                sessionsCompleted={pomodoro.sessionsCompleted}
+                onStart={pomodoro.start}
+                onPause={pomodoro.pause}
+                onReset={pomodoro.reset}
+                preset={userSettings.preset}
+                setPreset={userSettings.setPreset}
+                autoStart={userSettings.autoStart}
+                setAutoStart={userSettings.setAutoStart}
+                currentPhaseLength={pomodoro.currentPhaseLength}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+        <div className="fixed bottom-0 left-0 right-0 h-[72px] bg-app border-t border-token flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom)] z-50">
+          <button onClick={() => setActiveTab('main')} className="flex flex-col items-center gap-1 w-16 h-[44px] justify-center">
+            <div className={`flex items-center justify-center h-8 w-14 rounded-full transition-colors ${activeTab === 'main' ? 'bg-accent/15 text-accent' : 'text-muted'}`}>
+              <LayoutDashboard size={20} />
+            </div>
+            <span className={`text-[10px] font-medium ${activeTab === 'main' ? 'text-primary' : 'text-muted'}`}>Home</span>
+          </button>
+          <button onClick={() => setActiveTab('learn')} className="flex flex-col items-center gap-1 w-16 h-[44px] justify-center">
+            <div className={`flex items-center justify-center h-8 w-14 rounded-full transition-colors ${activeTab === 'learn' ? 'bg-accent/15 text-accent' : 'text-muted'}`}>
+              <BookOpen size={20} />
+            </div>
+            <span className={`text-[10px] font-medium ${activeTab === 'learn' ? 'text-primary' : 'text-muted'}`}>Learn</span>
+          </button>
+          <button onClick={() => setActiveTab('reviewer')} className="flex flex-col items-center gap-1 w-16 h-[44px] justify-center">
+            <div className={`flex items-center justify-center h-8 w-14 rounded-full transition-colors ${activeTab === 'reviewer' ? 'bg-accent/15 text-accent' : 'text-muted'}`}>
+              <FileText size={20} />
+            </div>
+            <span className={`text-[10px] font-medium ${activeTab === 'reviewer' ? 'text-primary' : 'text-muted'}`}>Reviewer</span>
+          </button>
+          <button onClick={() => setActiveTab('stats')} className="flex flex-col items-center gap-1 w-16 h-[44px] justify-center">
+            <div className={`flex items-center justify-center h-8 w-14 rounded-full transition-colors ${activeTab === 'stats' ? 'bg-accent/15 text-accent' : 'text-muted'}`}>
+              <BarChart3 size={20} />
+            </div>
+            <span className={`text-[10px] font-medium ${activeTab === 'stats' ? 'text-primary' : 'text-muted'}`}>Stats</span>
+          </button>
+          <button onClick={() => setActiveTab('community')} className="flex flex-col items-center gap-1 w-16 h-[44px] justify-center">
+            <div className={`flex items-center justify-center h-8 w-14 rounded-full transition-colors ${activeTab === 'community' ? 'bg-accent/15 text-accent' : 'text-muted'}`}>
+              <Users size={20} />
+            </div>
+            <span className={`text-[10px] font-medium ${activeTab === 'community' ? 'text-primary' : 'text-muted'}`}>Community</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -195,7 +195,7 @@ export function LeaderboardView() {
         ) : (
           <div className="flex flex-col">
             {/* Header Row */}
-            <div className="grid grid-cols-[60px_1fr_100px_120px] gap-4 px-6 py-4 border-b border-token bg-white/[0.02] text-xs font-semibold text-secondary uppercase tracking-wider">
+            <div className="hidden md:grid grid-cols-[60px_1fr_100px_120px] gap-4 px-6 py-4 border-b border-token bg-white/[0.02] text-xs font-semibold text-secondary uppercase tracking-wider">
               <div className="text-center">Rank</div>
               <div>Student</div>
               <div className="text-center">Level</div>
@@ -225,7 +225,7 @@ export function LeaderboardView() {
                   <div 
                     key={u.user_id}
                     onClick={() => handleUserClick(u)}
-                    className={`grid grid-cols-[60px_1fr_100px_120px] gap-4 px-6 py-4 items-center transition-colors cursor-pointer ${
+                    className={`grid grid-cols-[40px_1fr_auto] md:grid-cols-[60px_1fr_100px_120px] gap-3 md:gap-4 px-4 md:px-6 py-4 items-center transition-colors cursor-pointer ${
                       isMe ? 'bg-accent-muted' : 'hover:bg-white/[0.02]'
                     }`}
                   >
@@ -237,22 +237,22 @@ export function LeaderboardView() {
                     </div>
 
                     {/* Student Info */}
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10 border border-token">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <Avatar className="h-10 w-10 border border-token shrink-0">
                         {(isMe ? dbAvatarUrl : u.avatar_url) && <AvatarImage src={(isMe ? dbAvatarUrl : u.avatar_url)!} alt={(isMe ? dbDisplayName : u.display_name) || ''} />}
                         <AvatarFallback className="bg-slate-800 text-secondary font-medium">
                           {getInitials(isMe ? dbDisplayName : u.display_name, u.user_id)}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col">
-                        <span className={`font-semibold ${isMe ? 'text-accent' : 'text-slate-200'}`}>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`font-semibold truncate ${isMe ? 'text-accent' : 'text-slate-200'}`}>
                           {(isMe ? dbDisplayName : u.display_name) || 'Anonymous Learner'} {isMe && '(You)'}
                         </span>
                       </div>
                     </div>
 
                     {/* Level Badge */}
-                    <div className="flex justify-center">
+                    <div className="hidden md:flex justify-center">
                       <span className="inline-flex items-center justify-center h-7 px-3 bg-white/[0.05] border border-token rounded-full text-xs font-semibold text-secondary">
                         Lvl {u.level}
                       </span>

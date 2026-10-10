@@ -51,11 +51,15 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground border border-token duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed bottom-0 left-0 right-0 z-50 grid w-full max-h-[90vh] overflow-y-auto gap-4 rounded-t-2xl bg-popover p-4 text-sm text-popover-foreground border border-token duration-200 outline-none",
+          "md:bottom-auto md:right-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-sm md:rounded-xl",
+          "data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-full md:data-open:zoom-in-95 md:data-open:slide-in-from-bottom-0",
+          "data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom-full md:data-closed:zoom-out-95 md:data-closed:slide-out-to-bottom-0",
           className
         )}
         {...props}
       >
+        <div className="md:hidden w-12 h-1.5 bg-secondary/30 rounded-full mx-auto shrink-0 mb-2" />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
@@ -63,13 +67,12 @@ function DialogContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-2 right-2"
+                className="absolute top-2 right-2 hidden md:inline-flex"
                 size="icon-sm"
               />
             }
           >
-            <XIcon
-            />
+            <XIcon />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}

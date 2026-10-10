@@ -344,7 +344,7 @@ export function StatsView({ sessions, streak }: StatsViewProps) {
       </div>
 
       {/* 3. Three stat cards */}
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
+      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
         <LevelCard xp={xp} level={level} />
         <StatCard
           label="Total study hours"

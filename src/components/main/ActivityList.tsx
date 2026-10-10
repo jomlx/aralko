@@ -180,6 +180,23 @@ export function ActivityList({
           <h4 className="text-xs font-semibold tracking-[0.2em] text-accent">WELCOME BACK</h4>
           <h1 className="mt-2 text-3xl font-bold text-primary">{greeting}, {displayName}.</h1>
           <p className="mt-1 text-sm text-muted">Pick up where you left off and make progress today.</p>
+          
+          <div className="md:hidden flex items-center gap-3 mt-6">
+            <div className="flex-1 bg-surface border border-token rounded-2xl p-4 flex flex-col items-center justify-center">
+              <span className="text-2xl font-bold text-primary flex items-center gap-2">
+                <span className="text-amber-400">🔥</span>
+                {useUserSettings().savedStreak}
+              </span>
+              <span className="text-[10px] text-muted font-medium mt-1">day streak</span>
+            </div>
+            <div className="flex-1 bg-surface border border-token rounded-2xl p-4 flex flex-col items-center justify-center">
+              <span className="text-2xl font-bold text-primary flex items-center gap-2">
+                <span className="text-amber-400">⭐</span>
+                {useUserSettings().xp}
+              </span>
+              <span className="text-[10px] text-muted font-medium mt-1">Total XP</span>
+            </div>
+          </div>
         </div>
 
         {/* Activity list */}

@@ -3,6 +3,7 @@ import { XP_SESSION } from '../../lib/streakConstants';
 import { Upload, FileText, Loader2, Sparkles, BookText, Edit3, FileUp, Trash2, RefreshCw, PanelRight } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
+import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 import type { Activity } from '../../types';
 import { exportReviewerAsPDF, exportReviewerAsDocx } from '../../utils/exportReviewer';
 import { generateWithBackend } from '../../lib/apiClient';
@@ -375,9 +376,12 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="w-full text-left border-collapse border border-token rounded-lg overflow-hidden" {...props} /></div>,
-                        th: ({node, ...props}) => <th className="border border-token bg-white/[0.03] px-4 py-2 font-medium text-primary" {...props} />,
-                        td: ({node, ...props}) => <td className="border border-token px-4 py-2" {...props} />,
+                        table: ({node, ...props}) => <div className="my-4"><table className="w-full text-left md:border-collapse block md:table" {...props} /></div>,
+                        thead: ({node, ...props}) => <thead className="hidden md:table-header-group" {...props} />,
+                        tbody: ({node, ...props}) => <tbody className="block md:table-row-group space-y-3 md:space-y-0" {...props} />,
+                        tr: ({node, ...props}) => <tr className="block md:table-row border border-token md:border-0 rounded-xl md:rounded-none p-3 md:p-0 bg-white/[0.02] md:bg-transparent" {...props} />,
+                        th: ({node, ...props}) => <th className="md:border md:border-token md:bg-white/[0.03] md:px-4 md:py-2 font-medium text-primary hidden md:table-cell" {...props} />,
+                        td: ({node, ...props}) => <td className="block md:table-cell md:border md:border-token md:px-4 md:py-2 first:font-bold first:text-primary first:mb-1 md:first:mb-0 md:first:font-normal md:first:text-inherit text-sm md:text-sm" {...props} />,
                         h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-primary mt-6 mb-4" {...props} />,
                         h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-primary mt-5 mb-3" {...props} />,
                         h3: ({node, ...props}) => <h3 className="text-lg font-medium text-primary mt-4 mb-2" {...props} />,
@@ -400,9 +404,9 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
           </div>
         </div>
           
-        {/* Right: Aralmo Assistant Slider */}
+        {/* Right: Aralmo Assistant Slider (Desktop) */}
         <div
-          className={`flex-shrink-0 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+          className={`hidden md:flex flex-shrink-0 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
             isChatOpen ? 'w-[280px] opacity-100 translate-x-0' : 'w-0 opacity-0 translate-x-10 overflow-hidden ml-[-20px]'
           }`}
         >
@@ -410,7 +414,19 @@ export function ReviewerTab({ activities, selectedActivity, onUpdateActivity, ad
             <AIChatPanel activeActivity={activeActivity} aiConsent={aiConsent} onConsentRequired={onConsentRequired} />
           </div>
         </div>
-
+      </div>
+      
+      {/* Mobile AI Assistant Button */}
+      <div className="md:hidden fixed bottom-[90px] right-4 z-40">
+        <Dialog>
+          <DialogTrigger className="flex items-center gap-2 bg-accent text-primary px-4 py-3 rounded-full shadow-lg font-bold border-0 outline-none">
+            <Sparkles size={18} />
+            Ask AI
+          </DialogTrigger>
+          <DialogContent className="p-0 h-[85vh] flex flex-col">
+            <AIChatPanel activeActivity={activeActivity} aiConsent={aiConsent} onConsentRequired={onConsentRequired} />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
