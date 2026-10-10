@@ -248,7 +248,7 @@ function AppContent() {
         {/* Sidebar */}
         {!isTestMode && !isMobile && (
           <>
-            <ResizablePanel defaultSize={25} minSize={22} maxSize={32}>
+            <ResizablePanel defaultSize="25%" minSize="22%" maxSize="32%">
               <Sidebar>
                 <StudyTracker 
                   secondsLeft={pomodoro.secondsLeft}
