@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { XP_SESSION } from '../lib/streakConstants';
 import type { StudySession } from '../types';
 import { supabase } from '../lib/supabase';
@@ -22,13 +22,23 @@ export function useSessions(addXP?: (amount: number) => void) {
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [hasSessionsData, setHasSessionsData] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(false);
 
   const saveToLocal = useCallback((data: StudySession[]) => {
     if (!userId) return;
     localStorage.setItem(`${LOCAL_STORAGE_KEY}-${userId}`, JSON.stringify(data));
   }, [userId]);
 
-  const fetchSessions = useCallback(async () => {
+  // Use refs so the recursive fetch + event listeners always see latest values
+  const cancelledRef = useRef(false);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const slowRetryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    cancelledRef.current = false;
+    setSessionsLoaded(false);
+    setSyncFailed(false);
+
     if (!userId) {
       setSessions([]);
       setSessionsLoaded(true);
@@ -44,8 +54,32 @@ export function useSessions(addXP?: (amount: number) => void) {
       } catch {}
     }
 
-    for (let attempt = 0; attempt <= 5; attempt++) {
-      if (attempt > 0) await new Promise(r => setTimeout(r, 5000));
+    let retryCount = 0;
+
+    const onOnline = () => { if (!cancelledRef.current) scheduleSlowRetry(); };
+    const onVisible = () => { if (!cancelledRef.current && document.visibilityState === 'visible') scheduleSlowRetry(); };
+
+    const scheduleSlowRetry = () => {
+      if (slowRetryTimerRef.current) clearTimeout(slowRetryTimerRef.current);
+      slowRetryTimerRef.current = setTimeout(fetchSessions, 0);
+    };
+
+    const startSlowRetries = () => {
+      setSyncFailed(true);
+      slowRetryTimerRef.current = setTimeout(fetchSessions, 30000);
+      window.addEventListener('online', onOnline);
+      document.addEventListener('visibilitychange', onVisible);
+    };
+
+    const stopSlowRetries = () => {
+      setSyncFailed(false);
+      if (slowRetryTimerRef.current) clearTimeout(slowRetryTimerRef.current);
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+
+    const fetchSessions = async () => {
+      if (cancelledRef.current) return;
 
       try {
         const { data, error } = await supabase
@@ -53,6 +87,8 @@ export function useSessions(addXP?: (amount: number) => void) {
           .select('*')
           .eq('user_id', userId)
           .order('id', { ascending: true });
+
+        if (cancelledRef.current) return;
 
         if (!error && data) {
           const mapped: StudySession[] = data.map(row => ({
@@ -65,22 +101,37 @@ export function useSessions(addXP?: (amount: number) => void) {
           saveToLocal(mapped);
           setHasSessionsData(true);
           setSessionsLoaded(true);
+          stopSlowRetries();
           return;
         }
-        console.warn(`Failed to fetch sessions (attempt ${attempt + 1}/6):`, error?.message);
+        console.warn(`Failed to fetch sessions (attempt ${retryCount + 1}/6):`, error?.message);
       } catch (e) {
-        console.warn(`Failed to fetch sessions (attempt ${attempt + 1}/6):`, e);
+        if (cancelledRef.current) return;
+        console.warn(`Failed to fetch sessions (attempt ${retryCount + 1}/6):`, e);
       }
-    }
 
-    // All retries exhausted — allow streak eval with cached/default data
-    setSessionsLoaded(true);
-  }, [userId, saveToLocal]);
+      // Fast retries (5s apart, up to 6 attempts)
+      if (retryCount < 5) {
+        retryCount++;
+        retryTimerRef.current = setTimeout(fetchSessions, 5000);
+        return;
+      }
 
-  useEffect(() => {
-    setSessionsLoaded(false); // reset on user change
+      // All fast retries exhausted — do NOT set sessionsLoaded.
+      // Keep retrying slowly in the background.
+      startSlowRetries();
+    };
+
     fetchSessions();
-  }, [fetchSessions]);
+
+    return () => {
+      cancelledRef.current = true;
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      if (slowRetryTimerRef.current) clearTimeout(slowRetryTimerRef.current);
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [userId, saveToLocal]);
 
   const addSession = useCallback((session: StudySession) => {
     if (!userId) return;
@@ -147,7 +198,9 @@ export function useSessions(addXP?: (amount: number) => void) {
     sessions,
     sessionsLoaded,
     hasSessionsData,
+    syncFailed,
     addSession,
     streak
   };
 }
+

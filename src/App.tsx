@@ -128,7 +128,7 @@ function AppContent() {
 
   const userSettings = useUserSettings();
   const { activities, loading, addActivity, updateActivity, removeActivity } = useActivities();
-  const { sessions, sessionsLoaded, hasSessionsData, addSession } = useSessions(userSettings.addXP);
+  const { sessions, sessionsLoaded, hasSessionsData, syncFailed: sessionsSyncFailed, addSession } = useSessions(userSettings.addXP);
   const [selectedActivityId, setSelectedActivityId] = useLocalStorage<number>('aralko-selected-activity', 1);
 
   const activitiesRef = useRef(activities);
@@ -488,6 +488,12 @@ function AppContent() {
         onActivityAdded={handleActivityAdded}
         addXP={userSettings.addXP}
       />
+      {/* Non-blocking sync failure hint */}
+      {(userSettings.syncFailed || sessionsSyncFailed) && (
+        <div className="fixed top-1 left-1/2 -translate-x-1/2 z-[60] bg-amber-600/90 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+          Couldn't sync — retrying…
+        </div>
+      )}
       {/* Mobile Bottom Navigation & Pomodoro */}
       <div className="md:hidden">
         {pomodoro.isRunning && (

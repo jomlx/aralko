@@ -81,6 +81,7 @@ export function useUserSettings() {
   const [longestStreak, setLongestStreak] = useState(0);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [hasSettings, setHasSettings] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(false);
 
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -103,6 +104,7 @@ export function useUserSettings() {
       setLongestStreak(0);
       setSettingsLoaded(false);
       setHasSettings(false);
+      setSyncFailed(false);
       xpRef.current = 0;
       xpThisWeekRef.current = 0;
       longestStreakRef.current = 0;
@@ -144,7 +146,32 @@ export function useUserSettings() {
 
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let slowRetryTimer: ReturnType<typeof setTimeout> | undefined;
     let retryCount = 0;
+
+    const onOnline = () => { if (!cancelled) scheduleSlowRetry(); };
+    const onVisible = () => { if (!cancelled && document.visibilityState === 'visible') scheduleSlowRetry(); };
+
+    const scheduleSlowRetry = () => {
+      if (slowRetryTimer) clearTimeout(slowRetryTimer);
+      slowRetryTimer = setTimeout(fetchSettings, 0);
+    };
+
+    const startSlowRetries = () => {
+      setSyncFailed(true);
+      // Retry every 30s
+      slowRetryTimer = setTimeout(fetchSettings, 30000);
+      // Also retry on connectivity / tab focus
+      window.addEventListener('online', onOnline);
+      document.addEventListener('visibilitychange', onVisible);
+    };
+
+    const stopSlowRetries = () => {
+      setSyncFailed(false);
+      if (slowRetryTimer) clearTimeout(slowRetryTimer);
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
 
     const fetchSettings = () => {
       supabase
@@ -156,6 +183,7 @@ export function useUserSettings() {
       .then(({ data, error }) => {
         if (cancelled) return;
         if (data) {
+          stopSlowRetries();
           if (data.pomodoro_preset)    setPreset(data.pomodoro_preset);
           if (data.pomodoro_autostart !== null) setAutoStart(data.pomodoro_autostart);
           if (data.gemini_api_key)    setGeminiKey(data.gemini_api_key);
@@ -245,14 +273,15 @@ export function useUserSettings() {
           setHasSettings(true);
           try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
         } else if (error && error.code !== 'PGRST116') {
-          // Network error — retry instead of accepting defaults
+          // Network error — retry
           console.warn(`Failed to load user settings (attempt ${retryCount + 1}/6):`, error.message);
           if (retryCount < 5) {
             retryCount++;
             retryTimer = setTimeout(fetchSettings, 5000);
             return; // don't set settingsLoaded yet
           }
-          // All retries exhausted — seed from OAuth and allow streak eval
+          // All fast retries exhausted — do NOT set settingsLoaded.
+          // Seed display from OAuth for visual only, keep retrying slowly.
           const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
           if (metaName) setDisplayName(metaName);
           let metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
@@ -262,9 +291,11 @@ export function useUserSettings() {
           }
           if (metaAvatar) setAvatarUrl(metaAvatar);
           setHasSettings(true);
-          setSettingsLoaded(true);
+          // Do NOT set settingsLoaded — streak eval stays blocked.
+          startSlowRetries();
         } else if (!data) {
           // Row doesn't exist (PGRST116) — valid network response, new user
+          stopSlowRetries();
           const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
           let metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
           if (!metaAvatar && !sessionAssignedAvatars.has(userId)) {
@@ -302,6 +333,9 @@ export function useUserSettings() {
     return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
+      if (slowRetryTimer) clearTimeout(slowRetryTimer);
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [userId, user]);
 
@@ -377,7 +411,7 @@ export function useUserSettings() {
   return { 
     preset, setPreset, autoStart, setAutoStart, geminiKey, 
     xp, level, xpThisWeek, addXP,
-    streakFreezes, savedStreak, longestStreak, updateStreakData, settingsLoaded, hasSettings,
+    streakFreezes, savedStreak, longestStreak, updateStreakData, settingsLoaded, hasSettings, syncFailed,
     displayName, setDisplayName, avatarUrl, setAvatarUrl,
   };
 }
