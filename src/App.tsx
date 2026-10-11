@@ -7,14 +7,14 @@ import { StudyTracker } from './components/sidebar/StudyTracker';
 import { MusicPlayerCompact } from './components/main/MusicPlayerCompact';
 import { ActivityList } from './components/main/ActivityList';
 import { LearnTab } from './components/main/LearnTab';
-import { ReviewerTab } from './components/main/ReviewerTab';
-import { CommunityTab } from './components/community/CommunityTab';
+const ReviewerTab = React.lazy(() => import('./components/main/ReviewerTab').then(m => ({ default: m.ReviewerTab })));
+const CommunityTab = React.lazy(() => import('./components/community/CommunityTab').then(m => ({ default: m.CommunityTab })));
 import { TechniquesGrid } from './components/techniques/TechniquesGrid';
-import { StatsView } from './components/stats/StatsView';
+const StatsView = React.lazy(() => import('./components/stats/StatsView').then(m => ({ default: m.StatsView })));
 import { AddActivityModal } from './components/main/AddActivityModal';
 import { ProfilePopover } from './components/sidebar/ProfilePopover';
 import { ToastProvider } from './components/ui/Toast';
-import { SettingsDialog } from './components/SettingsDialog';
+const SettingsDialog = React.lazy(() => import('./components/SettingsDialog').then(m => ({ default: m.SettingsDialog })));
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
 import { useActivities } from './hooks/useActivities';
 import { useSessions } from './hooks/useSessions';
@@ -275,6 +275,8 @@ function AppContent() {
                   sessionsCount={sessions.length}
                   freezes={userSettings.streakFreezes}
                   longestStreak={userSettings.longestStreak}
+                  settingsLoaded={userSettings.settingsLoaded}
+                  sessionsLoaded={sessionsLoaded}
                 />
               </Sidebar>
             </ResizablePanel>
@@ -284,20 +286,24 @@ function AppContent() {
 
         <ResizablePanel>
           {/* Settings Dialog (rendered at app root to float above everything) */}
-          <SettingsDialog
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            theme={theme}
-            onToggleTheme={toggleTheme}
-            isAuthenticated={isAuthenticated}
-            onLogin={login}
-            onLogout={logout}
-            aiConsent={aiConsent}
-            aiConsentDate={aiConsentDate}
-            consentLoading={consentLoading}
-            onConsentOn={setConsentOn}
-            onConsentOff={setConsentOff}
-          />
+          {isSettingsOpen && (
+            <React.Suspense fallback={null}>
+              <SettingsDialog
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                isAuthenticated={isAuthenticated}
+                onLogin={login}
+                onLogout={logout}
+                aiConsent={aiConsent}
+                aiConsentDate={aiConsentDate}
+                consentLoading={consentLoading}
+                onConsentOn={setConsentOn}
+                onConsentOff={setConsentOff}
+              />
+            </React.Suspense>
+          )}
 
           {/* AI Consent Gate Dialog */}
           <AlertDialog open={consentGateOpen} onOpenChange={setConsentGateOpen}>
@@ -383,16 +389,18 @@ function AppContent() {
                   {/* Reviewer tab — always mounted */}
                   <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'reviewer' ? 'flex' : 'hidden'}`}>
                     {activities.length > 0 ? (
-                      <ReviewerTab
-                        activities={activities}
-                        selectedActivity={selectedActivityId}
-                        onUpdateActivity={updateActivity}
-                        addXP={userSettings.addXP}
-                        aiConsent={aiConsent}
-                        onConsentRequired={() => {
-                          setConsentGateOpen(true);
-                        }}
-                      />
+                      <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-muted text-sm">Loading Reviewer...</div>}>
+                        <ReviewerTab
+                          activities={activities}
+                          selectedActivity={selectedActivityId}
+                          onUpdateActivity={updateActivity}
+                          addXP={userSettings.addXP}
+                          aiConsent={aiConsent}
+                          onConsentRequired={() => {
+                            setConsentGateOpen(true);
+                          }}
+                        />
+                      </React.Suspense>
                     ) : (
                       <div className="flex flex-1 flex-col items-center justify-center text-secondary">
                         <p className="mb-4">No activities yet. Add one from the Main tab.</p>
@@ -410,17 +418,21 @@ function AppContent() {
 
                   {/* Stats tab — always mounted */}
                   <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'stats' ? 'block' : 'hidden'}`}>
-                    <StatsView sessions={sessions} streak={streakLogic.displayedStreak} />
+                    <React.Suspense fallback={<div className="p-8 text-center text-muted text-sm">Loading Stats...</div>}>
+                      <StatsView sessions={sessions} streak={streakLogic.displayedStreak} />
+                    </React.Suspense>
                   </div>
 
                   {/* Community tab — always mounted */}
                   <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'community' ? 'flex' : 'hidden'}`}>
-                    <CommunityTab 
-                      onOpenActivity={(id) => {
-                        setSelectedActivityId(id);
-                        setActiveTab('learn');
-                      }}
-                    />
+                    <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-muted text-sm">Loading Community...</div>}>
+                      <CommunityTab 
+                        onOpenActivity={(id) => {
+                          setSelectedActivityId(id);
+                          setActiveTab('learn');
+                        }}
+                      />
+                    </React.Suspense>
                   </div>
                 </>
               )}
@@ -567,7 +579,8 @@ function InnerApp() {
     }
   }, []);
 
-  if (loading) {
+  // Only show loading if we don't have a session AND are loading
+  if (loading && !session) {
     return (
       <div className="min-h-screen bg-app flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">

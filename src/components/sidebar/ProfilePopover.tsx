@@ -8,7 +8,11 @@ import { useAuth } from '../../hooks/useAuth';
 import { xpToLevel } from '../../hooks/useUserSettings';
 import { useUserSettingsContext as useUserSettings } from '../../hooks/UserSettingsContext';
 import { useToast } from '../ui/Toast';
-import { formatHours } from '../stats/StatsView';
+
+function formatHours(hours: number): string {
+  if (hours < 1) return `${Math.round(hours * 60)}m`;
+  return `${hours.toFixed(1)}h`;
+}
 
 interface ProfilePopoverProps {
   streak: number;
@@ -17,9 +21,11 @@ interface ProfilePopoverProps {
   sessionsCount: number;
   freezes: number;
   longestStreak: number;
+  settingsLoaded?: boolean;
+  sessionsLoaded?: boolean;
 }
 
-export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freezes: _freezes, longestStreak }: ProfilePopoverProps) {
+export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freezes: _freezes, longestStreak, settingsLoaded = true, sessionsLoaded = true }: ProfilePopoverProps) {
   const displayLongestStreak = Math.max(longestStreak, streak);
   const [isOpen, setIsOpen] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
@@ -325,12 +331,12 @@ export function ProfilePopover({ streak, xp, totalMinutes, sessionsCount, freeze
               displayName={displayName}
               avatarUrl={avatarUrl}
               initials={initials}
-              streak={streak}
-              level={level}
-              xp={xp.toLocaleString()}
-              sessionsCount={sessionsCount}
-              longestStreak={`${displayLongestStreak} ${displayLongestStreak === 1 ? 'day' : 'days'}`}
-              totalTime={formatHours(totalMinutes / 60)}
+              streak={settingsLoaded ? streak : <div className="h-8 w-12 bg-white/20 animate-pulse rounded" />}
+              level={settingsLoaded ? level : <div className="h-4 w-6 bg-white/20 animate-pulse rounded" />}
+              xp={settingsLoaded ? xp.toLocaleString() : <div className="h-4 w-8 bg-white/20 animate-pulse rounded" />}
+              sessionsCount={sessionsLoaded ? sessionsCount : <div className="h-4 w-6 bg-white/20 animate-pulse rounded" />}
+              longestStreak={settingsLoaded ? `${displayLongestStreak} ${displayLongestStreak === 1 ? 'day' : 'days'}` : <div className="h-4 w-12 bg-white/20 animate-pulse rounded inline-block" />}
+              totalTime={sessionsLoaded ? formatHours(totalMinutes / 60) : <div className="h-4 w-12 bg-white/20 animate-pulse rounded inline-block" />}
               joinDate={joinDate}
               showShareButton={true}
               onShareClick={() => setShowShareMenu(true)}

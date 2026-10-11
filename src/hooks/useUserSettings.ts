@@ -108,6 +108,41 @@ export function useUserSettings() {
       return;
     }
 
+    const CACHE_KEY = `aralko:cache:settings:${userId}`;
+    
+    // Seed from cache immediately
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data.pomodoro_preset) setPreset(data.pomodoro_preset);
+        if (data.pomodoro_autostart !== undefined) setAutoStart(data.pomodoro_autostart);
+        if (data.gemini_api_key) setGeminiKey(data.gemini_api_key);
+        if (data.xp !== undefined) {
+          setXp(data.xp);
+          setLevel(xpToLevel(data.xp));
+          xpRef.current = data.xp;
+        }
+        if (data.xp_this_week !== undefined) {
+          setXpThisWeek(data.xp_this_week);
+          xpThisWeekRef.current = data.xp_this_week;
+        }
+        if (data.week_start) weekStartRef.current = data.week_start;
+        if (data.streak_freezes !== undefined) setStreakFreezes(data.streak_freezes);
+        if (data.saved_streak !== undefined) setSavedStreak(data.saved_streak);
+        if (data.longest_streak !== undefined) {
+          setLongestStreak(data.longest_streak);
+          longestStreakRef.current = data.longest_streak;
+        }
+        if (data.display_name) setDisplayName(data.display_name);
+        if (data.avatar_url) setAvatarUrl(data.avatar_url);
+      }
+    } catch {}
+
+    const timeout = setTimeout(() => {
+      setSettingsLoaded(true);
+    }, 3000);
+
     supabase
       .from('user_settings')
       .select('pomodoro_preset, pomodoro_autostart, gemini_api_key, xp, level, xp_this_week, week_start, display_name, avatar_url, streak_freezes, saved_streak, longest_streak')
@@ -252,6 +287,12 @@ export function useUserSettings() {
         }
         
         setSettingsLoaded(true);
+        if (data) {
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+          } catch {}
+        }
+        clearTimeout(timeout);
       });
   }, [userId, user]);
 

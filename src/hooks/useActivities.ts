@@ -24,7 +24,20 @@ export function useActivities() {
       return;
     }
 
-    setLoading(true);
+    const local = localStorage.getItem(`${LOCAL_STORAGE_KEY}-${userId}`);
+    if (local) {
+      try {
+        setActivities(JSON.parse(local));
+        setLoading(false);
+      } catch {}
+    } else {
+      setLoading(true);
+    }
+
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+
     let data = null;
     let error = null;
     try {
@@ -91,6 +104,7 @@ export function useActivities() {
       setActivities(mapped);
       saveToLocal(mapped);
     }
+    clearTimeout(timeout);
     setLoading(false);
 
   }, [userId, saveToLocal]);

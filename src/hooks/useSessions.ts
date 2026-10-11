@@ -40,6 +40,10 @@ export function useSessions(addXP?: (amount: number) => void) {
       try { setSessions(JSON.parse(local)); } catch {}
     }
 
+    const timeout = setTimeout(() => {
+      setSessionsLoaded(true);
+    }, 3000);
+
     let data = null;
     let error = null;
     try {
@@ -69,6 +73,7 @@ export function useSessions(addXP?: (amount: number) => void) {
     }
 
     // Mark loaded only AFTER the network attempt completes (success or fallback)
+    clearTimeout(timeout);
     setSessionsLoaded(true);
   }, [userId, saveToLocal]);
 

@@ -2,6 +2,22 @@ import { useState, useEffect } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
+function getLocalSession(): Session | null {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.includes('-auth-token')) {
+        const item = localStorage.getItem(key);
+        if (item) {
+          const parsed = JSON.parse(item);
+          return parsed.currentSession || parsed || null;
+        }
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
 export interface AuthState {
   session: Session | null;
   user: User | null;
@@ -9,8 +25,8 @@ export interface AuthState {
 }
 
 export function useAuth(): AuthState {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(() => getLocalSession());
+  const [loading, setLoading] = useState(!getLocalSession());
 
   useEffect(() => {
     // Initialize from persisted session
