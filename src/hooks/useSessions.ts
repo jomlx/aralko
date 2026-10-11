@@ -21,6 +21,7 @@ export function useSessions(addXP?: (amount: number) => void) {
 
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [sessionsLoaded, setSessionsLoaded] = useState(false);
+  const [hasSessionsData, setHasSessionsData] = useState(false);
 
   const saveToLocal = useCallback((data: StudySession[]) => {
     if (!userId) return;
@@ -30,50 +31,49 @@ export function useSessions(addXP?: (amount: number) => void) {
   const fetchSessions = useCallback(async () => {
     if (!userId) {
       setSessions([]);
-      setSessionsLoaded(true); // No user = nothing to load
+      setSessionsLoaded(true);
       return;
     }
 
     // Seed from localStorage immediately so UI isn't empty while network loads
     const local = localStorage.getItem(`${LOCAL_STORAGE_KEY}-${userId}`);
     if (local) {
-      try { setSessions(JSON.parse(local)); } catch {}
+      try {
+        setSessions(JSON.parse(local));
+        setHasSessionsData(true);
+      } catch {}
     }
 
-    const timeout = setTimeout(() => {
-      setSessionsLoaded(true);
-    }, 3000);
+    for (let attempt = 0; attempt <= 5; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 5000));
 
-    let data = null;
-    let error = null;
-    try {
-      const res = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('id', { ascending: true });
-      data = res.data;
-      error = res.error;
-    } catch (e) {
-      error = e;
+      try {
+        const { data, error } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('user_id', userId)
+          .order('id', { ascending: true });
+
+        if (!error && data) {
+          const mapped: StudySession[] = data.map(row => ({
+            date: row.date,
+            minutes: row.minutes,
+            activityId: row.activityId,
+            activityName: row.activityName
+          }));
+          setSessions(mapped);
+          saveToLocal(mapped);
+          setHasSessionsData(true);
+          setSessionsLoaded(true);
+          return;
+        }
+        console.warn(`Failed to fetch sessions (attempt ${attempt + 1}/6):`, error?.message);
+      } catch (e) {
+        console.warn(`Failed to fetch sessions (attempt ${attempt + 1}/6):`, e);
+      }
     }
 
-    if (error || !data) {
-      console.warn('Failed to fetch sessions from Supabase. Falling back to local storage.');
-      // Keep whatever we already seeded from localStorage
-    } else {
-      const mapped: StudySession[] = data.map(row => ({
-        date: row.date,
-        minutes: row.minutes,
-        activityId: row.activityId,
-        activityName: row.activityName
-      }));
-      setSessions(mapped);
-      saveToLocal(mapped);
-    }
-
-    // Mark loaded only AFTER the network attempt completes (success or fallback)
-    clearTimeout(timeout);
+    // All retries exhausted — allow streak eval with cached/default data
     setSessionsLoaded(true);
   }, [userId, saveToLocal]);
 
@@ -146,6 +146,7 @@ export function useSessions(addXP?: (amount: number) => void) {
   return {
     sessions,
     sessionsLoaded,
+    hasSessionsData,
     addSession,
     streak
   };

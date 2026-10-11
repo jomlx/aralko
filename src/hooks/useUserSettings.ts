@@ -80,6 +80,7 @@ export function useUserSettings() {
   const [savedStreak, setSavedStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [hasSettings, setHasSettings] = useState(false);
 
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -101,6 +102,7 @@ export function useUserSettings() {
       setSavedStreak(0);
       setLongestStreak(0);
       setSettingsLoaded(false);
+      setHasSettings(false);
       xpRef.current = 0;
       xpThisWeekRef.current = 0;
       longestStreakRef.current = 0;
@@ -136,20 +138,23 @@ export function useUserSettings() {
         }
         if (data.display_name) setDisplayName(data.display_name);
         if (data.avatar_url) setAvatarUrl(data.avatar_url);
+        setHasSettings(true);
       }
     } catch {}
 
-    const timeout = setTimeout(() => {
-      setSettingsLoaded(true);
-    }, 3000);
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryCount = 0;
 
-    supabase
+    const fetchSettings = () => {
+      supabase
       .from('user_settings')
       .select('pomodoro_preset, pomodoro_autostart, gemini_api_key, xp, level, xp_this_week, week_start, display_name, avatar_url, streak_freezes, saved_streak, longest_streak')
       .eq('user_id', userId)
       .limit(1)
       .single()
       .then(({ data, error }) => {
+        if (cancelled) return;
         if (data) {
           if (data.pomodoro_preset)    setPreset(data.pomodoro_preset);
           if (data.pomodoro_autostart !== null) setAutoStart(data.pomodoro_autostart);
@@ -236,28 +241,30 @@ export function useUserSettings() {
           } else {
             ensureAvatar();
           }
+          setSettingsLoaded(true);
+          setHasSettings(true);
+          try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
         } else if (error && error.code !== 'PGRST116') {
-          console.warn('Failed to load user settings:', error.message);
-
-          // No DB row yet — seed from OAuth metadata
+          // Network error — retry instead of accepting defaults
+          console.warn(`Failed to load user settings (attempt ${retryCount + 1}/6):`, error.message);
+          if (retryCount < 5) {
+            retryCount++;
+            retryTimer = setTimeout(fetchSettings, 5000);
+            return; // don't set settingsLoaded yet
+          }
+          // All retries exhausted — seed from OAuth and allow streak eval
           const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
           if (metaName) setDisplayName(metaName);
-          
           let metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
           if (!metaAvatar && !sessionAssignedAvatars.has(userId)) {
             sessionAssignedAvatars.add(userId);
             metaAvatar = `/avatars/avatar${Math.floor(Math.random() * 7) + 1}.svg`;
           }
-          if (metaAvatar) {
-            setAvatarUrl(metaAvatar);
-            supabase.from('user_settings').select('avatar_url').eq('user_id', userId).maybeSingle().then(({ data: check }) => {
-              if (!check?.avatar_url) {
-                supabase.from('user_settings').upsert({ user_id: userId, avatar_url: metaAvatar }, { onConflict: 'user_id' }).then(() => {});
-              }
-            });
-          }
+          if (metaAvatar) setAvatarUrl(metaAvatar);
+          setHasSettings(true);
+          setSettingsLoaded(true);
         } else if (!data) {
-          // Row doesn't exist (PGRST116) — seed from OAuth metadata
+          // Row doesn't exist (PGRST116) — valid network response, new user
           const metaName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
           let metaAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
           if (!metaAvatar && !sessionAssignedAvatars.has(userId)) {
@@ -284,16 +291,18 @@ export function useUserSettings() {
             supabase.from('user_settings').upsert({ user_id: userId, avatar_url: metaAvatar }, { onConflict: 'user_id' }).then(() => {});
           }
           if (metaAvatar) setAvatarUrl(metaAvatar);
+          setHasSettings(true);
+          setSettingsLoaded(true);
         }
-        
-        setSettingsLoaded(true);
-        if (data) {
-          try {
-            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-          } catch {}
-        }
-        clearTimeout(timeout);
       });
+    };
+
+    fetchSettings();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, [userId, user]);
 
   useEffect(() => { xpRef.current = xp; }, [xp]);
@@ -368,7 +377,7 @@ export function useUserSettings() {
   return { 
     preset, setPreset, autoStart, setAutoStart, geminiKey, 
     xp, level, xpThisWeek, addXP,
-    streakFreezes, savedStreak, longestStreak, updateStreakData, settingsLoaded,
+    streakFreezes, savedStreak, longestStreak, updateStreakData, settingsLoaded, hasSettings,
     displayName, setDisplayName, avatarUrl, setAvatarUrl,
   };
 }

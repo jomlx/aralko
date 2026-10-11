@@ -128,7 +128,7 @@ function AppContent() {
 
   const userSettings = useUserSettings();
   const { activities, loading, addActivity, updateActivity, removeActivity } = useActivities();
-  const { sessions, sessionsLoaded, addSession } = useSessions(userSettings.addXP);
+  const { sessions, sessionsLoaded, hasSessionsData, addSession } = useSessions(userSettings.addXP);
   const [selectedActivityId, setSelectedActivityId] = useLocalStorage<number>('aralko-selected-activity', 1);
 
   const activitiesRef = useRef(activities);
@@ -275,8 +275,8 @@ function AppContent() {
                   sessionsCount={sessions.length}
                   freezes={userSettings.streakFreezes}
                   longestStreak={userSettings.longestStreak}
-                  settingsLoaded={userSettings.settingsLoaded}
-                  sessionsLoaded={sessionsLoaded}
+                  settingsLoaded={userSettings.hasSettings}
+                  sessionsLoaded={hasSessionsData}
                 />
               </Sidebar>
             </ResizablePanel>
@@ -418,9 +418,18 @@ function AppContent() {
 
                   {/* Stats tab — always mounted */}
                   <div className={`flex-1 min-h-0 overflow-y-auto ${activeTab === 'stats' ? 'block' : 'hidden'}`}>
-                    <React.Suspense fallback={<div className="p-8 text-center text-muted text-sm">Loading Stats...</div>}>
-                      <StatsView sessions={sessions} streak={streakLogic.displayedStreak} />
-                    </React.Suspense>
+                    {!hasSessionsData ? (
+                      <div className="p-6 space-y-4">
+                        <div className="h-5 w-32 bg-white/10 animate-pulse rounded" />
+                        <div className="h-28 bg-white/10 animate-pulse rounded-xl" />
+                        <div className="h-5 w-40 bg-white/10 animate-pulse rounded" />
+                        <div className="h-48 bg-white/10 animate-pulse rounded-xl" />
+                      </div>
+                    ) : (
+                      <React.Suspense fallback={<div className="p-8 text-center text-muted text-sm">Loading Stats...</div>}>
+                        <StatsView sessions={sessions} streak={streakLogic.displayedStreak} />
+                      </React.Suspense>
+                    )}
                   </div>
 
                   {/* Community tab — always mounted */}
